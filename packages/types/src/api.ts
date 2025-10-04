@@ -4,7 +4,39 @@ import type { PaginationParams, PaginatedResponse, ApiResponse, ApiError } from 
  * API request and response types for FinMatter
  */
 
-// Auth API types
+// Auth API types (Phone Authentication)
+export type SendOTPRequest = {
+  phoneNumber: string;
+};
+
+export type SendOTPResponse = ApiResponse<{
+  success: boolean;
+  message: string;
+  expiresIn: number; // seconds
+}>;
+
+export type VerifyOTPRequest = {
+  phoneNumber: string;
+  otp: string;
+};
+
+export type VerifyOTPResponse = ApiResponse<{
+  user: {
+    id: string;
+    phoneNumber: string;
+    isVerified: boolean;
+    biometricEnabled: boolean;
+    createdAt: string;
+    lastLogin?: string;
+  };
+  session: {
+    token: string;
+    refreshToken: string;
+    expiresAt: string;
+  };
+}>;
+
+// Legacy email-based auth types (deprecated)
 export type LoginRequest = {
   email: string;
   password: string;

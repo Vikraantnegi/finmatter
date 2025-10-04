@@ -2,13 +2,49 @@ import type { AuditFields, Currency } from './common';
 
 /**
  * User-related types for FinMatter
+ * Updated to align with phone authentication and database schema
  */
 
 export type UserRole = 'user' | 'admin' | 'beta_tester';
 
 export type UserStatus = 'active' | 'inactive' | 'suspended' | 'pending_verification';
 
-export type User = AuditFields & {
+// Database User (matches Supabase users table)
+export type DatabaseUser = {
+  id: string; // UUID
+  phone_number: string;
+  created_at: string;
+  last_login?: string;
+  biometric_enabled: boolean;
+  is_verified: boolean;
+  profile_data?: UserProfileData;
+  updated_at: string;
+};
+
+// Application User (transformed from database)
+export type User = {
+  id: string;
+  phoneNumber: string;
+  createdAt: string;
+  lastLogin?: string;
+  biometricEnabled: boolean;
+  isVerified: boolean;
+  profileData?: UserProfileData;
+  updatedAt: string;
+};
+
+export type UserProfileData = {
+  firstName?: string;
+  lastName?: string;
+  displayName?: string;
+  avatar?: string;
+  dateOfBirth?: string;
+  preferences?: UserPreferences;
+  subscription?: UserSubscription;
+};
+
+// Legacy User type for backward compatibility (deprecated)
+export type LegacyUser = AuditFields & {
   id: string;
   email: string;
   firstName?: string;
@@ -91,26 +127,23 @@ export type SubscriptionLimits = {
 export type UserProfile = Pick<
   User,
   | 'id'
-  | 'email'
-  | 'firstName'
-  | 'lastName'
-  | 'displayName'
-  | 'avatar'
-  | 'preferences'
+  | 'phoneNumber'
+  | 'isVerified'
+  | 'biometricEnabled'
+  | 'profileData'
+  | 'createdAt'
+  | 'lastLogin'
 >;
 
 export type CreateUserRequest = {
-  email: string;
-  password: string;
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
-  preferences?: Partial<UserPreferences>;
+  phoneNumber: string;
+  profileData?: Partial<UserProfileData>;
 };
 
-export type UpdateUserRequest = Partial<
-  Pick<User, 'firstName' | 'lastName' | 'displayName' | 'avatar' | 'preferences'>
->;
+export type UpdateUserRequest = {
+  profileData?: Partial<UserProfileData>;
+  biometricEnabled?: boolean;
+};
 
 export type UserSession = {
   id: string;

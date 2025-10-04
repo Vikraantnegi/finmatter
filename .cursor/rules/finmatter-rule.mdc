@@ -1,0 +1,11 @@
+---
+description: I'm building FinMatter, a personal finance app. 
+globs:
+alwaysApply: true
+
+Please generate complete, production-ready code with:
+   - Error handling
+   - TypeScript types
+   - Comments for complex logic
+   - No placeholder code
+---

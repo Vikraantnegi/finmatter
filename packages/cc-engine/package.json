@@ -1,0 +1,36 @@
+{
+  "name": "@finmatter/cc-engine",
+  "version": "1.0.0",
+  "description": "Credit card optimization engine for FinMatter",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@finmatter/types": "workspace:*",
+    "@finmatter/shared": "workspace:*",
+    "pdf-parse": "^1.1.1",
+    "date-fns": "^3.6.0"
+  },
+  "devDependencies": {
+    "@types/pdf-parse": "^1.1.1",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.11",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.3.3"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "restricted"
+  }
+}

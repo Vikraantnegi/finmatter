@@ -96,13 +96,15 @@ export class ApiClient {
     const requestOptions: RequestInit = {
       method,
       headers: requestHeaders,
-      signal
+      signal: signal || null
     };
 
     if (body && method !== 'GET') {
       if (body instanceof FormData) {
         // Remove Content-Type header for FormData (browser will set it with boundary)
-        delete requestOptions.headers?.['Content-Type'];
+        if (requestOptions.headers && 'Content-Type' in requestOptions.headers) {
+          delete (requestOptions.headers as any)['Content-Type'];
+        }
         requestOptions.body = body;
       } else {
         requestOptions.body = JSON.stringify(body);
@@ -416,7 +418,7 @@ export const sequentialRequests = async <T = any>(
   const results: ApiResponse<T>[] = [];
   
   for (const request of requests) {
-    const result = await request;
+    const result = await request();
     results.push(result);
   }
   

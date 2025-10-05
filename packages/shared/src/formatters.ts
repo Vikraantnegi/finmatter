@@ -423,8 +423,10 @@ export const formatSuccessMessage = (message: string, data?: any): string => {
     const keys = Object.keys(data);
     if (keys.length === 1) {
       const key = keys[0];
-      const value = data[key];
-      return `${message}: ${value}`;
+      if (key) {
+        const value = data[key];
+        return `${message}: ${value}`;
+      }
     }
   }
 

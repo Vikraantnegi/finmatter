@@ -1,87 +1,160 @@
 /**
  * Authentication Service
- * Handles API calls for authentication
+ * Handles API calls for phone-based authentication with OTP
  */
 
 import { apiClient } from '@finmatter/shared';
-import type { User, UserSession } from '@finmatter/types';
+import type { 
+  SendOTPRequest, 
+  SendOTPResponse, 
+  VerifyOTPRequest, 
+  VerifyOTPResponse,
+  AuthUserProfile,
+  AuthUserSession 
+} from '@finmatter/types';
+import { storage } from '../lib/storage';
 
 class AuthService {
-  async login(
-    email: string,
-    password: string,
-  ): Promise<{ user: User; session: UserSession }> {
-    const response = await apiClient.post<{ user: User; session: UserSession }>(
-      '/auth/login',
-      {
-        email,
-        password,
-      },
-    );
+  /**
+   * Sends OTP to the provided phone number
+   */
+  async sendOTP(phoneNumber: string): Promise<SendOTPResponse> {
+    const response = await apiClient.post<SendOTPResponse>('/auth/send-otp', {
+      phoneNumber,
+    } as SendOTPRequest);
 
-    if (!response.data) {
-      throw new Error('Invalid response from server');
+    return response.data || response;
+  }
+
+  /**
+   * Verifies OTP and creates user session
+   */
+  async verifyOTP(phoneNumber: string, otp: string): Promise<VerifyOTPResponse> {
+    const response = await apiClient.post<VerifyOTPResponse>('/auth/verify-otp', {
+      phoneNumber,
+      otp,
+    } as VerifyOTPRequest);
+
+    return response.data || response;
+  }
+
+  /**
+   * Stores user session securely on device
+   */
+  async storeUserSession(data: { user: AuthUserProfile; session: AuthUserSession }): Promise<void> {
+    try {
+      await storage.set('user_session', data);
+      await storage.set('access_token', data.session.token);
+      await storage.set('refresh_token', data.session.refreshToken);
+      await storage.set('user_profile', data.user);
+    } catch (error) {
+      console.error('Failed to store user session:', error);
+      throw new Error('Failed to save authentication data');
     }
-
-    return response.data;
   }
 
-  async signup(
-    email: string,
-    password: string,
-    userData?: Partial<User>,
-  ): Promise<{ user: User; session: UserSession }> {
-    const response = await apiClient.post<{ user: User; session: UserSession }>(
-      '/auth/signup',
-      {
-        email,
-        password,
-        ...userData,
-      },
-    );
-
-    if (!response.data) {
-      throw new Error('Invalid response from server');
+  /**
+   * Retrieves stored user session
+   */
+  async getUserSession(): Promise<{ user: AuthUserProfile; session: AuthUserSession } | null> {
+    try {
+      const userSession = await storage.get<{ user: AuthUserProfile; session: AuthUserSession }>('user_session');
+      return userSession || null;
+    } catch (error) {
+      console.error('Failed to retrieve user session:', error);
+      return null;
     }
-
-    return response.data;
   }
 
-  async logout(token: string): Promise<void> {
-    await apiClient.post('/auth/logout', undefined, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
+  /**
+   * Updates user's biometric preference
+   */
+  async updateBiometricPreference(userId: string, enabled: boolean): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Get current session
+      const session = await this.getUserSession();
+      if (!session) {
+        return { success: false, error: 'No active session' };
+      }
 
-  async refreshToken(refreshToken: string): Promise<{ session: UserSession }> {
-    const response = await apiClient.post<{ session: UserSession }>(
-      '/auth/refresh',
-      {
-        refreshToken,
-      },
-    );
+      // Update preference via API (this would be a new endpoint)
+      // For now, we'll update the local storage
+      const updatedUser = {
+        ...session.user,
+        biometricEnabled: enabled,
+      };
 
-    if (!response.data) {
-      throw new Error('Invalid response from server');
+      await storage.set('user_profile', updatedUser);
+      const updatedSession = {
+        ...session,
+        user: updatedUser,
+      };
+      await storage.set('user_session', updatedSession);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to update biometric preference:', error);
+      return { success: false, error: 'Failed to update preference' };
     }
-
-    return response.data;
   }
 
-  async forgotPassword(email: string): Promise<void> {
-    await apiClient.post('/auth/forgot-password', { email });
+  /**
+   * Clears stored user session
+   */
+  async clearUserSession(): Promise<void> {
+    try {
+      await storage.delete('user_session');
+      await storage.delete('access_token');
+      await storage.delete('refresh_token');
+      await storage.delete('user_profile');
+    } catch (error) {
+      console.error('Failed to clear user session:', error);
+    }
   }
 
-  async resetPassword(token: string, password: string): Promise<void> {
-    await apiClient.post('/auth/reset-password', { token, password });
+  /**
+   * Checks if user is authenticated
+   */
+  async isAuthenticated(): Promise<boolean> {
+    try {
+      const session = await this.getUserSession();
+      return !!session;
+    } catch (error) {
+      return false;
+    }
   }
 
-  async verifyEmail(token: string): Promise<void> {
-    await apiClient.post('/auth/verify-email', { token });
+  /**
+   * Gets stored access token
+   */
+  async getAccessToken(): Promise<string | null> {
+    try {
+      return await storage.get<string>('access_token');
+    } catch (error) {
+      return null;
+    }
   }
 
-  async resendVerificationEmail(email: string): Promise<void> {
-    await apiClient.post('/auth/resend-verification', { email });
+  /**
+   * Gets stored refresh token
+   */
+  async getRefreshToken(): Promise<string | null> {
+    try {
+      return await storage.get<string>('refresh_token');
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Gets stored user profile
+   */
+  async getUserProfile(): Promise<AuthUserProfile | null> {
+    try {
+      return await storage.get<AuthUserProfile>('user_profile');
+    } catch (error) {
+      return null;
+    }
   }
 }
 

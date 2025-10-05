@@ -68,7 +68,7 @@ export const getNestedProperty = (
     if (result === null || result === undefined || !isObject(result)) {
       return defaultValue;
     }
-    result = result[key];
+    result = (result as Record<string, any>)[key];
   }
 
   return result !== undefined ? result : defaultValue;
@@ -87,13 +87,18 @@ export const setNestedProperty = (
 
   for (let i = 0; i < keys.length - 1; i++) {
     const key = keys[i];
-    if (!isObject(current[key])) {
-      current[key] = {};
+    if (key && !isObject((current as Record<string, any>)[key])) {
+      (current as Record<string, any>)[key] = {};
     }
-    current = current[key];
+    if (key) {
+      current = (current as Record<string, any>)[key];
+    }
   }
 
-  current[keys[keys.length - 1]] = value;
+  const lastKey = keys[keys.length - 1];
+  if (lastKey) {
+    (current as Record<string, any>)[lastKey] = value;
+  }
 };
 
 /**
@@ -230,7 +235,7 @@ export const isBrowser = (): boolean => {
  * Check if running in Node.js
  */
 export const isNode = (): boolean => {
-  return typeof process !== 'undefined' && process.versions && process.versions.node;
+  return typeof process !== 'undefined' && process.versions && !!process.versions.node;
 };
 
 /**
@@ -353,8 +358,10 @@ export const groupBy = <T, K extends keyof T>(
 ): Record<string, T[]> => {
   return array.reduce((groups, item) => {
     const groupKey = String(item[key]);
-    groups[groupKey] = groups[groupKey] || [];
-    groups[groupKey].push(item);
+    if (!groups[groupKey]) {
+      groups[groupKey] = [];
+    }
+    (groups[groupKey] as T[]).push(item);
     return groups;
   }, {} as Record<string, T[]>);
 };

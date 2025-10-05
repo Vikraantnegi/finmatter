@@ -15,8 +15,7 @@ const VerifyOTPSchema = z.object({
     .max(15, 'Phone number must be at most 15 digits')
     .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format'),
   otp: z.string()
-    .min(4, 'OTP must be at least 4 digits')
-    .max(8, 'OTP must be at most 8 digits')
+    .min(6, 'OTP must be at least 6 digits')
     .regex(/^\d+$/, 'OTP must contain only digits'),
 });
 

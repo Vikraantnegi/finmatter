@@ -1,127 +1,58 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /**
  * Authentication Provider
- * Manages user authentication state and context
+ * Manages phone-based authentication state and context
  */
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { MMKV } from 'react-native-mmkv';
 
 // Types
-import { User, UserSession } from '@finmatter/types';
+import { AuthUserProfile, AuthUserSession } from '@finmatter/types';
 
 // Services
 import { authService } from '../services/AuthService';
 
 interface AuthContextType {
-  user: User | null;
-  session: UserSession | null;
+  user: AuthUserProfile | null;
+  session: AuthUserSession | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (
-    email: string,
-    password: string,
-    userData?: Partial<User>,
-  ) => Promise<void>;
   logout: () => Promise<void>;
-  refreshToken: () => Promise<void>;
+  checkAuthStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Storage instance
-const storage = new MMKV({
-  id: 'finmatter-auth',
-  encryptionKey: 'finmatter-auth-key',
-});
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<UserSession | null>(null);
+  const [user, setUser] = useState<AuthUserProfile | null>(null);
+  const [session, setSession] = useState<AuthUserSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const isAuthenticated = !!user && !!session;
 
   // Initialize auth state from storage
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const storedUser = storage.getString('user');
-        const storedSession = storage.getString('session');
-
-        if (storedUser && storedSession) {
-          const userData = JSON.parse(storedUser);
-          const sessionData = JSON.parse(storedSession);
-
-          // Check if session is still valid
-          if (
-            sessionData.expiresAt &&
-            new Date(sessionData.expiresAt) > new Date()
-          ) {
-            setUser(userData);
-            setSession(sessionData);
-          } else {
-            // Try to refresh token
-            try {
-              await refreshToken();
-            } catch {
-              // Clear invalid session
-              storage.delete('user');
-              storage.delete('session');
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-        // Clear corrupted data
-        storage.delete('user');
-        storage.delete('session');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeAuth();
+    checkAuthStatus();
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const checkAuthStatus = async (): Promise<void> => {
     try {
       setIsLoading(true);
-      const response = await authService.login(email, password);
+      const userSession = await authService.getUserSession();
 
-      setUser(response.user);
-      setSession(response.session);
-
-      // Store in secure storage
-      storage.set('user', JSON.stringify(response.user));
-      storage.set('session', JSON.stringify(response.session));
+      if (userSession) {
+        setUser(userSession.user);
+        setSession(userSession.session);
+      } else {
+        setUser(null);
+        setSession(null);
+      }
     } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const signup = async (
-    email: string,
-    password: string,
-    userData?: Partial<User>,
-  ): Promise<void> => {
-    try {
-      setIsLoading(true);
-      const response = await authService.signup(email, password, userData);
-
-      setUser(response.user);
-      setSession(response.session);
-
-      // Store in secure storage
-      storage.set('user', JSON.stringify(response.user));
-      storage.set('session', JSON.stringify(response.session));
-    } catch (error) {
-      throw error;
+      console.error('Auth status check error:', error);
+      setUser(null);
+      setSession(null);
     } finally {
       setIsLoading(false);
     }
@@ -129,34 +60,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = async (): Promise<void> => {
     try {
-      if (session?.token) {
-        await authService.logout(session.token);
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Clear local state and storage
+      await authService.clearUserSession();
       setUser(null);
       setSession(null);
-      storage.delete('user');
-      storage.delete('session');
-    }
-  };
-
-  const refreshToken = async (): Promise<void> => {
-    try {
-      if (!session?.refreshToken) {
-        throw new Error('No refresh token available');
-      }
-
-      const response = await authService.refreshToken(session.refreshToken);
-
-      setSession(response.session);
-      storage.set('session', JSON.stringify(response.session));
     } catch (error) {
-      // Refresh failed, logout user
-      await logout();
-      throw error;
+      console.error('Logout error:', error);
     }
   };
 
@@ -165,10 +73,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     session,
     isLoading,
     isAuthenticated,
-    login,
-    signup,
     logout,
-    refreshToken,
+    checkAuthStatus,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

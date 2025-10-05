@@ -64,29 +64,4 @@ Instead of "Build the entire card optimizer":
 
 ## Always run all the systems, and check if everything's working fine, nothings broken, all the connections are working fine! Look for all TS issues too, before committing to git.
 
-## Your First 3 Commits (Do This Now!)
-
-### Commit 1: Monorepo Setup (30 mins)
-```bash
-# Use Cursor Prompt 1
-git commit -m "feat: Initialize monorepo structure with Turborepo"
-```
-
-### Commit 2: Supabase Setup (30 mins)
-```bash
-# Use Cursor Prompt 2
-git commit -m "feat: Setup Supabase with auth and initial schema"
-```
-
-### Commit 3: Mobile App Shell (1 hour)
-```bash
-# Use Cursor Prompt 3
-git commit -m "feat: Add auth screens and navigation"
-```
-
-**After these 3 commits (2 hours total), you'll have:**
-- ✅ Working monorepo
-- ✅ Database setup
-- ✅ Mobile app that you can open and see screens
-
----
+## Always before starting to code, let me know what you are planning, a small doc should be fine, and then after you are done, share another small doc stating what you did.

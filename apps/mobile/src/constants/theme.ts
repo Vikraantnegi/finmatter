@@ -35,6 +35,8 @@ export const theme = {
     textSecondary: '#475569',
     textTertiary: '#94A3B8',
     textDisabled: '#CBD5E1',
+    disabled: '#CBD5E1',
+    errorBackground: '#FEF2F2',
     white: '#FFFFFF',
     black: '#000000',
     transparent: 'transparent',
@@ -55,6 +57,22 @@ export const theme = {
     full: 9999,
   },
   typography: {
+    sizes: {
+      xs: 12,
+      sm: 14,
+      md: 16,
+      lg: 18,
+      xl: 20,
+      xxl: 24,
+    },
+    weights: {
+      light: '300' as const,
+      normal: '400' as const,
+      medium: '500' as const,
+      semibold: '600' as const,
+      bold: '700' as const,
+      extrabold: '800' as const,
+    },
     h1: {
       fontSize: 32,
       fontWeight: '700' as const,

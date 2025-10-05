@@ -167,24 +167,6 @@ vercel --prod
 - **iOS**: Build and upload to App Store Connect
 - **Android**: Build and upload to Google Play Console
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support
-
-For support and questions:
-- Create an issue in the repository
-- Email: support@finmatter.app
-
 ## 🔗 Links
 
 - [Product Requirements Document](./PRD.md)

@@ -14,6 +14,9 @@ import MainNavigator from './MainNavigator';
 // Hooks
 import { useAuth } from '../providers/AuthProvider';
 
+// Components
+import { ToastComponent } from '../components/Toast';
+
 // Types
 import { RootStackParamList } from './types';
 
@@ -27,13 +30,16 @@ const AppNavigator: React.FC = () => {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isAuthenticated ? (
-        <Stack.Screen name="Main" component={MainNavigator as any} />
-      ) : (
-        <Stack.Screen name="Auth" component={AuthNavigator as any} />
-      )}
-    </Stack.Navigator>
+    <>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated ? (
+          <Stack.Screen name="Main" component={MainNavigator as any} />
+        ) : (
+          <Stack.Screen name="Auth" component={AuthNavigator as any} />
+        )}
+      </Stack.Navigator>
+      <ToastComponent />
+    </>
   );
 };
 

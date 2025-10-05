@@ -1,21 +1,28 @@
 /**
  * Authentication Navigator
- * Handles login, signup, and onboarding screens
+ * Handles phone authentication flow: PhoneInput → OTPVerification → BiometricSetup
  */
 
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 
 // Screens
-import LoginScreen from '../screens/auth/LoginScreen';
-import SignupScreen from '../screens/auth/SignupScreen';
-import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import PhoneInputScreen from '../screens/auth/PhoneInputScreen';
+import OTPVerificationScreen from '../screens/auth/OTPVerificationScreen';
+import BiometricSetupScreen from '../screens/auth/BiometricSetupScreen';
 
 // Types
 export type RootStackParamList = {
-  Login: undefined;
-  Signup: undefined;
-  ForgotPassword: undefined;
+  PhoneInput: undefined;
+  OTPVerification: {
+    phoneNumber: string;
+    callingCode: string;
+    countryCode: string;
+  };
+  BiometricSetup: {
+    userId: string;
+    phoneNumber: string;
+  };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -23,17 +30,21 @@ const Stack = createStackNavigator<RootStackParamList>();
 const AuthNavigator: React.FC = () => {
   return (
     <Stack.Navigator
-      initialRouteName="Login"
+      initialRouteName="PhoneInput"
       screenOptions={{
         headerShown: false,
         cardStyle: { backgroundColor: '#ffffff' },
+        gestureEnabled: false, // Disable swipe back for auth flow
       }}
     >
-      <Stack.Screen name="Login" component={LoginScreen as any} />
-      <Stack.Screen name="Signup" component={SignupScreen as any} />
+      <Stack.Screen name="PhoneInput" component={PhoneInputScreen as any} />
       <Stack.Screen
-        name="ForgotPassword"
-        component={ForgotPasswordScreen as any}
+        name="OTPVerification"
+        component={OTPVerificationScreen as any}
+      />
+      <Stack.Screen
+        name="BiometricSetup"
+        component={BiometricSetupScreen as any}
       />
     </Stack.Navigator>
   );

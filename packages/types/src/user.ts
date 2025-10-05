@@ -9,8 +9,8 @@ export type UserRole = 'user' | 'admin' | 'beta_tester';
 
 export type UserStatus = 'active' | 'inactive' | 'suspended' | 'pending_verification';
 
-// Database User (matches Supabase users table)
-export type DatabaseUser = {
+// Custom Users Table (matches our Supabase users table)
+export type CustomUsersTableUser = {
   id: string; // UUID
   phone_number: string;
   created_at: string;

@@ -22,7 +22,7 @@ export class FinMatterError extends Error {
     this.name = 'FinMatterError';
     this.code = code;
     this.statusCode = statusCode;
-    this.details = details;
+    this.details = details || {};
 
     // Maintains proper stack trace for where our error was thrown
     if (Error.captureStackTrace) {

@@ -7,7 +7,11 @@ import type { AuditFields, Currency } from './common';
 
 export type UserRole = 'user' | 'admin' | 'beta_tester';
 
-export type UserStatus = 'active' | 'inactive' | 'suspended' | 'pending_verification';
+export type UserStatus =
+  | 'active'
+  | 'inactive'
+  | 'suspended'
+  | 'pending_verification';
 
 // Custom Users Table (matches our Supabase users table)
 export type CustomUsersTableUser = {

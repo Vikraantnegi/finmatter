@@ -26,29 +26,24 @@ const Stack = createStackNavigator<OnboardingStackParamList>();
 const OnboardingNavigator: React.FC = () => {
   return (
     <Stack.Navigator
-      initialRouteName="Welcome"
+      initialRouteName='Welcome'
       screenOptions={{
         headerShown: false,
         cardStyle: { backgroundColor: '#ffffff' },
         gestureEnabled: false, // Disable swipe back for onboarding flow
-      }}>
-      <Stack.Screen name="Welcome" component={WelcomeScreen as any} />
-      <Stack.Screen 
-        name="NotificationPermission" 
-        component={NotificationPermissionScreen as any} 
+      }}
+    >
+      <Stack.Screen name='Welcome' component={WelcomeScreen as any} />
+      <Stack.Screen
+        name='NotificationPermission'
+        component={NotificationPermissionScreen as any}
       />
-      <Stack.Screen 
-        name="SMSPermission" 
-        component={SMSPermissionScreen as any} 
+      <Stack.Screen
+        name='SMSPermission'
+        component={SMSPermissionScreen as any}
       />
-      <Stack.Screen 
-        name="Tutorial" 
-        component={TutorialScreen as any} 
-      />
-      <Stack.Screen 
-        name="AddFirstCard" 
-        component={AddFirstCardScreen as any} 
-      />
+      <Stack.Screen name='Tutorial' component={TutorialScreen as any} />
+      <Stack.Screen name='AddFirstCard' component={AddFirstCardScreen as any} />
     </Stack.Navigator>
   );
 };

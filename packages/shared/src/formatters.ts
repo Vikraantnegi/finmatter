@@ -10,7 +10,7 @@ import { format, parseISO, isValid } from 'date-fns';
 export const formatCurrency = (
   amount: number,
   currency: string = 'INR',
-  locale: string = 'en-IN'
+  locale: string = 'en-IN',
 ): string => {
   if (typeof amount !== 'number' || isNaN(amount)) {
     return '₹0.00';
@@ -19,7 +19,7 @@ export const formatCurrency = (
   try {
     return new Intl.NumberFormat(locale, {
       style: 'currency',
-      currency: currency,
+      currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
@@ -34,7 +34,7 @@ export const formatCurrency = (
  */
 export const formatNumber = (
   number: number,
-  locale: string = 'en-IN'
+  locale: string = 'en-IN',
 ): string => {
   if (typeof number !== 'number' || isNaN(number)) {
     return '0';
@@ -52,7 +52,7 @@ export const formatNumber = (
  */
 export const formatPercentage = (
   value: number,
-  decimals: number = 1
+  decimals: number = 1,
 ): string => {
   if (typeof value !== 'number' || isNaN(value)) {
     return '0%';
@@ -71,7 +71,7 @@ export const formatFileSize = (bytes: number): string => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
 
 /**
@@ -79,11 +79,11 @@ export const formatFileSize = (bytes: number): string => {
  */
 export const formatDate = (
   date: Date | string,
-  formatString: string = 'MMM dd, yyyy'
+  formatString: string = 'MMM dd, yyyy',
 ): string => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : date;
-    
+
     if (!isValid(dateObj)) {
       return 'Invalid Date';
     }
@@ -100,7 +100,7 @@ export const formatDate = (
 export const formatRelativeTime = (date: Date | string): string => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : date;
-    
+
     if (!isValid(dateObj)) {
       return 'Invalid Date';
     }
@@ -174,36 +174,42 @@ export const formatPhoneNumber = (phone: string): string => {
 /**
  * Format card number (masked)
  */
-export const formatCardNumber = (cardNumber: string, visibleDigits: number = 4): string => {
+export const formatCardNumber = (
+  cardNumber: string,
+  visibleDigits: number = 4,
+): string => {
   if (!cardNumber) return '';
 
   const cleaned = cardNumber.replace(/\D/g, '');
-  
+
   if (cleaned.length < visibleDigits) {
     return cleaned;
   }
 
   const visible = cleaned.slice(-visibleDigits);
   const masked = '*'.repeat(cleaned.length - visibleDigits);
-  
+
   return masked + visible;
 };
 
 /**
  * Format bank account number (masked)
  */
-export const formatAccountNumber = (accountNumber: string, visibleDigits: number = 4): string => {
+export const formatAccountNumber = (
+  accountNumber: string,
+  visibleDigits: number = 4,
+): string => {
   if (!accountNumber) return '';
 
   const cleaned = accountNumber.replace(/\D/g, '');
-  
+
   if (cleaned.length < visibleDigits) {
     return cleaned;
   }
 
   const visible = cleaned.slice(-visibleDigits);
   const masked = '*'.repeat(cleaned.length - visibleDigits);
-  
+
   return masked + visible;
 };
 
@@ -224,7 +230,7 @@ export const formatPanNumber = (pan: string): string => {
 
   // Remove spaces and convert to uppercase
   const cleaned = pan.replace(/\s/g, '').toUpperCase();
-  
+
   // Format as AAAAA0000A
   if (cleaned.length === 10) {
     return `${cleaned.slice(0, 5)} ${cleaned.slice(5, 9)} ${cleaned.slice(9)}`;
@@ -241,7 +247,7 @@ export const formatAadhaarNumber = (aadhaar: string): string => {
 
   // Remove all non-digits
   const cleaned = aadhaar.replace(/\D/g, '');
-  
+
   // Format as 0000 0000 0000
   if (cleaned.length === 12) {
     return `${cleaned.slice(0, 4)} ${cleaned.slice(4, 8)} ${cleaned.slice(8)}`;
@@ -257,7 +263,7 @@ export const formatGstNumber = (gst: string): string => {
   if (!gst) return '';
 
   const cleaned = gst.replace(/\s/g, '').toUpperCase();
-  
+
   if (cleaned.length === 15) {
     return `${cleaned.slice(0, 2)}${cleaned.slice(2, 7)}${cleaned.slice(7, 11)}${cleaned.slice(11, 13)}${cleaned.slice(13)}`;
   }
@@ -304,14 +310,17 @@ export const formatAddress = (address: {
 /**
  * Format transaction description
  */
-export const formatTransactionDescription = (description: string, maxLength: number = 50): string => {
+export const formatTransactionDescription = (
+  description: string,
+  maxLength: number = 50,
+): string => {
   if (!description) return '';
 
   if (description.length <= maxLength) {
     return description;
   }
 
-  return description.slice(0, maxLength - 3) + '...';
+  return `${description.slice(0, maxLength - 3)}...`;
 };
 
 /**
@@ -325,7 +334,17 @@ export const formatMerchantName = (merchantName: string): string => {
     .split(' ')
     .map(word => {
       // Keep common words lowercase
-      const commonWords = ['the', 'and', 'of', 'in', 'at', 'to', 'for', 'with', 'on'];
+      const commonWords = [
+        'the',
+        'and',
+        'of',
+        'in',
+        'at',
+        'to',
+        'for',
+        'with',
+        'on',
+      ];
       if (commonWords.includes(word)) {
         return word;
       }
@@ -404,13 +423,15 @@ export const formatErrorMessage = (error: any): string => {
 /**
  * Format validation errors
  */
-export const formatValidationErrors = (errors: Record<string, string>): string[] => {
+export const formatValidationErrors = (
+  errors: Record<string, string>,
+): string[] => {
   return Object.entries(errors).map(([field, message]) => {
     const formattedField = field
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase())
       .trim();
-    
+
     return `${formattedField}: ${message}`;
   });
 };

@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-native/no-inline-styles */
 /**
  * OTP Verification Screen for FinMatter Authentication
  *
@@ -14,7 +16,6 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
@@ -23,7 +24,6 @@ import {
 } from 'react-native';
 import OTPInputView from 'react-native-otp-input';
 import { AuthScreenProps } from '../../navigation/types';
-import { theme } from '../../constants/theme';
 import { authService } from '../../services/AuthService';
 import { showErrorToast, showSuccessToast } from '../../utils/toast';
 import { haptics } from '../../utils/haptics';
@@ -71,7 +71,6 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
 
   /**
    * Starts the resend cooldown timer
-   * 30-second countdown before resend is allowed
    */
   const startResendCooldown = useCallback(() => {
     setResendCooldown(30);
@@ -83,55 +82,35 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
           setCanResend(true);
           if (cooldownIntervalRef.current) {
             clearInterval(cooldownIntervalRef.current);
+            cooldownIntervalRef.current = null;
           }
           return 0;
         }
         return prev - 1;
       });
-    }, 1000);
+    }, 1000) as unknown as number;
   }, []);
 
   /**
-   * Initializes cooldown timer when component mounts
-   */
-  useEffect(() => {
-    startResendCooldown();
-
-    // Cleanup on unmount
-    return () => {
-      if (cooldownIntervalRef.current) {
-        clearInterval(cooldownIntervalRef.current);
-      }
-    };
-  }, [startResendCooldown]);
-
-  /**
    * Handles OTP input changes
-   * Auto-verifies when 6 digits are entered
    */
-  const handleOTPChange = useCallback(
-    (code: string) => {
-      setOtp(code);
-      setError(null); // Clear error when user types
+  const handleOTPChange = useCallback((code: string) => {
+    setOtp(code);
+    setError(null);
 
-      // Auto-verify when 6 digits entered
-      if (code.length === 6) {
-        handleVerifyOTP(code);
-      }
-    },
-    [phoneNumber, navigation],
-  );
+    // Auto-verify when 6 digits are entered
+    if (code.length === 6) {
+      handleVerifyOTP(code);
+    }
+  }, []);
 
   /**
-   * Verifies the entered OTP
-   * Handles success, failure, and error states
+   * Handles OTP verification
    */
   const handleVerifyOTP = useCallback(
     async (otpCode?: string) => {
       const codeToVerify = otpCode || otp;
-
       if (codeToVerify.length !== 6) {
-        setError('Please enter a valid 6-digit OTP');
         return;
       }
 
@@ -219,30 +198,33 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
               'You have exceeded the maximum number of verification attempts. Please request a new OTP.',
               [
                 {
-                  text: 'Request New OTP',
-                  onPress: handleResendOTP,
+                  text: 'OK',
+                  onPress: () => {
+                    // Reset attempt count and clear OTP
+                    setAttemptCount(0);
+                    setOtp('');
+                  },
                 },
-                { text: 'Cancel', style: 'cancel' },
               ],
             );
           }
         }
-      } catch (error) {
-        console.error('Verify OTP error:', error);
+      } catch (err) {
+        console.error('OTP verification error:', err);
         setError('Network error. Please check your connection and try again.');
+        setOtp(''); // Clear OTP on error
       } finally {
         setIsLoading(false);
       }
     },
-    [otp, phoneNumber, navigation, attemptCount],
+    [otp, phoneNumber, attemptCount, navigation],
   );
 
   /**
-   * Handles OTP resend functionality
-   * Includes rate limiting and cooldown management
+   * Handles resending OTP
    */
   const handleResendOTP = useCallback(async () => {
-    if (!canResend) {
+    if (!canResend || isLoading) {
       return;
     }
 
@@ -281,8 +263,8 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
           setError(errorMessage);
         }
       }
-    } catch (error) {
-      console.error('Resend OTP error:', error);
+    } catch (err) {
+      console.error('OTP verification error:', err);
       showErrorToast(
         'Network Error',
         'Please check your connection and try again.',
@@ -290,7 +272,7 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [canResend, phoneNumber, startResendCooldown]);
+  }, [canResend, phoneNumber, startResendCooldown, isLoading]);
 
   /**
    * Handles back navigation
@@ -324,24 +306,43 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
     return `Resend in ${resendCooldown}s`;
   }, [canResend, resendCooldown, isLoading]);
 
+  // Initialize cooldown on component mount
+  useEffect(() => {
+    startResendCooldown();
+    return () => {
+      if (cooldownIntervalRef.current) {
+        clearInterval(cooldownIntervalRef.current);
+      }
+    };
+  }, [startResendCooldown]);
+
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      className='flex-1 bg-background'
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
+        className='flex-1 flex-grow p-4'
+        keyboardShouldPersistTaps='handled'
       >
         {/* Header Section */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-            <Text style={styles.backButtonText}>←</Text>
+        <View className='items-center mb-8 px-4'>
+          <TouchableOpacity
+            className='self-start mb-4 p-2'
+            onPress={handleGoBack}
+          >
+            <Text className='text-2xl text-primary'>←</Text>
           </TouchableOpacity>
 
-          <Text style={styles.title}>Verify Your Phone</Text>
-          <Text style={styles.subtitle}>Enter the 6-digit code sent to</Text>
-          <Text style={styles.phoneNumber}>{getFormattedPhoneNumber()}</Text>
+          <Text className='text-3xl font-bold text-text text-center mb-2'>
+            Verify Your Phone
+          </Text>
+          <Text className='text-base text-text-secondary text-center mb-1'>
+            Enter the 6-digit code sent to
+          </Text>
+          <Text className='text-base font-medium text-text text-center'>
+            {getFormattedPhoneNumber()}
+          </Text>
         </View>
 
         {/* OTP Input Section */}
@@ -349,58 +350,71 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
           shouldShake={shouldShake}
           onShakeComplete={() => setShouldShake(false)}
         >
-          <View style={styles.otpSection}>
+          <View className='items-center mb-8'>
             <OTPInputView
-              style={styles.otpInput}
+              style={{ width: '80%', height: 48 }}
               pinCount={6}
               code={otp}
               onCodeChanged={handleOTPChange}
               autoFocusOnLoad
               secureTextEntry
-              codeInputFieldStyle={[
-                styles.otpInputField,
-                error && styles.otpInputFieldError,
-              ]}
-              codeInputHighlightStyle={styles.otpInputHighlight}
+              codeInputFieldStyle={{
+                width: 45,
+                height: 50,
+                borderWidth: 1,
+                borderColor: error ? '#EF4444' : '#E2E8F0',
+                borderRadius: 8,
+                backgroundColor: '#F8FAFC',
+              }}
+              codeInputHighlightStyle={{
+                borderColor: '#3B82F6',
+                borderWidth: 2,
+              }}
               editable={!isLoading}
             />
 
             {/* Error Message */}
-            {error && <Text style={styles.errorText}>{error}</Text>}
+            {error && (
+              <Text className='text-error text-sm text-center mt-4 mb-2'>
+                {error}
+              </Text>
+            )}
 
             {/* Attempt Count */}
             {attemptCount > 0 && (
-              <Text style={styles.attemptText}>Attempts: {attemptCount}/3</Text>
+              <Text className='text-text-secondary text-sm text-center mb-4'>
+                Attempts: {attemptCount}/3
+              </Text>
             )}
           </View>
         </ShakeAnimation>
 
         {/* Action Buttons */}
-        <View style={styles.actionSection}>
+        <View className='items-center mb-8 gap-4'>
           {/* Verify Button (for manual verification) */}
           {otp.length === 6 && !isLoading && (
             <TouchableOpacity
-              style={styles.verifyButton}
+              className='bg-primary rounded-md px-8 py-4 min-w-[200px] items-center'
               onPress={() => handleVerifyOTP()}
             >
-              <Text style={styles.verifyButtonText}>Verify</Text>
+              <Text className='text-white text-base font-semibold'>
+                Verify OTP
+              </Text>
             </TouchableOpacity>
           )}
 
           {/* Resend Button */}
           <TouchableOpacity
-            style={[
-              styles.resendButton,
-              (!canResend || isLoading) && styles.resendButtonDisabled,
-            ]}
+            className={`rounded-md px-6 py-4 border ${
+              canResend && !isLoading ? 'border-primary' : 'border-disabled'
+            }`}
             onPress={handleResendOTP}
             disabled={!canResend || isLoading}
           >
             <Text
-              style={[
-                styles.resendButtonText,
-                (!canResend || isLoading) && styles.resendButtonTextDisabled,
-              ]}
+              className={`text-base font-medium ${
+                canResend && !isLoading ? 'text-primary' : 'text-text-secondary'
+              }`}
             >
               {getResendButtonText()}
             </Text>
@@ -408,8 +422,8 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
         </View>
 
         {/* Info Section */}
-        <View style={styles.infoSection}>
-          <Text style={styles.infoText}>
+        <View className='items-center'>
+          <Text className='text-sm text-text-secondary text-center leading-[18px]'>
             Didn't receive the code? Check your SMS messages or request a new
             code.
           </Text>
@@ -422,141 +436,11 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
       {/* Loading Spinner Overlay */}
       <LoadingSpinner
         isLoading={isLoading}
-        message="Verifying OTP..."
+        message='Verifying OTP...'
         overlay={true}
       />
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: theme.spacing.lg,
-    justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.xl,
-  },
-  backButton: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    padding: theme.spacing.sm,
-  },
-  backButtonText: {
-    fontSize: theme.typography.sizes.lg,
-    color: theme.colors.primary,
-    fontWeight: theme.typography.weights.bold,
-  },
-  title: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: theme.spacing.sm,
-  },
-  subtitle: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: theme.spacing.xs,
-  },
-  phoneNumber: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.primary,
-    fontWeight: theme.typography.weights.semibold,
-    textAlign: 'center',
-  },
-  otpSection: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.xl,
-  },
-  otpInput: {
-    width: '100%',
-    height: 80,
-  },
-  otpInputField: {
-    width: 45,
-    height: 50,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.surface,
-    color: theme.colors.text,
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-  },
-  otpInputFieldError: {
-    borderColor: theme.colors.error,
-  },
-  otpInputHighlight: {
-    borderColor: theme.colors.primary,
-    borderWidth: 2,
-  },
-  errorText: {
-    color: theme.colors.error,
-    fontSize: theme.typography.sizes.sm,
-    textAlign: 'center',
-    marginTop: theme.spacing.md,
-  },
-  attemptText: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.typography.sizes.sm,
-    textAlign: 'center',
-    marginTop: theme.spacing.sm,
-  },
-  actionSection: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.lg,
-    gap: theme.spacing.md,
-  },
-  verifyButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-    minWidth: 200,
-    alignItems: 'center',
-  },
-  verifyButtonText: {
-    color: theme.colors.white,
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-  },
-  resendButton: {
-    backgroundColor: 'transparent',
-    borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
-  },
-  resendButtonDisabled: {
-    borderColor: theme.colors.disabled,
-  },
-  resendButtonText: {
-    color: theme.colors.primary,
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.medium,
-  },
-  resendButtonTextDisabled: {
-    color: theme.colors.textSecondary,
-  },
-  infoSection: {
-    alignItems: 'center',
-  },
-  infoText: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-});
 
 export default OTPVerificationScreen;

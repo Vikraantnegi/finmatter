@@ -42,15 +42,19 @@ const AppNavigator: React.FC = () => {
 
   return (
     <>
-      <Stack.Navigator 
+      <Stack.Navigator
         screenOptions={{ headerShown: false }}
-        initialRouteName={getInitialRoute()}>
+        initialRouteName={getInitialRoute()}
+      >
         {!isAuthenticated ? (
-          <Stack.Screen name="Auth" component={AuthNavigator as any} />
+          <Stack.Screen name='Auth' component={AuthNavigator as any} />
         ) : !onboardingCompleted ? (
-          <Stack.Screen name="Onboarding" component={OnboardingNavigator as any} />
+          <Stack.Screen
+            name='Onboarding'
+            component={OnboardingNavigator as any}
+          />
         ) : (
-          <Stack.Screen name="Main" component={MainNavigator as any} />
+          <Stack.Screen name='Main' component={MainNavigator as any} />
         )}
       </Stack.Navigator>
       <ToastComponent />

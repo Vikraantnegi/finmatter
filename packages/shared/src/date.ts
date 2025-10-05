@@ -2,7 +2,25 @@
  * Date utilities for FinMatter
  */
 
-import { format, parseISO, isValid, addDays, addMonths, addYears, subDays, subMonths, subYears, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfYear, endOfYear, differenceInDays, differenceInMonths, differenceInYears } from 'date-fns';
+import {
+  parseISO,
+  isValid,
+  addDays,
+  addMonths,
+  addYears,
+  subDays,
+  subMonths,
+  subYears,
+  startOfDay,
+  endOfDay,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
+  differenceInDays,
+  differenceInMonths,
+  differenceInYears,
+} from 'date-fns';
 
 /**
  * Get current date in ISO format
@@ -36,7 +54,7 @@ export const parseISODate = (isoString: string): Date | null => {
 export const formatToISO = (date: Date | string): string => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : date;
-    
+
     if (!isValid(dateObj)) {
       throw new Error('Invalid date');
     }
@@ -122,7 +140,10 @@ export const addYearsToDate = (date: Date | string, years: number): Date => {
 /**
  * Subtract days from date
  */
-export const subtractDaysFromDate = (date: Date | string, days: number): Date => {
+export const subtractDaysFromDate = (
+  date: Date | string,
+  days: number,
+): Date => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
   return subDays(isValid(dateObj) ? dateObj : new Date(), days);
 };
@@ -130,7 +151,10 @@ export const subtractDaysFromDate = (date: Date | string, days: number): Date =>
 /**
  * Subtract months from date
  */
-export const subtractMonthsFromDate = (date: Date | string, months: number): Date => {
+export const subtractMonthsFromDate = (
+  date: Date | string,
+  months: number,
+): Date => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
   return subMonths(isValid(dateObj) ? dateObj : new Date(), months);
 };
@@ -138,7 +162,10 @@ export const subtractMonthsFromDate = (date: Date | string, months: number): Dat
 /**
  * Subtract years from date
  */
-export const subtractYearsFromDate = (date: Date | string, years: number): Date => {
+export const subtractYearsFromDate = (
+  date: Date | string,
+  years: number,
+): Date => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
   return subYears(isValid(dateObj) ? dateObj : new Date(), years);
 };
@@ -146,42 +173,51 @@ export const subtractYearsFromDate = (date: Date | string, years: number): Date 
 /**
  * Get difference in days between two dates
  */
-export const getDaysDifference = (date1: Date | string, date2: Date | string): number => {
+export const getDaysDifference = (
+  date1: Date | string,
+  date2: Date | string,
+): number => {
   const date1Obj = typeof date1 === 'string' ? parseISO(date1) : date1;
   const date2Obj = typeof date2 === 'string' ? parseISO(date2) : date2;
-  
+
   if (!isValid(date1Obj) || !isValid(date2Obj)) {
     return 0;
   }
-  
+
   return differenceInDays(date2Obj, date1Obj);
 };
 
 /**
  * Get difference in months between two dates
  */
-export const getMonthsDifference = (date1: Date | string, date2: Date | string): number => {
+export const getMonthsDifference = (
+  date1: Date | string,
+  date2: Date | string,
+): number => {
   const date1Obj = typeof date1 === 'string' ? parseISO(date1) : date1;
   const date2Obj = typeof date2 === 'string' ? parseISO(date2) : date2;
-  
+
   if (!isValid(date1Obj) || !isValid(date2Obj)) {
     return 0;
   }
-  
+
   return differenceInMonths(date2Obj, date1Obj);
 };
 
 /**
  * Get difference in years between two dates
  */
-export const getYearsDifference = (date1: Date | string, date2: Date | string): number => {
+export const getYearsDifference = (
+  date1: Date | string,
+  date2: Date | string,
+): number => {
   const date1Obj = typeof date1 === 'string' ? parseISO(date1) : date1;
   const date2Obj = typeof date2 === 'string' ? parseISO(date2) : date2;
-  
+
   if (!isValid(date1Obj) || !isValid(date2Obj)) {
     return 0;
   }
-  
+
   return differenceInYears(date2Obj, date1Obj);
 };
 
@@ -190,11 +226,11 @@ export const getYearsDifference = (date1: Date | string, date2: Date | string): 
  */
 export const isToday = (date: Date | string): boolean => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(dateObj)) {
     return false;
   }
-  
+
   const today = new Date();
   return dateObj.toDateString() === today.toDateString();
 };
@@ -204,11 +240,11 @@ export const isToday = (date: Date | string): boolean => {
  */
 export const isYesterday = (date: Date | string): boolean => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(dateObj)) {
     return false;
   }
-  
+
   const yesterday = subDays(new Date(), 1);
   return dateObj.toDateString() === yesterday.toDateString();
 };
@@ -218,13 +254,16 @@ export const isYesterday = (date: Date | string): boolean => {
  */
 export const isCurrentMonth = (date: Date | string): boolean => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(dateObj)) {
     return false;
   }
-  
+
   const now = new Date();
-  return dateObj.getMonth() === now.getMonth() && dateObj.getFullYear() === now.getFullYear();
+  return (
+    dateObj.getMonth() === now.getMonth() &&
+    dateObj.getFullYear() === now.getFullYear()
+  );
 };
 
 /**
@@ -232,11 +271,11 @@ export const isCurrentMonth = (date: Date | string): boolean => {
  */
 export const isCurrentYear = (date: Date | string): boolean => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(dateObj)) {
     return false;
   }
-  
+
   const now = new Date();
   return dateObj.getFullYear() === now.getFullYear();
 };
@@ -244,13 +283,16 @@ export const isCurrentYear = (date: Date | string): boolean => {
 /**
  * Get month name from date
  */
-export const getMonthName = (date: Date | string, locale: string = 'en-US'): string => {
+export const getMonthName = (
+  date: Date | string,
+  locale: string = 'en-US',
+): string => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(dateObj)) {
     return 'Invalid Date';
   }
-  
+
   return dateObj.toLocaleDateString(locale, { month: 'long' });
 };
 
@@ -259,11 +301,11 @@ export const getMonthName = (date: Date | string, locale: string = 'en-US'): str
  */
 export const getYear = (date: Date | string): number => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(dateObj)) {
     return new Date().getFullYear();
   }
-  
+
   return dateObj.getFullYear();
 };
 
@@ -272,11 +314,11 @@ export const getYear = (date: Date | string): number => {
  */
 export const getMonth = (date: Date | string): number => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(dateObj)) {
     return new Date().getMonth() + 1;
   }
-  
+
   return dateObj.getMonth() + 1;
 };
 
@@ -285,11 +327,11 @@ export const getMonth = (date: Date | string): number => {
  */
 export const getDay = (date: Date | string): number => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(dateObj)) {
     return new Date().getDate();
   }
-  
+
   return dateObj.getDate();
 };
 
@@ -298,11 +340,11 @@ export const getDay = (date: Date | string): number => {
  */
 export const getDayOfWeek = (date: Date | string): number => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(dateObj)) {
     return new Date().getDay();
   }
-  
+
   return dateObj.getDay();
 };
 
@@ -311,13 +353,15 @@ export const getDayOfWeek = (date: Date | string): number => {
  */
 export const getWeekNumber = (date: Date | string): number => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(dateObj)) {
     return 1;
   }
-  
+
   const startOfYear = new Date(dateObj.getFullYear(), 0, 1);
-  const days = Math.floor((dateObj.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+  const days = Math.floor(
+    (dateObj.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000),
+  );
   return Math.ceil((days + startOfYear.getDay() + 1) / 7);
 };
 
@@ -327,21 +371,21 @@ export const getWeekNumber = (date: Date | string): number => {
 export const generateDateRange = (
   startDate: Date | string,
   endDate: Date | string,
-  interval: 'day' | 'week' | 'month' | 'year' = 'day'
+  interval: 'day' | 'week' | 'month' | 'year' = 'day',
 ): Date[] => {
   const start = typeof startDate === 'string' ? parseISO(startDate) : startDate;
   const end = typeof endDate === 'string' ? parseISO(endDate) : endDate;
-  
+
   if (!isValid(start) || !isValid(end)) {
     return [];
   }
-  
+
   const dates: Date[] = [];
   let current = start;
-  
+
   while (current <= end) {
     dates.push(new Date(current));
-    
+
     switch (interval) {
       case 'day':
         current = addDays(current, 1);
@@ -357,28 +401,30 @@ export const generateDateRange = (
         break;
     }
   }
-  
+
   return dates;
 };
 
 /**
  * Get fiscal year for a date (April to March in India)
  */
-export const getFiscalYear = (date: Date | string): { start: Date; end: Date; year: string } => {
+export const getFiscalYear = (
+  date: Date | string,
+): { start: Date; end: Date; year: string } => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(dateObj)) {
     const now = new Date();
     return getFiscalYear(now);
   }
-  
+
   const year = dateObj.getFullYear();
   const month = dateObj.getMonth() + 1; // 1-12
-  
+
   let fiscalYear: number;
   let fiscalStart: Date;
   let fiscalEnd: Date;
-  
+
   if (month >= 4) {
     // April to December - current fiscal year
     fiscalYear = year;
@@ -390,32 +436,34 @@ export const getFiscalYear = (date: Date | string): { start: Date; end: Date; ye
     fiscalStart = new Date(year - 1, 3, 1); // April 1st previous year
     fiscalEnd = new Date(year, 2, 31); // March 31st current year
   }
-  
+
   return {
     start: fiscalStart,
     end: fiscalEnd,
-    year: `${fiscalYear}-${(fiscalYear + 1).toString().slice(-2)}`
+    year: `${fiscalYear}-${(fiscalYear + 1).toString().slice(-2)}`,
   };
 };
 
 /**
  * Get quarter for a date
  */
-export const getQuarter = (date: Date | string): { quarter: number; start: Date; end: Date; year: number } => {
+export const getQuarter = (
+  date: Date | string,
+): { quarter: number; start: Date; end: Date; year: number } => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(dateObj)) {
     const now = new Date();
     return getQuarter(now);
   }
-  
+
   const year = dateObj.getFullYear();
   const month = dateObj.getMonth() + 1; // 1-12
-  
+
   let quarter: number;
   let startMonth: number;
   let endMonth: number;
-  
+
   if (month <= 3) {
     quarter = 1;
     startMonth = 0; // January
@@ -433,12 +481,12 @@ export const getQuarter = (date: Date | string): { quarter: number; start: Date;
     startMonth = 9; // October
     endMonth = 11; // December
   }
-  
+
   return {
     quarter,
     start: new Date(year, startMonth, 1),
     end: new Date(year, endMonth + 1, 0), // Last day of the end month
-    year
+    year,
   };
 };
 
@@ -447,11 +495,11 @@ export const getQuarter = (date: Date | string): { quarter: number; start: Date;
  */
 export const isWeekend = (date: Date | string): boolean => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(dateObj)) {
     return false;
   }
-  
+
   const dayOfWeek = dateObj.getDay();
   return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
 };
@@ -468,15 +516,15 @@ export const isBusinessDay = (date: Date | string): boolean => {
  */
 export const getNextBusinessDay = (date: Date | string): Date => {
   let current = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(current)) {
     current = new Date();
   }
-  
+
   do {
     current = addDays(current, 1);
   } while (isWeekend(current));
-  
+
   return current;
 };
 
@@ -485,14 +533,14 @@ export const getNextBusinessDay = (date: Date | string): Date => {
  */
 export const getPreviousBusinessDay = (date: Date | string): Date => {
   let current = typeof date === 'string' ? parseISO(date) : date;
-  
+
   if (!isValid(current)) {
     current = new Date();
   }
-  
+
   do {
     current = subDays(current, 1);
   } while (isWeekend(current));
-  
+
   return current;
 };

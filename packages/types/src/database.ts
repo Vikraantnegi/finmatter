@@ -231,17 +231,23 @@ export interface Database {
       card_benefits: {
         Row: DatabaseCardBenefit;
         Insert: Omit<DatabaseCardBenefit, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<DatabaseCardBenefit, 'id' | 'created_at' | 'updated_at'>>;
+        Update: Partial<
+          Omit<DatabaseCardBenefit, 'id' | 'created_at' | 'updated_at'>
+        >;
       };
       transactions: {
         Row: DatabaseTransaction;
         Insert: Omit<DatabaseTransaction, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<DatabaseTransaction, 'id' | 'created_at' | 'updated_at'>>;
+        Update: Partial<
+          Omit<DatabaseTransaction, 'id' | 'created_at' | 'updated_at'>
+        >;
       };
       statements: {
         Row: DatabaseStatement;
         Insert: Omit<DatabaseStatement, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<DatabaseStatement, 'id' | 'created_at' | 'updated_at'>>;
+        Update: Partial<
+          Omit<DatabaseStatement, 'id' | 'created_at' | 'updated_at'>
+        >;
       };
       goals: {
         Row: DatabaseGoal;
@@ -250,28 +256,50 @@ export interface Database {
       };
       ai_conversations: {
         Row: DatabaseAIConversation;
-        Insert: Omit<DatabaseAIConversation, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<DatabaseAIConversation, 'id' | 'created_at' | 'updated_at'>>;
+        Insert: Omit<
+          DatabaseAIConversation,
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<
+          Omit<DatabaseAIConversation, 'id' | 'created_at' | 'updated_at'>
+        >;
       };
       email_connections: {
         Row: DatabaseEmailConnection;
-        Insert: Omit<DatabaseEmailConnection, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<DatabaseEmailConnection, 'id' | 'created_at' | 'updated_at'>>;
+        Insert: Omit<
+          DatabaseEmailConnection,
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<
+          Omit<DatabaseEmailConnection, 'id' | 'created_at' | 'updated_at'>
+        >;
       };
       aa_consents: {
         Row: DatabaseAAConsent;
         Insert: Omit<DatabaseAAConsent, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<DatabaseAAConsent, 'id' | 'created_at' | 'updated_at'>>;
+        Update: Partial<
+          Omit<DatabaseAAConsent, 'id' | 'created_at' | 'updated_at'>
+        >;
       };
       user_preferences: {
         Row: DatabaseUserPreferences;
-        Insert: Omit<DatabaseUserPreferences, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<DatabaseUserPreferences, 'id' | 'created_at' | 'updated_at'>>;
+        Insert: Omit<
+          DatabaseUserPreferences,
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<
+          Omit<DatabaseUserPreferences, 'id' | 'created_at' | 'updated_at'>
+        >;
       };
       category_corrections: {
         Row: DatabaseCategoryCorrection;
-        Insert: Omit<DatabaseCategoryCorrection, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<DatabaseCategoryCorrection, 'id' | 'created_at' | 'updated_at'>>;
+        Insert: Omit<
+          DatabaseCategoryCorrection,
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<
+          Omit<DatabaseCategoryCorrection, 'id' | 'created_at' | 'updated_at'>
+        >;
       };
       banks: {
         Row: DatabaseBank;
@@ -281,7 +309,9 @@ export interface Database {
       popular_cards: {
         Row: DatabasePopularCard;
         Insert: Omit<DatabasePopularCard, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<DatabasePopularCard, 'id' | 'created_at' | 'updated_at'>>;
+        Update: Partial<
+          Omit<DatabasePopularCard, 'id' | 'created_at' | 'updated_at'>
+        >;
       };
     };
     Views: {

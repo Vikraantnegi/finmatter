@@ -7,7 +7,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -15,7 +14,6 @@ import {
   ScrollView,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { theme } from '../../constants/theme';
 import { showErrorToast, showSuccessToast } from '../../utils/toast';
 import { authService } from '../../services/AuthService';
 
@@ -24,9 +22,7 @@ interface WelcomeScreenProps {
   route: any;
 }
 
-export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
-  navigation,
-}) => {
+export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -53,175 +49,141 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       });
 
       if (response.success) {
-        showSuccessToast(
-          'Welcome!',
-          `Nice to meet you, ${name.trim()}!`,
-        );
-        
-        // Navigate to next onboarding screen
+        showSuccessToast('Welcome!', `Nice to meet you, ${name.trim()}!`);
+
+        // Navigate to next screen after a short delay
         setTimeout(() => {
           navigation.navigate('NotificationPermission');
         }, 1500);
       } else {
-        showErrorToast(
-          'Profile Update Failed',
-          response.error || 'Failed to update profile. Please try again.',
-        );
+        throw new Error('Failed to update profile');
       }
     } catch (error) {
       console.error('Profile update error:', error);
-      showErrorToast(
-        'Network Error',
-        'Please check your connection and try again.',
-      );
+      showErrorToast('Error', 'Failed to save your name. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const isNameValid = validateName(name);
-
   return (
     <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      className='flex-1 bg-background'
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled">
-        <View style={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.emoji}>👋</Text>
-            <Text style={styles.title}>Welcome to FinMatter!</Text>
-            <Text style={styles.subtitle}>
-              Let's get you set up in 2 minutes
-            </Text>
-          </View>
+        className='flex-1 flex-grow p-4'
+        keyboardShouldPersistTaps='handled'
+      >
+        {/* Header Section */}
+        <View className='items-center mb-12 px-4'>
+          <Text className='text-4xl font-bold text-text text-center mb-4'>
+            Welcome to FinMatter! 👋
+          </Text>
+          <Text className='text-lg text-text-secondary text-center leading-6'>
+            Let's get to know you better. What should we call you?
+          </Text>
+        </View>
 
-          {/* Name Input */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.nameInput}
-              placeholder="What should we call you?"
-              placeholderTextColor={theme.colors.textSecondary}
-              value={name}
-              onChangeText={setName}
-              autoFocus
-              autoCapitalize="words"
-              autoCorrect={false}
-              maxLength={50}
-              returnKeyType="done"
-              onSubmitEditing={handleContinue}
-            />
-            {name.length > 0 && !isNameValid && (
-              <Text style={styles.errorText}>
-                Name must be at least 2 characters, letters only
+        {/* Illustration Section */}
+        <View className='items-center mb-12'>
+          <View className='w-32 h-32 bg-primary/10 rounded-full items-center justify-center mb-6'>
+            <Text className='text-6xl'>👤</Text>
+          </View>
+          <Text className='text-base text-text-secondary text-center'>
+            Your name helps us personalize your experience
+          </Text>
+        </View>
+
+        {/* Name Input Section */}
+        <View className='mb-8'>
+          <Text className='text-lg font-semibold text-text mb-3'>
+            What's your name?
+          </Text>
+          <TextInput
+            className='bg-surface rounded-md px-4 py-4 text-base text-text border border-border'
+            placeholder='Enter your name'
+            placeholderTextColor='#94A3B8'
+            value={name}
+            onChangeText={setName}
+            autoFocus
+            autoCapitalize='words'
+            autoCorrect={false}
+            maxLength={50}
+            editable={!isLoading}
+          />
+          <Text className='text-sm text-text-tertiary mt-2'>
+            {name.length}/50 characters
+          </Text>
+        </View>
+
+        {/* Benefits Section */}
+        <View className='mb-12 px-4'>
+          <Text className='text-lg font-semibold text-text mb-4'>
+            Why we need this:
+          </Text>
+          <View className='space-y-3'>
+            <View className='flex-row items-start'>
+              <Text className='text-success text-xl mr-3'>✓</Text>
+              <Text className='text-base text-text-secondary flex-1'>
+                Personalize your dashboard and recommendations
               </Text>
-            )}
+            </View>
+            <View className='flex-row items-start'>
+              <Text className='text-success text-xl mr-3'>✓</Text>
+              <Text className='text-base text-text-secondary flex-1'>
+                Create a more engaging financial experience
+              </Text>
+            </View>
+            <View className='flex-row items-start'>
+              <Text className='text-success text-xl mr-3'>✓</Text>
+              <Text className='text-base text-text-secondary flex-1'>
+                Help you track your financial goals better
+              </Text>
+            </View>
           </View>
+        </View>
 
-          {/* Continue Button */}
+        {/* Continue Button */}
+        <View className='px-4'>
           <TouchableOpacity
-            style={[
-              styles.continueButton,
-              (!isNameValid || isLoading) && styles.disabledButton,
-            ]}
+            className={`rounded-md py-4 px-6 items-center ${
+              !validateName(name) || isLoading ? 'bg-disabled' : 'bg-primary'
+            }`}
             onPress={handleContinue}
-            disabled={!isNameValid || isLoading}>
+            disabled={!validateName(name) || isLoading}
+          >
             <LinearGradient
               colors={
-                isNameValid && !isLoading
-                  ? [theme.colors.primary, theme.colors.primaryDark]
-                  : [theme.colors.disabled, theme.colors.disabled]
+                validateName(name) && !isLoading
+                  ? ['#3B82F6', '#2563EB']
+                  : ['#CBD5E1', '#CBD5E1']
               }
-              style={styles.buttonGradient}>
-              <Text style={styles.buttonText}>
-                {isLoading ? 'Setting up...' : 'Continue'}
+              className='rounded-md py-4 px-8 w-full items-center'
+            >
+              <Text
+                className={`text-base font-semibold ${
+                  !validateName(name) || isLoading
+                    ? 'text-text-secondary'
+                    : 'text-white'
+                }`}
+              >
+                {isLoading ? 'Saving...' : 'Continue'}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
+        </View>
+
+        {/* Privacy Note */}
+        <View className='mt-8 px-4'>
+          <Text className='text-xs text-text-tertiary text-center leading-4'>
+            Your information is secure and will only be used to personalize your
+            FinMatter experience.
+          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-  },
-  content: {
-    flex: 1,
-    padding: theme.spacing.xl,
-    justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.xxl,
-  },
-  emoji: {
-    fontSize: 64,
-    marginBottom: theme.spacing.lg,
-  },
-  title: {
-    ...theme.typography.h1,
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: theme.spacing.sm,
-  },
-  subtitle: {
-    ...theme.typography.bodyLarge,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  inputContainer: {
-    marginBottom: theme.spacing.xl,
-  },
-  nameInput: {
-    ...theme.typography.h3,
-    color: theme.colors.text,
-    borderBottomWidth: 2,
-    borderBottomColor: theme.colors.primary,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.sm,
-    textAlign: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.sm,
-  },
-  errorText: {
-    ...theme.typography.bodySmall,
-    color: theme.colors.error,
-    textAlign: 'center',
-  },
-  continueButton: {
-    borderRadius: theme.borderRadius.lg,
-    overflow: 'hidden',
-    elevation: 4,
-    shadowColor: theme.colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  buttonGradient: {
-    paddingVertical: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    ...theme.typography.button,
-    color: theme.colors.white,
-    fontWeight: theme.typography.weights.semibold,
-  },
-});
 
 export default WelcomeScreen;

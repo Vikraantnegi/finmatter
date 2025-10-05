@@ -28,31 +28,35 @@ This is a monorepo built with Turborepo containing:
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd finmatter
    ```
 
 2. **Install dependencies**
+
    ```bash
    pnpm install
    ```
 
 3. **Setup environment variables**
+
    ```bash
    # Copy environment files
    cp apps/api/.env.example apps/api/.env.local
    cp apps/mobile/.env.example apps/mobile/.env
    cp apps/web/.env.example apps/web/.env.local
-   
+
    # Fill in your actual values
    ```
 
 4. **Start development servers**
+
    ```bash
    # Start all apps
    pnpm dev:all
-   
+
    # Or start individually
    pnpm dev:api    # API server on http://localhost:3000
    pnpm dev:web    # Web app on http://localhost:3001
@@ -115,6 +119,7 @@ finmatter/
 ### Environment Variables
 
 #### API Server (`apps/api/.env.local`)
+
 ```env
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -123,6 +128,7 @@ OPENAI_API_KEY=your_openai_api_key
 ```
 
 #### Mobile App (`apps/mobile/.env`)
+
 ```env
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -130,6 +136,7 @@ API_URL=http://localhost:3000
 ```
 
 #### Web App (`apps/web/.env.local`)
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -152,18 +159,21 @@ cd apps/web && pnpm build
 ## 🚀 Deployment
 
 ### API Server (Vercel)
+
 ```bash
 cd apps/api
 vercel --prod
 ```
 
 ### Web App (Vercel)
+
 ```bash
 cd apps/web
 vercel --prod
 ```
 
 ### Mobile App
+
 - **iOS**: Build and upload to App Store Connect
 - **Android**: Build and upload to Google Play Console
 

@@ -10,11 +10,13 @@ import { z } from 'zod';
 
 // Request validation schema
 const VerifyOTPSchema = z.object({
-  phoneNumber: z.string()
+  phoneNumber: z
+    .string()
     .min(10, 'Phone number must be at least 10 digits')
     .max(15, 'Phone number must be at most 15 digits')
     .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format'),
-  otp: z.string()
+  otp: z
+    .string()
     .min(6, 'OTP must be at least 6 digits')
     .regex(/^\d+$/, 'OTP must contain only digits'),
 });
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
             details: validation.error.errors,
           },
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -54,9 +56,12 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Supabase OTP verification error:', error);
-      
+
       // Handle specific error cases
-      if (error.message.includes('expired') || error.message.includes('timeout')) {
+      if (
+        error.message.includes('expired') ||
+        error.message.includes('timeout')
+      ) {
         return NextResponse.json(
           {
             success: false,
@@ -65,11 +70,14 @@ export async function POST(request: NextRequest) {
               message: 'OTP has expired. Please request a new one.',
             },
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
-      if (error.message.includes('invalid') || error.message.includes('incorrect')) {
+      if (
+        error.message.includes('invalid') ||
+        error.message.includes('incorrect')
+      ) {
         return NextResponse.json(
           {
             success: false,
@@ -78,7 +86,7 @@ export async function POST(request: NextRequest) {
               message: 'Invalid OTP. Please check and try again.',
             },
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -91,7 +99,7 @@ export async function POST(request: NextRequest) {
             details: error.message,
           },
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -104,7 +112,7 @@ export async function POST(request: NextRequest) {
             message: 'Failed to create session. Please try again.',
           },
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -116,7 +124,8 @@ export async function POST(request: NextRequest) {
       .eq('phone_number', phoneNumber)
       .single();
 
-    if (userError && userError.code !== 'PGRST116') { // PGRST116 = no rows found
+    if (userError && userError.code !== 'PGRST116') {
+      // PGRST116 = no rows found
       console.error('Database user lookup error:', userError);
       return NextResponse.json(
         {
@@ -126,7 +135,7 @@ export async function POST(request: NextRequest) {
             message: 'Failed to retrieve user data.',
           },
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -134,7 +143,7 @@ export async function POST(request: NextRequest) {
       // Update last login and OTP verification
       const { data: updatedUser, error: updateError } = await supabaseAdmin
         .from('users')
-        .update({ 
+        .update({
           last_login: new Date().toISOString(),
           is_verified: true,
           last_otp_verification: new Date().toISOString(), // Track OTP verification for 30-day logic
@@ -173,7 +182,7 @@ export async function POST(request: NextRequest) {
               message: 'Failed to create user account.',
             },
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -199,7 +208,6 @@ export async function POST(request: NextRequest) {
         },
       },
     });
-
   } catch (error) {
     console.error('Verify OTP error:', error);
     return NextResponse.json(
@@ -210,7 +218,7 @@ export async function POST(request: NextRequest) {
           message: 'An unexpected error occurred',
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

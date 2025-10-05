@@ -1,12 +1,11 @@
+/* eslint-disable react-native/no-inline-styles */
 /**
  * Toast Configuration for FinMatter
  * Custom toast styles and configurations
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
-import { theme } from '../constants/theme';
 
 /**
  * Custom Success Toast Component
@@ -14,10 +13,24 @@ import { theme } from '../constants/theme';
 const SuccessToast = (props: any) => (
   <BaseToast
     {...props}
-    style={styles.successToast}
-    contentContainerStyle={styles.contentContainer}
-    text1Style={styles.text1}
-    text2Style={styles.text2}
+    style={{
+      borderLeftColor: '#10B981',
+      backgroundColor: '#ECFDF5',
+      borderRadius: 8,
+      borderLeftWidth: 4,
+    }}
+    contentContainerStyle={{
+      paddingHorizontal: 16,
+    }}
+    text1Style={{
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#065F46',
+    }}
+    text2Style={{
+      fontSize: 14,
+      color: '#047857',
+    }}
   />
 );
 
@@ -27,10 +40,24 @@ const SuccessToast = (props: any) => (
 const CustomErrorToast = (props: any) => (
   <ErrorToast
     {...props}
-    style={styles.errorToast}
-    contentContainerStyle={styles.contentContainer}
-    text1Style={styles.text1}
-    text2Style={styles.text2}
+    style={{
+      borderLeftColor: '#EF4444',
+      backgroundColor: '#FEF2F2',
+      borderRadius: 8,
+      borderLeftWidth: 4,
+    }}
+    contentContainerStyle={{
+      paddingHorizontal: 16,
+    }}
+    text1Style={{
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#991B1B',
+    }}
+    text2Style={{
+      fontSize: 14,
+      color: '#DC2626',
+    }}
   />
 );
 
@@ -40,87 +67,37 @@ const CustomErrorToast = (props: any) => (
 const InfoToast = (props: any) => (
   <BaseToast
     {...props}
-    style={styles.infoToast}
-    contentContainerStyle={styles.contentContainer}
-    text1Style={styles.text1}
-    text2Style={styles.text2}
+    style={{
+      borderLeftColor: '#3B82F6',
+      backgroundColor: '#EFF6FF',
+      borderRadius: 8,
+      borderLeftWidth: 4,
+    }}
+    contentContainerStyle={{
+      paddingHorizontal: 16,
+    }}
+    text1Style={{
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#1E40AF',
+    }}
+    text2Style={{
+      fontSize: 14,
+      color: '#2563EB',
+    }}
   />
 );
 
-/**
- * Toast Configuration
- */
+// Toast configuration
 const toastConfig = {
   success: SuccessToast,
   error: CustomErrorToast,
   info: InfoToast,
 };
 
-const styles = StyleSheet.create({
-  successToast: {
-    borderLeftColor: theme.colors.success,
-    borderLeftWidth: 4,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
-    shadowColor: theme.colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  errorToast: {
-    borderLeftColor: theme.colors.error,
-    borderLeftWidth: 4,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
-    shadowColor: theme.colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  infoToast: {
-    borderLeftColor: theme.colors.info,
-    borderLeftWidth: 4,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
-    shadowColor: theme.colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  contentContainer: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-  },
-  text1: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.text,
-  },
-  text2: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.normal,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
-  },
-});
-
 /**
  * Toast Component with Configuration
  */
-export const ToastComponent: React.FC = () => {
-  return <Toast config={toastConfig} />;
+export const ToastComponent = () => {
+  return <Toast config={toastConfig} position='top' topOffset={60} />;
 };
-
-export default ToastComponent;

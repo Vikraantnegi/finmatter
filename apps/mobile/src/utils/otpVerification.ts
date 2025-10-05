@@ -10,7 +10,9 @@ export const OTP_VERIFICATION_DAYS = 30; // Days after which OTP re-verification
  * @param lastOtpVerification - ISO date string of last OTP verification
  * @returns true if OTP re-verification is required
  */
-export const isOTPReVerificationRequired = (lastOtpVerification?: string): boolean => {
+export const isOTPReVerificationRequired = (
+  lastOtpVerification?: string,
+): boolean => {
   if (!lastOtpVerification) {
     // If no previous verification, require OTP
     return true;
@@ -18,7 +20,9 @@ export const isOTPReVerificationRequired = (lastOtpVerification?: string): boole
 
   const lastVerificationDate = new Date(lastOtpVerification);
   const currentDate = new Date();
-  const daysDifference = (currentDate.getTime() - lastVerificationDate.getTime()) / (1000 * 60 * 60 * 24);
+  const daysDifference =
+    (currentDate.getTime() - lastVerificationDate.getTime()) /
+    (1000 * 60 * 60 * 24);
 
   return daysDifference > OTP_VERIFICATION_DAYS;
 };
@@ -35,7 +39,9 @@ export const getDaysUntilOTPExpiry = (lastOtpVerification?: string): number => {
 
   const lastVerificationDate = new Date(lastOtpVerification);
   const currentDate = new Date();
-  const daysDifference = (currentDate.getTime() - lastVerificationDate.getTime()) / (1000 * 60 * 60 * 24);
+  const daysDifference =
+    (currentDate.getTime() - lastVerificationDate.getTime()) /
+    (1000 * 60 * 60 * 24);
 
   return Math.max(0, OTP_VERIFICATION_DAYS - daysDifference);
 };
@@ -45,9 +51,11 @@ export const getDaysUntilOTPExpiry = (lastOtpVerification?: string): number => {
  * @param lastOtpVerification - ISO date string of last OTP verification
  * @returns user-friendly message
  */
-export const getOTPVerificationMessage = (lastOtpVerification?: string): string => {
+export const getOTPVerificationMessage = (
+  lastOtpVerification?: string,
+): string => {
   const daysRemaining = getDaysUntilOTPExpiry(lastOtpVerification);
-  
+
   if (daysRemaining === 0) {
     return 'OTP verification required for security';
   } else if (daysRemaining <= 7) {
@@ -62,14 +70,18 @@ export const getOTPVerificationMessage = (lastOtpVerification?: string): string 
  * @param lastOtpVerification - ISO date string of last OTP verification
  * @returns formatted date string
  */
-export const formatLastOTPVerification = (lastOtpVerification?: string): string => {
+export const formatLastOTPVerification = (
+  lastOtpVerification?: string,
+): string => {
   if (!lastOtpVerification) {
     return 'Never';
   }
 
   const date = new Date(lastOtpVerification);
   const now = new Date();
-  const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  const diffInDays = Math.floor(
+    (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
+  );
 
   if (diffInDays === 0) {
     return 'Today';

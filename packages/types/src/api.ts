@@ -1,4 +1,9 @@
-import type { PaginationParams, PaginatedResponse, ApiResponse, ApiError } from './common';
+import type {
+  PaginationParams,
+  PaginatedResponse,
+  ApiResponse,
+  ApiError,
+} from './common';
 
 /**
  * API request and response types for FinMatter

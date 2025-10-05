@@ -1,4 +1,4 @@
-import type { AuditFields, Currency, ID } from './common';
+import type { AuditFields, Currency } from './common';
 import { Transaction } from './transaction';
 
 /**

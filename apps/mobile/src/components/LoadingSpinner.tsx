@@ -4,8 +4,7 @@
  */
 
 import React from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
-import { theme } from '../constants/theme';
+import { View, ActivityIndicator, Text } from 'react-native';
 
 interface LoadingSpinnerProps {
   isLoading: boolean;
@@ -19,7 +18,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   isLoading,
   message = 'Loading...',
   size = 'large',
-  color = theme.colors.primary,
+  color = '#3B82F6',
   overlay = false,
 }) => {
   if (!isLoading) {
@@ -27,43 +26,23 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   }
 
   const content = (
-    <View style={styles.container}>
+    <View className='flex-row items-center justify-center p-4 gap-2'>
       <ActivityIndicator size={size} color={color} />
-      {message && <Text style={styles.message}>{message}</Text>}
+      {message && (
+        <Text className='text-base text-text-secondary ml-2'>{message}</Text>
+      )}
     </View>
   );
 
   if (overlay) {
-    return <View style={styles.overlay}>{content}</View>;
+    return (
+      <View className='absolute inset-0 bg-white/90 justify-center items-center z-[1000]'>
+        {content}
+      </View>
+    );
   }
 
   return content;
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.spacing.md,
-    gap: theme.spacing.sm,
-  },
-  message: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    marginLeft: theme.spacing.sm,
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-});
 
 export default LoadingSpinner;

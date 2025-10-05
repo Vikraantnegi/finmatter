@@ -8,7 +8,7 @@ Create a monorepo structure using Turborepo with the following:
 apps/
   - mobile: React Native CLI project with TypeScript
   - api: Next.js 14 with App Router for API routes
-  
+
 packages/
   - shared: Shared utilities and constants
   - types: Shared TypeScript types
@@ -76,12 +76,12 @@ Build authentication flow in React Native app using PHONE + OTP:
      - Format: +91 XXXXX XXXXX
      - Validate 10-digit Indian number
      - "Send OTP" button
-   
+
    - src/screens/auth/OTPVerificationScreen.tsx
      - 6-digit OTP input (auto-focus each digit)
      - Resend OTP option (disabled for 30 seconds)
      - Auto-verify when 6 digits entered
-   
+
    - src/screens/auth/BiometricSetupScreen.tsx
      - After OTP verified, offer biometric setup
      - Skip option available
@@ -163,14 +163,14 @@ Build card portfolio screens in React Native:
      - Show last 4 digits (with toggle to hide/show)
      - Show active benefits summary
      - FAB button to add new card
-   
+
    - src/screens/cards/AddCardScreen.tsx
      - Bank selection dropdown (HDFC, ICICI, SBI, Axis, etc.)
      - Card name input
      - Last 4 digits input
      - Card type and network selection
      - Reward type selection
-   
+
    - src/screens/cards/CardDetailScreen.tsx
      - Full card details
      - Benefits breakdown by category
@@ -181,7 +181,7 @@ Build card portfolio screens in React Native:
    - src/components/cards/CreditCardVisual.tsx
      - Animated card component with gradient based on bank
      - Flip animation to show/hide number
-   
+
    - src/components/cards/BenefitItem.tsx
      - Display category + reward rate
      - Visual indicator (icon for category)
@@ -249,7 +249,7 @@ Implement PDF upload and parsing in backend:
    - POST /api/statements/upload
    - Accept multipart/form-data
    - Parameters: PDF file, bank_name, card_id
-   
+
 2. Flow:
    - Validate file type (PDF only, max 5MB)
    - Upload to Supabase Storage (encrypted bucket)
@@ -292,7 +292,7 @@ Build PDF upload flow in mobile app:
      - File picker button (react-native-document-picker)
      - Upload progress indicator
      - Success/error state
-   
+
    - src/screens/statements/StatementListScreen.tsx
      - List of uploaded statements
      - Show parse status, transaction count
@@ -357,11 +357,11 @@ Build transaction management APIs:
      - Query params: start_date, end_date, card_id, category
      - Return paginated transactions
      - Include card info and category
-   
+
    - PUT /api/transactions/:id/category
      - Allow manual category change
      - Store in user_category_corrections table for learning
-   
+
    - GET /api/transactions/stats
      - Return spending by category
      - Return spending by card
@@ -391,13 +391,13 @@ Build transaction viewing and management in mobile:
      - Pull-to-refresh
      - Infinite scroll with react-query
      - Filter button (by card, category, date range)
-   
+
    - src/screens/transactions/TransactionDetailScreen.tsx
      - Full transaction details
      - Change category (dropdown)
      - Show card used
      - Add notes (future)
-   
+
    - src/screens/transactions/FilterScreen.tsx
      - Date range picker
      - Multi-select for categories
@@ -408,7 +408,7 @@ Build transaction viewing and management in mobile:
    - src/components/transactions/TransactionItem.tsx
      - Merchant name, amount, category icon
      - Swipeable for quick actions
-   
+
    - src/components/transactions/CategoryIcon.tsx
      - Icon mapping for each category
      - Use lucide-react-native
@@ -443,7 +443,7 @@ Build the core CC optimization engine in packages/cc-engine:
        minTransaction?: number;
        conditions?: string[];
      }
-   
+
    - Function: calculateReward(amount, category, cardRules): number
    - Handle different reward types (cashback %, points per 100, etc.)
    - Apply caps and conditions
@@ -453,7 +453,7 @@ Build the core CC optimization engine in packages/cc-engine:
    - Compare all user's cards for the transaction
    - Return best card with reasoning
    - Include second-best option
-   
+
    interface RecommendationResult {
      bestCard: Card;
      expectedReward: number;
@@ -482,7 +482,7 @@ Create card recommendation API:
    - POST /api/optimizer/recommend
    - Body: { amount: number, category: string }
    - Response: { bestCard, expectedReward, reasoning, alternatives[] }
-   
+
 2. Flow:
    - Fetch user's cards with benefits
    - Call optimizer from @finmatter/cc-engine
@@ -553,7 +553,7 @@ Implement AI assistant using OpenAI API:
      - User's cards and benefits
      - Recent transactions summary
      - Spending patterns
-   
+
 2. API endpoint:
    - POST /api/ai/chat
    - Body: { message: string, conversationId?: string }
@@ -609,7 +609,7 @@ Build AI chat interface in mobile app:
      - Support text and card recommendations
      - Markdown rendering for formatted responses
      - Copy message button
-   
+
    - src/components/ai/QuickPrompts.tsx
      - Horizontal scrollable chips
      - Context-aware suggestions
@@ -642,15 +642,15 @@ Build analytics endpoints for dashboard:
      - Top category
      - Most used card
      - Month-over-month change
-   
+
    - GET /api/analytics/spending-by-category
      - Spending breakdown by category
      - Time range parameter
-   
+
    - GET /api/analytics/card-usage
      - Spending per card
      - Rewards earned per card
-   
+
    - GET /api/analytics/trends
      - Last 6 months spending trend
      - Category trends
@@ -710,7 +710,7 @@ Build email transaction alert parser:
 1. Create email parsing service in packages/cc-engine:
    - src/emailParser/index.ts
    - Support Gmail and Outlook via IMAP
-   
+
 2. Parsing logic:
    - Detect credit card transaction emails
    - Common senders: alerts@hdfcbank.com, alerts@icicibank.com, etc.
@@ -719,14 +719,14 @@ Build email transaction alert parser:
      - Merchant name
      - Date/time
      - Card last 4 digits
-   
+
 3. Use regex patterns for each bank's email format
 
 4. API in apps/api:
    - POST /api/email/connect
      - OAuth flow for Gmail
      - Store encrypted tokens
-   
+
    - POST /api/email/sync
      - Fetch last 30 days of emails
      - Parse transaction alerts
@@ -751,7 +751,7 @@ Build email connection flow in mobile:
      - OAuth flow (in-app browser)
      - Show last sync time
      - Manual sync button
-   
+
    - src/screens/settings/EmailSyncStatusScreen.tsx
      - Show sync progress
      - Transactions found and added
@@ -815,13 +815,13 @@ Build goals and limits interface:
      - List all active goals
      - Progress bars for each
      - Add goal FAB
-   
+
    - src/screens/goals/CreateGoalScreen.tsx
      - Goal type selection (spending limit, savings goal)
      - Category selection (for spending limits)
      - Amount input
      - Period selection (monthly, yearly)
-   
+
    - src/screens/goals/GoalDetailScreen.tsx
      - Detailed progress
      - Chart showing spending over time
@@ -860,7 +860,7 @@ Integrate Account Aggregator framework:
      - POST /api/aa/initiate-consent
      - GET /api/aa/consent-status
      - POST /api/aa/fetch-data
-   
+
 3. Database tables:
    - aa_consents: consent_id, user_id, status, expires_at
    - aa_accounts: account_id, user_id, fip_id, account_type
@@ -884,11 +884,11 @@ Build AA consent flow in mobile:
    - src/screens/aa/AAOnboardingScreen.tsx
      - Explain benefits of AA
      - "Connect Bank" button
-   
+
    - src/screens/aa/AAConsentScreen.tsx
      - Webview for AA consent flow
      - Handle redirects back to app
-   
+
    - src/screens/aa/AAAccountsScreen.tsx
      - List connected bank accounts
      - Auto-sync toggle
@@ -1005,7 +1005,7 @@ Setup analytics and monitoring:
    - Optimizer used
    - AI query sent
    - Goal created
-   
+
 2. Use PostHog or Mixpanel:
    - Install SDK in mobile app
    - Track key user actions
@@ -1096,6 +1096,7 @@ Prepare for beta launch:
 ## Feature Priority Matrix
 
 ### P0 (Must Have for Beta)
+
 - ✅ Auth + Biometric
 - ✅ Card Portfolio Management
 - ✅ PDF Statement Upload & Parsing
@@ -1104,11 +1105,13 @@ Prepare for beta launch:
 - ✅ Basic Dashboard
 
 ### P1 (Should Have for Beta)
+
 - ✅ AI Assistant (Basic)
 - ✅ Email Integration
 - ✅ Goals & Spending Limits
 
 ### P2 (Nice to Have, Post-Beta)
+
 - Account Aggregator Integration
 - Advanced AI features
 - Social sharing
@@ -1120,6 +1123,7 @@ Prepare for beta launch:
 ## Testing Strategy
 
 ### Unit Tests (Week 6+)
+
 ```
 packages/cc-engine/**/*.test.ts
 - Test reward calculations
@@ -1132,6 +1136,7 @@ apps/api/**/*.test.ts
 ```
 
 ### Integration Tests (Week 8+)
+
 ```
 Test full user flows:
 - Signup → Add card → Upload statement → Get recommendation
@@ -1140,6 +1145,7 @@ Test full user flows:
 ```
 
 ### Manual Testing Checklist (Weekly)
+
 ```
 □ Fresh install and signup
 □ Add 3 different bank cards
@@ -1158,19 +1164,23 @@ Test full user flows:
 ## When You Get Stuck
 
 ### Week 1-2 Blockers (Expected)
+
 - **PDF parsing not working:** Start with one bank, perfect it, then expand
 - **React Native build issues:** Run `npx react-native doctor`, fix one by one
 - **Supabase RLS confusing:** Start without RLS, add it in Week 6
 
 ### Week 3-4 Blockers
+
 - **Categorization accuracy low:** Start with basic keyword matching, improve later
 - **Too much data to handle:** Add pagination early, limit to last 3 months
 
 ### Week 5-6 Blockers
+
 - **AI responses slow:** Use streaming responses, show typing indicator
 - **OpenAI costs high:** Switch to GPT-4o-mini, add caching
 
 ### General Debugging
+
 1. Check logs (console, Sentry)
 2. Add more logging
 3. Test with simpler data
@@ -1183,16 +1193,19 @@ Test full user flows:
 ## Success Metrics (Track Weekly)
 
 ### Development Velocity
+
 - Features completed vs planned
 - Bugs introduced vs fixed
 - Code commits per day
 
 ### Product Quality
+
 - Crash-free rate (target >99%)
 - API response time (target <500ms)
 - PDF parse success rate (target >90%)
 
 ### Personal Metrics
+
 - Hours coded per day
 - Features shipped per week
 - Days since last commit (should be 0!)
@@ -1202,15 +1215,18 @@ Test full user flows:
 ## Emergency Pivots (If Needed)
 
 ### If PDF parsing is too hard (Week 3)
+
 → Focus on manual transaction entry + email parsing
 → Make manual entry SUPER fast and easy
 
 ### If AI costs are too high (Week 6)
+
 → Start with rule-based responses
 → Use AI only for complex queries
 → Add tighter rate limits
 
 ### If AA integration is too complex (Week 10)
+
 → Ship without it for beta
 → Add in Month 3-4
 → PDF + email is enough for MVP
@@ -1247,6 +1263,7 @@ Before you start coding TODAY:
 ## Final Words
 
 You have everything you need:
+
 - ✅ Full-stack skills
 - ✅ Clear roadmap
 - ✅ 30 detailed Cursor prompts

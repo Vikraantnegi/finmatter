@@ -39,7 +39,10 @@ export async function PUT(req: NextRequest) {
     }
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ success: true, message: 'No data to update' }, { status: 200 });
+      return NextResponse.json(
+        { success: true, message: 'No data to update' },
+        { status: 200 },
+      );
     }
 
     const { data, error } = await supabaseAdmin

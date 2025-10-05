@@ -10,6 +10,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import FlashMessage from 'react-native-flash-message';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+// NativeWind styles
+import './global.css';
+
 // Navigation
 import AppNavigator from './src/navigation/AppNavigator';
 
@@ -17,20 +20,17 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/providers/AuthProvider';
 
 // Styles
-import { theme } from './src/constants/theme';
+// Theme is now defined in tailwind.config.js
 
 const App: React.FC = () => {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView className='flex-1'>
       <SafeAreaProvider>
         <AuthProvider>
           <NavigationContainer>
-            <StatusBar
-              barStyle="light-content"
-              backgroundColor={theme.colors.primary}
-            />
+            <StatusBar barStyle='light-content' backgroundColor='#3B82F6' />
             <AppNavigator />
-            <FlashMessage position="top" />
+            <FlashMessage position='top' />
           </NavigationContainer>
         </AuthProvider>
       </SafeAreaProvider>

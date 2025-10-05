@@ -4,64 +4,26 @@
  */
 
 import React from 'react';
-import {
-  View,
-  Text,
-  ActivityIndicator,
-  StyleSheet,
-  SafeAreaView,
-} from 'react-native';
+import { View, Text, ActivityIndicator, SafeAreaView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-
-import { theme } from '../constants/theme';
 
 const LoadingScreen: React.FC = () => {
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView className='flex-1'>
       <LinearGradient
-        colors={[theme.colors.primary, theme.colors.primaryDark]}
-        style={styles.gradient}
+        colors={['#3B82F6', '#2563EB']}
+        className='flex-1 justify-center items-center'
       >
-        <View style={styles.content}>
-          <Text style={styles.title}>FinMatter</Text>
-          <Text style={styles.subtitle}>Personal Finance Super App</Text>
-          <ActivityIndicator
-            size="large"
-            color={theme.colors.white}
-            style={styles.loader}
-          />
+        <View className='items-center'>
+          <Text className='text-4xl font-bold text-white mb-2'>FinMatter</Text>
+          <Text className='text-lg text-white/90 mb-8'>
+            Personal Finance Super App
+          </Text>
+          <ActivityIndicator size='large' color='#FFFFFF' className='mt-6' />
         </View>
       </LinearGradient>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  gradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    alignItems: 'center',
-  },
-  title: {
-    ...theme.typography.h1,
-    color: theme.colors.white,
-    marginBottom: theme.spacing.sm,
-  },
-  subtitle: {
-    ...theme.typography.body,
-    color: theme.colors.white,
-    opacity: 0.9,
-    marginBottom: theme.spacing.xl,
-  },
-  loader: {
-    marginTop: theme.spacing.lg,
-  },
-});
 
 export default LoadingScreen;

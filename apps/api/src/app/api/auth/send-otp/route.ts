@@ -10,7 +10,8 @@ import { z } from 'zod';
 
 // Request validation schema
 const SendOTPSchema = z.object({
-  phoneNumber: z.string()
+  phoneNumber: z
+    .string()
     .min(10, 'Phone number must be at least 10 digits')
     .max(15, 'Phone number must be at most 15 digits')
     .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format'),
@@ -28,7 +29,10 @@ const RATE_LIMIT = {
 /**
  * Check rate limit for phone number
  */
-function checkRateLimit(phoneNumber: string): { allowed: boolean; retryAfter?: number } {
+function checkRateLimit(phoneNumber: string): {
+  allowed: boolean;
+  retryAfter?: number;
+} {
   const now = Date.now();
   const key = phoneNumber;
   const stored = rateLimitStore.get(key);
@@ -73,7 +77,7 @@ export async function POST(request: NextRequest) {
             details: validation.error.errors,
           },
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -92,16 +96,18 @@ export async function POST(request: NextRequest) {
           rateLimit: {
             attempts: RATE_LIMIT.maxAttempts,
             remaining: 0,
-            resetTime: new Date(Date.now() + (rateLimit.retryAfter! * 1000)).toISOString(),
+            resetTime: new Date(
+              Date.now() + rateLimit.retryAfter! * 1000,
+            ).toISOString(),
             retryAfter: rateLimit.retryAfter,
           },
         },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
     // Send OTP using Supabase Auth
-    const { data, error } = await supabaseAdmin.auth.signInWithOtp({
+    const { error } = await supabaseAdmin.auth.signInWithOtp({
       phone: phoneNumber,
       options: {
         channel: 'sms',
@@ -119,7 +125,7 @@ export async function POST(request: NextRequest) {
             details: error.message,
           },
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -132,7 +138,6 @@ export async function POST(request: NextRequest) {
         expiresIn: 300, // 5 minutes in seconds
       },
     });
-
   } catch (error) {
     console.error('Send OTP error:', error);
     return NextResponse.json(
@@ -143,7 +148,7 @@ export async function POST(request: NextRequest) {
           message: 'An unexpected error occurred',
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

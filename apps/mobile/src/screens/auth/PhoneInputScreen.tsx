@@ -14,23 +14,20 @@ import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TextInput,
 } from 'react-native';
-import { TextInput } from 'react-native-gesture-handler';
 import CountryPicker, {
   Country,
   CountryCode,
-  DARK_THEME,
   DEFAULT_THEME,
 } from 'react-native-country-picker-modal';
 import { AuthScreenProps } from '../../navigation/types';
-import { theme } from '../../constants/theme';
 import { authService } from '../../services/AuthService';
-import { showErrorToast, showSuccessToast } from '../../utils/toast';
+import { showErrorToast } from '../../utils/toast';
 import { haptics } from '../../utils/haptics';
 
 interface PhoneInputScreenProps extends AuthScreenProps<'PhoneInput'> {}
@@ -52,120 +49,105 @@ const DEFAULT_COUNTRY: Country = {
  * Phone Input Screen Component
  *
  * Handles phone number input with country code selection
- * and validation before sending OTP
+ * Validates phone numbers and sends OTP via API
  */
 export const PhoneInputScreen: React.FC<PhoneInputScreenProps> = ({
   navigation,
 }) => {
   // State management
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [countryCode, setCountryCode] = useState<CountryCode>('IN');
-  const [callingCode, setCallingCode] = useState('91');
-  const [isLoading, setIsLoading] = useState(false);
+  const [countryCode, setCountryCode] = useState<CountryCode>(
+    DEFAULT_COUNTRY.cca2,
+  );
+  const [callingCode, setCallingCode] = useState(
+    DEFAULT_COUNTRY.callingCode[0],
+  );
   const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{
     phoneNumber?: string;
     general?: string;
   }>({});
 
   /**
-   * Validates phone number format
-   * For India: 10 digits required
-   * For other countries: basic format validation
+   * Validates phone number format based on country
    */
   const validatePhoneNumber = useCallback(
-    (number: string): boolean => {
-      const cleanedNumber = number.replace(/\D/g, '');
-
-      if (countryCode === 'IN') {
-        // Indian numbers must be exactly 10 digits
-        return /^\d{10}$/.test(cleanedNumber);
+    (phone: string): boolean => {
+      if (!phone.trim()) {
+        setErrors({ phoneNumber: 'Phone number is required' });
+        return false;
       }
 
-      // For other countries, basic validation (7-15 digits)
-      return /^\d{7,15}$/.test(cleanedNumber);
-    },
-    [countryCode],
-  );
-
-  /**
-   * Formats phone number for display
-   * Indian format: XXXXX XXXXX
-   * Other countries: basic formatting
-   */
-  const formatPhoneNumber = useCallback(
-    (number: string): string => {
-      const cleanedNumber = number.replace(/\D/g, '');
+      // Remove spaces and special characters
+      const cleanedPhone = phone.replace(/[\s\-()]/g, '');
 
       if (countryCode === 'IN') {
-        // Indian format: XXXXX XXXXX
-        if (cleanedNumber.length <= 5) {
-          return cleanedNumber;
+        // Indian phone number validation (10 digits)
+        if (!/^\d{10}$/.test(cleanedPhone)) {
+          setErrors({
+            phoneNumber: 'Please enter a valid 10-digit phone number',
+          });
+          return false;
         }
-        return `${cleanedNumber.slice(0, 5)} ${cleanedNumber.slice(5, 10)}`;
+      } else {
+        // General validation for other countries (6-15 digits)
+        if (!/^\d{6,15}$/.test(cleanedPhone)) {
+          setErrors({
+            phoneNumber: 'Please enter a valid phone number',
+          });
+          return false;
+        }
       }
 
-      // For other countries, just clean the number
-      return cleanedNumber;
+      setErrors({});
+      return true;
     },
     [countryCode],
   );
 
   /**
    * Handles phone number input changes
-   * Formats the number and validates it
    */
   const handlePhoneNumberChange = useCallback(
     (text: string) => {
-      const formatted = formatPhoneNumber(text);
-      setPhoneNumber(formatted);
+      // Format phone number for display (Indian format with space)
+      let formattedText = text;
+
+      if (countryCode === 'IN' && text.length > 0) {
+        // Add space after 5 digits for Indian format
+        const cleanedText = text.replace(/\s/g, '');
+        if (cleanedText.length > 5) {
+          formattedText = `${cleanedText.slice(0, 5)} ${cleanedText.slice(5, 10)}`;
+        } else {
+          formattedText = cleanedText;
+        }
+      }
+
+      setPhoneNumber(formattedText);
 
       // Clear errors when user starts typing
       if (errors.phoneNumber) {
-        setErrors(prev => ({ ...prev, phoneNumber: undefined }));
+        setErrors({});
       }
     },
-    [formatPhoneNumber, errors.phoneNumber],
+    [countryCode, errors.phoneNumber],
   );
 
   /**
-   * Handles country selection from picker
-   */
-  const handleCountrySelect = useCallback((country: Country) => {
-    setCountryCode(country.cca2);
-    setCallingCode(country.callingCode[0]);
-    setPhoneNumber(''); // Clear phone number when country changes
-    setErrors({}); // Clear all errors
-  }, []);
-
-  /**
-   * Validates input and sends OTP
+   * Handles sending OTP
    */
   const handleSendOTP = useCallback(async () => {
+    if (!validatePhoneNumber(phoneNumber)) {
+      return;
+    }
+
     try {
-      // Clear previous errors
+      setIsLoading(true);
       setErrors({});
 
-      // Validate phone number
-      const cleanedNumber = phoneNumber.replace(/\D/g, '');
-      if (!cleanedNumber) {
-        setErrors({ phoneNumber: 'Phone number is required' });
-        return;
-      }
-
-      if (!validatePhoneNumber(phoneNumber)) {
-        const message =
-          countryCode === 'IN'
-            ? 'Please enter a valid 10-digit Indian phone number'
-            : 'Please enter a valid phone number';
-        setErrors({ phoneNumber: message });
-        return;
-      }
-
-      // Set loading state
-      setIsLoading(true);
-
-      // Format phone number with country code
+      // Clean phone number for API call
+      const cleanedNumber = phoneNumber.replace(/\s/g, '');
       const fullPhoneNumber = `+${callingCode}${cleanedNumber}`;
 
       // Send OTP via API
@@ -221,46 +203,49 @@ export const PhoneInputScreen: React.FC<PhoneInputScreenProps> = ({
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      className='flex-1 bg-background'
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
+        className='flex-1 flex-grow p-4'
+        keyboardShouldPersistTaps='handled'
       >
         {/* Header Section */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Enter Your Phone Number</Text>
-          <Text style={styles.subtitle}>
+        <View className='items-center mb-8 px-4'>
+          <Text className='text-3xl font-bold text-text text-center mb-2'>
+            Enter Your Phone Number
+          </Text>
+          <Text className='text-base text-text-secondary text-center'>
             We'll send you a verification code via SMS
           </Text>
         </View>
 
         {/* Phone Input Section */}
-        <View style={styles.inputSection}>
+        <View className='flex-row items-center mb-6 gap-2'>
           {/* Country Code Picker */}
           <TouchableOpacity
-            style={styles.countryPicker}
+            className='flex-row items-center bg-surface rounded-md px-4 py-4 border border-border min-w-[100px]'
             onPress={() => setShowCountryPicker(true)}
           >
-            <Text style={styles.countryText}>{getCountryDisplay()}</Text>
-            <Text style={styles.dropdownIcon}>▼</Text>
+            <Text className='text-base text-text mr-1'>
+              {getCountryDisplay()}
+            </Text>
+            <Text className='text-sm text-text-secondary'>▼</Text>
           </TouchableOpacity>
 
           {/* Phone Number Input */}
-          <View style={styles.phoneInputContainer}>
+          <View className='flex-1'>
             <TextInput
-              style={[
-                styles.phoneInput,
-                errors.phoneNumber && styles.phoneInputError,
-              ]}
+              className={`bg-surface rounded-md px-4 py-4 text-base text-text border ${
+                errors.phoneNumber ? 'border-error' : 'border-border'
+              }`}
               placeholder={
                 countryCode === 'IN' ? 'XXXXX XXXXX' : 'Phone number'
               }
-              placeholderTextColor={theme.colors.textSecondary}
+              placeholderTextColor='#94A3B8'
               value={phoneNumber}
               onChangeText={handlePhoneNumberChange}
-              keyboardType="phone-pad"
+              keyboardType='phone-pad'
               maxLength={countryCode === 'IN' ? 11 : 15} // Account for space in Indian format
               autoFocus
               editable={!isLoading}
@@ -270,160 +255,71 @@ export const PhoneInputScreen: React.FC<PhoneInputScreenProps> = ({
 
         {/* Error Messages */}
         {errors.phoneNumber && (
-          <Text style={styles.errorText}>{errors.phoneNumber}</Text>
+          <Text className='text-error text-sm text-center mb-4'>
+            {errors.phoneNumber}
+          </Text>
         )}
         {errors.general && (
-          <Text style={styles.errorText}>{errors.general}</Text>
+          <Text className='text-error text-sm text-center mb-4'>
+            {errors.general}
+          </Text>
         )}
 
         {/* Send OTP Button */}
         <TouchableOpacity
-          style={[
-            styles.sendButton,
-            (!phoneNumber.trim() || isLoading) && styles.sendButtonDisabled,
-          ]}
+          className={`rounded-md py-4 items-center mb-6 ${
+            !phoneNumber.trim() || isLoading ? 'bg-disabled' : 'bg-primary'
+          }`}
           onPress={handleSendOTP}
           disabled={!phoneNumber.trim() || isLoading}
         >
           <Text
-            style={[
-              styles.sendButtonText,
-              (!phoneNumber.trim() || isLoading) &&
-                styles.sendButtonTextDisabled,
-            ]}
+            className={`text-base font-semibold ${
+              !phoneNumber.trim() || isLoading
+                ? 'text-text-secondary'
+                : 'text-white'
+            }`}
           >
             {isLoading ? 'Sending...' : 'Send OTP'}
           </Text>
         </TouchableOpacity>
 
         {/* Info Section */}
-        <View style={styles.infoSection}>
-          <Text style={styles.infoText}>
-            By continuing, you agree to receive SMS messages for verification.
-            Standard messaging rates may apply.
+        <View className='items-center'>
+          <Text className='text-sm text-text-secondary text-center leading-[18px]'>
+            By continuing, you agree to our Terms of Service and Privacy Policy.
+            Message and data rates may apply.
           </Text>
         </View>
       </ScrollView>
 
       {/* Country Picker Modal */}
       <CountryPicker
-        visible={showCountryPicker}
-        onSelect={handleCountrySelect}
-        onClose={() => setShowCountryPicker(false)}
+        withEmoji
+        withCallingCode
         withFilter
         withFlag
-        withCallingCode
-        withEmoji
+        withCountryNameButton
+        withAlphaFilter
+        withCallingCodeButton
+        withModal
+        visible={showCountryPicker}
+        onSelect={country => {
+          setCountryCode(country.cca2);
+          setCallingCode(country.callingCode[0]);
+          setShowCountryPicker(false);
+        }}
+        onClose={() => setShowCountryPicker(false)}
         theme={DEFAULT_THEME}
-        preferredCountries={['IN', 'US', 'GB']} // Preferred countries for quick selection
-        countryCode={countryCode}
+        countryCode={DEFAULT_COUNTRY.cca2}
+        // eslint-disable-next-line react-native/no-inline-styles
+        containerButtonStyle={{
+          backgroundColor: '#F8FAFC',
+          borderRadius: 8,
+        }}
       />
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: theme.spacing.lg,
-    justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.xl,
-  },
-  title: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: theme.spacing.sm,
-  },
-  subtitle: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  inputSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: theme.spacing.lg,
-    gap: theme.spacing.sm,
-  },
-  countryPicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    minWidth: 100,
-  },
-  countryText: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.text,
-    marginRight: theme.spacing.xs,
-  },
-  dropdownIcon: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textSecondary,
-  },
-  phoneInputContainer: {
-    flex: 1,
-  },
-  phoneInput: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.text,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  phoneInputError: {
-    borderColor: theme.colors.error,
-  },
-  errorText: {
-    color: theme.colors.error,
-    fontSize: theme.typography.sizes.sm,
-    textAlign: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  sendButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.md,
-    paddingVertical: theme.spacing.md,
-    alignItems: 'center',
-    marginBottom: theme.spacing.lg,
-  },
-  sendButtonDisabled: {
-    backgroundColor: theme.colors.disabled,
-  },
-  sendButtonText: {
-    color: theme.colors.white,
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-  },
-  sendButtonTextDisabled: {
-    color: theme.colors.textSecondary,
-  },
-  infoSection: {
-    alignItems: 'center',
-  },
-  infoText: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-});
 
 export default PhoneInputScreen;

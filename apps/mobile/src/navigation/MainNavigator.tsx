@@ -57,17 +57,17 @@ const MainNavigator: React.FC = () => {
 
   return (
     <Tab.Navigator
-      initialRouteName="Home"
+      initialRouteName='Home'
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) =>
           getTabBarIcon(route.name, focused, color, size),
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: '#3B82F6',
+        tabBarInactiveTintColor: '#475569',
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: '#F8FAFC',
           borderTopWidth: 1,
-          borderTopColor: '#E0E0E0',
+          borderTopColor: '#E2E8F0',
           paddingBottom: 5,
           paddingTop: 5,
           height: 60,
@@ -75,27 +75,27 @@ const MainNavigator: React.FC = () => {
       })}
     >
       <Tab.Screen
-        name="Home"
+        name='Home'
         component={HomeScreen as any}
         options={{ tabBarLabel: 'Home' }}
       />
       <Tab.Screen
-        name="Cards"
+        name='Cards'
         component={CardsScreen as any}
         options={{ tabBarLabel: 'Cards' }}
       />
       <Tab.Screen
-        name="Transactions"
+        name='Transactions'
         component={TransactionsScreen as any}
         options={{ tabBarLabel: 'Transactions' }}
       />
       <Tab.Screen
-        name="Optimizer"
+        name='Optimizer'
         component={OptimizerScreen as any}
         options={{ tabBarLabel: 'Optimizer' }}
       />
       <Tab.Screen
-        name="Profile"
+        name='Profile'
         component={ProfileScreen as any}
         options={{ tabBarLabel: 'Profile' }}
       />

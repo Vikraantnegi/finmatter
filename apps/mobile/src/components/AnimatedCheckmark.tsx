@@ -4,9 +4,8 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import * as Animatable from 'react-native-animatable';
-import { theme } from '../constants/theme';
 
 interface AnimatedCheckmarkProps {
   isVisible: boolean;
@@ -36,51 +35,24 @@ export const AnimatedCheckmark: React.FC<AnimatedCheckmarkProps> = ({
   }
 
   return (
-    <View style={styles.container}>
+    <View className='absolute inset-0 justify-center items-center bg-white/90 z-[1000]'>
       <Animatable.View
         ref={animationRef}
-        style={[styles.checkmarkContainer, { width: size, height: size }]}
+        className='bg-success rounded-full justify-center items-center shadow-lg'
+        style={{ width: size, height: size }}
       >
         <Animatable.Text
-          style={[styles.checkmark, { fontSize: size * 0.6 }]}
-          animation="pulse"
+          className='text-white font-bold'
+          style={{ fontSize: size * 0.6 }}
+          animation='pulse'
           iterationCount={1}
           duration={1000}
         >
-          ✓
+          {'✓'}
         </Animatable.Text>
       </Animatable.View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    zIndex: 1000,
-  },
-  checkmarkContainer: {
-    backgroundColor: theme.colors.success,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: theme.colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  checkmark: {
-    color: theme.colors.white,
-    fontWeight: 'bold',
-  },
-});
 
 export default AnimatedCheckmark;

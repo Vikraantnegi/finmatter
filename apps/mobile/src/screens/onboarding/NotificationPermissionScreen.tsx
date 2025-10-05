@@ -1,20 +1,13 @@
 /**
  * Notification Permission Screen
- * Requests notification permission for spending alerts and updates
+ * Requests permission for push notifications
  */
 
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Platform,
-} from 'react-native';
-import { PERMISSIONS, request, RESULTS } from 'react-native-permissions';
-import LinearGradient from 'react-native-linear-gradient';
-import { theme } from '../../constants/theme';
+import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+// Permission handling will be implemented later
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
+import { haptics } from '../../utils/haptics';
 
 interface NotificationPermissionScreenProps {
   navigation: any;
@@ -26,168 +19,196 @@ export const NotificationPermissionScreen: React.FC<
 > = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleEnableNotifications = async () => {
+  const handleAllowNotifications = async () => {
     setIsLoading(true);
 
     try {
-      // For now, we'll skip the permission request and just continue
-      // The actual permission request will be handled by the system when we send notifications
-      const permission = null;
+      // For demo purposes, we'll simulate the permission flow
+      // In a real app, you would use the actual permission APIs
 
-      // For now, we'll just simulate a successful permission grant
-      // TODO: Implement proper notification permission request
-      const result = 'granted';
+      // Simulate permission request delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      if (result === 'granted') {
+      // For now, always grant permission (simulated)
+      const granted = true;
+
+      if (granted) {
+        haptics.success();
         showSuccessToast(
           'Notifications Enabled',
-          "You'll receive alerts for spending limits and goals",
+          "You'll now receive important updates about your finances.",
         );
 
-        // Store permission status in auth store
-        // TODO: Update authStore with notification permission
+        // Update user preference
+        // await authService.setNotificationPermission(true);
+
+        // Navigate to next screen after a short delay
         setTimeout(() => {
           navigation.navigate('SMSPermission');
         }, 1500);
-      } else if (result === 'denied') {
+      } else {
+        haptics.error();
         showErrorToast(
           'Permission Denied',
-          'You can enable notifications later in settings',
+          'You can enable notifications later in settings.',
         );
-        navigation.navigate('SMSPermission');
-      } else {
-        // Blocked or other
+        // Still continue to next screen
         navigation.navigate('SMSPermission');
       }
     } catch (error) {
       console.error('Notification permission error:', error);
-      showErrorToast('Error', 'Failed to request notification permission');
-      navigation.navigate('SMSPermission');
+      showErrorToast(
+        'Error',
+        'Failed to request notification permission. Please try again.',
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSkip = () => {
-    navigation.navigate('SMSPermission');
+    Alert.alert(
+      'Skip Notifications',
+      "You can enable notifications later in settings. You'll miss important updates about your finances.",
+      [
+        { text: 'Go Back', style: 'cancel' },
+        {
+          text: 'Skip',
+          style: 'destructive',
+          onPress: () => {
+            showErrorToast(
+              'Notifications Disabled',
+              'You can enable them later in settings.',
+            );
+            navigation.navigate('SMSPermission');
+          },
+        },
+      ],
+    );
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <Text style={styles.icon}>🔔</Text>
-          </View>
-          <Text style={styles.title}>Stay Updated</Text>
-          <Text style={styles.description}>
-            Get alerts for spending limits, goals, and important updates
-          </Text>
+    <ScrollView className='flex-1 bg-background flex-grow p-4'>
+      {/* Header Section */}
+      <View className='items-center mb-12 px-4'>
+        <Text className='text-4xl font-bold text-text text-center mb-4'>
+          Stay Informed 📱
+        </Text>
+        <Text className='text-lg text-text-secondary text-center leading-6'>
+          Get notified about important updates to your finances
+        </Text>
+      </View>
+
+      {/* Illustration Section */}
+      <View className='items-center mb-12'>
+        <View className='w-32 h-32 bg-info/10 rounded-full items-center justify-center mb-6'>
+          <Text className='text-6xl'>🔔</Text>
         </View>
+        <Text className='text-base text-text-secondary text-center'>
+          We'll send you helpful reminders and updates
+        </Text>
+      </View>
 
-        {/* Buttons */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleEnableNotifications}
-            disabled={isLoading}
-          >
-            <LinearGradient
-              colors={[theme.colors.primary, theme.colors.primaryDark]}
-              style={styles.buttonGradient}
-            >
-              <Text style={styles.primaryButtonText}>
-                {isLoading ? 'Requesting...' : 'Enable Notifications'}
+      {/* Benefits Section */}
+      <View className='mb-12 px-4'>
+        <Text className='text-lg font-semibold text-text mb-4'>
+          What you'll receive:
+        </Text>
+        <View className='space-y-4'>
+          <View className='flex-row items-start'>
+            <Text className='text-info text-xl mr-3'>🔔</Text>
+            <View className='flex-1'>
+              <Text className='text-base font-medium text-text'>
+                Bill Payment Reminders
               </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <Text className='text-sm text-text-secondary'>
+                Never miss a payment deadline
+              </Text>
+            </View>
+          </View>
 
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={handleSkip}
-            disabled={isLoading}
-          >
-            <Text style={styles.skipButtonText}>Skip for now</Text>
-          </TouchableOpacity>
+          <View className='flex-row items-start'>
+            <Text className='text-info text-xl mr-3'>💰</Text>
+            <View className='flex-1'>
+              <Text className='text-base font-medium text-text'>
+                Spending Alerts
+              </Text>
+              <Text className='text-sm text-text-secondary'>
+                Know when you're approaching budget limits
+              </Text>
+            </View>
+          </View>
+
+          <View className='flex-row items-start'>
+            <Text className='text-info text-xl mr-3'>📊</Text>
+            <View className='flex-1'>
+              <Text className='text-base font-medium text-text'>
+                Financial Insights
+              </Text>
+              <Text className='text-sm text-text-secondary'>
+                Weekly reports on your financial health
+              </Text>
+            </View>
+          </View>
+
+          <View className='flex-row items-start'>
+            <Text className='text-info text-xl mr-3'>🔒</Text>
+            <View className='flex-1'>
+              <Text className='text-base font-medium text-text'>
+                Security Alerts
+              </Text>
+              <Text className='text-sm text-text-secondary'>
+                Immediate notifications for account activity
+              </Text>
+            </View>
+          </View>
         </View>
       </View>
-    </View>
+
+      {/* Privacy Section */}
+      <View className='mb-12 px-4'>
+        <View className='bg-surface rounded-md p-4 border border-border'>
+          <Text className='text-base font-medium text-text mb-2'>
+            🔒 Your Privacy Matters
+          </Text>
+          <Text className='text-sm text-text-secondary leading-5'>
+            We only send essential notifications. You can customize or disable
+            them anytime in settings. We never share your data with third
+            parties.
+          </Text>
+        </View>
+      </View>
+
+      {/* Action Buttons */}
+      <View className='px-4 space-y-4'>
+        <TouchableOpacity
+          className={`rounded-md py-4 px-6 items-center ${
+            isLoading ? 'bg-disabled' : 'bg-primary'
+          }`}
+          onPress={handleAllowNotifications}
+          disabled={isLoading}
+        >
+          <Text
+            className={`text-base font-semibold ${
+              isLoading ? 'text-text-secondary' : 'text-white'
+            }`}
+          >
+            {isLoading ? 'Requesting...' : 'Allow Notifications'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className='py-3 px-6 items-center'
+          onPress={handleSkip}
+          disabled={isLoading}
+        >
+          <Text className='text-base font-medium text-text-secondary'>
+            Skip for now
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  content: {
-    flex: 1,
-    padding: theme.spacing.xl,
-    justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.xxl,
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: theme.colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing.xl,
-  },
-  icon: {
-    fontSize: 40,
-  },
-  title: {
-    ...theme.typography.h2,
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  description: {
-    ...theme.typography.bodyLarge,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: theme.spacing.lg,
-  },
-  buttonContainer: {
-    gap: theme.spacing.md,
-  },
-  primaryButton: {
-    borderRadius: theme.borderRadius.lg,
-    overflow: 'hidden',
-    elevation: 4,
-    shadowColor: theme.colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  buttonGradient: {
-    paddingVertical: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.white,
-    fontWeight: theme.typography.weights.semibold,
-  },
-  skipButton: {
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xl,
-    alignItems: 'center',
-  },
-  skipButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.textSecondary,
-    fontWeight: theme.typography.weights.medium,
-  },
-});
 
 export default NotificationPermissionScreen;

@@ -1,19 +1,12 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * Biometric Prompt Component
  * Handles biometric authentication on app launch for users with biometric enabled
  */
 
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Modal,
-  Dimensions,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Modal, Dimensions } from 'react-native';
 import ReactNativeBiometrics from 'react-native-biometrics';
-import { theme } from '../constants/theme';
 import { showErrorToast } from '../utils/toast';
 
 interface BiometricPromptProps {
@@ -73,36 +66,47 @@ export const BiometricPrompt: React.FC<BiometricPromptProps> = ({
     <Modal
       visible={isVisible}
       transparent
-      animationType="fade"
+      animationType='fade'
       onRequestClose={onCancel}
     >
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <Text style={styles.icon}>🔐</Text>
-          <Text style={styles.title}>Unlock FinMatter</Text>
-          <Text style={styles.subtitle}>
+      <View className='flex-1 bg-black/80 justify-center items-center'>
+        <View
+          className='bg-background rounded-2xl p-8 items-center shadow-lg max-w-sm'
+          style={{ width: screenWidth * 0.8 }}
+        >
+          <Text className='text-5xl mb-6'>🔐</Text>
+          <Text className='text-2xl font-bold text-text text-center mb-2'>
+            Unlock FinMatter
+          </Text>
+          <Text className='text-base text-text-secondary text-center mb-8'>
             Use your biometric to continue securely
           </Text>
 
           {isLoading && (
-            <Text style={styles.loadingText}>Authenticating...</Text>
+            <Text className='text-base text-primary text-center mb-6 italic'>
+              Authenticating...
+            </Text>
           )}
 
-          <View style={styles.buttonContainer}>
+          <View className='w-full gap-4'>
             <TouchableOpacity
-              style={styles.fallbackButton}
+              className='bg-primary rounded-md py-4 px-6 items-center'
               onPress={onFallback}
               disabled={isLoading}
             >
-              <Text style={styles.fallbackButtonText}>Use Password</Text>
+              <Text className='text-white text-base font-semibold'>
+                Use Password
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.cancelButton}
+              className='py-3 px-6 items-center'
               onPress={onCancel}
               disabled={isLoading}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text className='text-text-secondary text-base font-medium'>
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -110,76 +114,5 @@ export const BiometricPrompt: React.FC<BiometricPromptProps> = ({
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  container: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.xl,
-    width: screenWidth * 0.8,
-    maxWidth: 400,
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: theme.colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  icon: {
-    fontSize: 48,
-    marginBottom: theme.spacing.lg,
-  },
-  title: {
-    ...theme.typography.h3,
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: theme.spacing.sm,
-  },
-  subtitle: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: theme.spacing.xl,
-  },
-  loadingText: {
-    ...theme.typography.body,
-    color: theme.colors.primary,
-    textAlign: 'center',
-    marginBottom: theme.spacing.lg,
-    fontStyle: 'italic',
-  },
-  buttonContainer: {
-    gap: theme.spacing.md,
-    width: '100%',
-  },
-  fallbackButton: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    alignItems: 'center',
-  },
-  fallbackButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.white,
-    fontWeight: theme.typography.weights.semibold,
-  },
-  cancelButton: {
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    fontWeight: theme.typography.weights.medium,
-  },
-});
 
 export default BiometricPrompt;

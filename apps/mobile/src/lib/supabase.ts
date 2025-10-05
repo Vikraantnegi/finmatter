@@ -26,7 +26,8 @@ const customStorage = {
 };
 
 // Environment variables for Supabase configuration
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
+const supabaseUrl =
+  process.env.EXPO_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl) {
@@ -57,13 +58,16 @@ export type { User, Session } from '@supabase/supabase-js';
  * Helper function to get current session
  */
 export const getCurrentSession = async () => {
-  const { data: { session }, error } = await supabase.auth.getSession();
-  
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+
   if (error) {
     console.error('Error getting session:', error);
     return null;
   }
-  
+
   return session;
 };
 
@@ -72,12 +76,12 @@ export const getCurrentSession = async () => {
  */
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut();
-  
+
   if (error) {
     console.error('Error signing out:', error);
     throw error;
   }
-  
+
   // Clear any additional app-specific storage
   storage.clearAll();
 };
@@ -94,12 +98,15 @@ export const isAuthenticated = async (): Promise<boolean> => {
  * Helper function to get current user
  */
 export const getCurrentUser = async () => {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
   if (error) {
     console.error('Error getting user:', error);
     return null;
   }
-  
+
   return user;
 };

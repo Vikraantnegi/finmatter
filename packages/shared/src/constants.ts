@@ -54,19 +54,10 @@ export const CARD_NETWORKS = [
 ] as const;
 
 // Card types
-export const CARD_TYPES = [
-  'credit',
-  'debit',
-  'prepaid',
-] as const;
+export const CARD_TYPES = ['credit', 'debit', 'prepaid'] as const;
 
 // Reward types
-export const REWARD_TYPES = [
-  'cashback',
-  'points',
-  'miles',
-  'none',
-] as const;
+export const REWARD_TYPES = ['cashback', 'points', 'miles', 'none'] as const;
 
 // Indian banks
 export const INDIAN_BANKS = [
@@ -101,7 +92,12 @@ export const POPULAR_CARDS = [
     rewardType: 'cashback',
     annualFee: 0,
     benefits: [
-      { category: 'shopping', rewardRate: 5, rewardType: 'cashback', conditions: ['amazon'] },
+      {
+        category: 'shopping',
+        rewardRate: 5,
+        rewardType: 'cashback',
+        conditions: ['amazon'],
+      },
       { category: 'others', rewardRate: 2, rewardType: 'cashback' },
     ],
   },
@@ -122,7 +118,12 @@ export const POPULAR_CARDS = [
     rewardType: 'points',
     annualFee: 10000,
     benefits: [
-      { category: 'travel', rewardRate: 25, rewardType: 'points', conditions: ['min_200'] },
+      {
+        category: 'travel',
+        rewardRate: 25,
+        rewardType: 'points',
+        conditions: ['min_200'],
+      },
       { category: 'others', rewardRate: 12, rewardType: 'points' },
     ],
   },
@@ -246,7 +247,8 @@ export const CACHE_KEYS = {
   goals: (userId: string) => `goals:${userId}`,
   recommendations: (userId: string, amount: number, category: string) =>
     `recommendations:${userId}:${amount}:${category}`,
-  aiConversation: (conversationId: string) => `ai:conversation:${conversationId}`,
+  aiConversation: (conversationId: string) =>
+    `ai:conversation:${conversationId}`,
 } as const;
 
 // Error codes

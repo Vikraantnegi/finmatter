@@ -4,12 +4,7 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [
-        "dist/**",
-        ".next/**",
-        "android/app/build/**",
-        "ios/build/**"
-      ]
+      "outputs": ["dist/**", ".next/**", "android/app/build/**", "ios/build/**"]
     },
     "dev": {
       "cache": false,

@@ -3,7 +3,7 @@
  * Phone-based authentication system
  */
 
-import type { ApiResponse, ApiError } from './common';
+import type { ApiResponse } from './common';
 
 // Phone Authentication Types
 export type PhoneAuthRequest = {
@@ -144,7 +144,12 @@ export type RateLimitResponse = {
 
 // Error Types
 export type AuthError = {
-  code: 'INVALID_OTP' | 'OTP_EXPIRED' | 'PHONE_NOT_FOUND' | 'RATE_LIMIT_EXCEEDED' | 'INVALID_TOKEN';
+  code:
+    | 'INVALID_OTP'
+    | 'OTP_EXPIRED'
+    | 'PHONE_NOT_FOUND'
+    | 'RATE_LIMIT_EXCEEDED'
+    | 'INVALID_TOKEN';
   message: string;
   details?: Record<string, any>;
 };

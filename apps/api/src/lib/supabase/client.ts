@@ -6,7 +6,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Environment variables for Supabase configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 if (!supabaseUrl) {
@@ -35,7 +36,7 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
  */
 export const supabase = createClient(
   supabaseUrl,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
 );
 
 // Type exports for use in API routes

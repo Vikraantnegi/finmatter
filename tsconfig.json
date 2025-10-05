@@ -33,10 +33,7 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true
   },
-  "include": [
-    "apps/**/*",
-    "packages/**/*"
-  ],
+  "include": ["apps/**/*", "packages/**/*"],
   "exclude": [
     "node_modules",
     "**/node_modules",

@@ -16,7 +16,7 @@ export class FinMatterError extends Error {
     message: string,
     code: string = ERROR_CODES.INTERNAL_SERVER_ERROR,
     statusCode: number = 500,
-    details?: Record<string, any>
+    details?: Record<string, any>,
   ) {
     super(message);
     this.name = 'FinMatterError';
@@ -103,7 +103,7 @@ export class RateLimitError extends FinMatterError {
 export class PDFParsingError extends FinMatterError {
   constructor(
     message: string = 'Failed to parse PDF statement',
-    details?: Record<string, any>
+    details?: Record<string, any>,
   ) {
     super(message, ERROR_CODES.PDF_PARSING_ERROR, 422, details);
     this.name = 'PDFParsingError';
@@ -116,7 +116,7 @@ export class PDFParsingError extends FinMatterError {
 export class AIServiceError extends FinMatterError {
   constructor(
     message: string = 'AI service unavailable',
-    details?: Record<string, any>
+    details?: Record<string, any>,
   ) {
     super(message, ERROR_CODES.AI_SERVICE_ERROR, 503, details);
     this.name = 'AIServiceError';
@@ -132,7 +132,7 @@ export class ExternalAPIError extends FinMatterError {
   constructor(
     service: string,
     message: string = 'External service error',
-    details?: Record<string, any>
+    details?: Record<string, any>,
   ) {
     super(message, ERROR_CODES.EXTERNAL_API_ERROR, 502, details);
     this.name = 'ExternalAPIError';
@@ -149,7 +149,7 @@ export class DatabaseError extends FinMatterError {
   constructor(
     operation: string,
     message: string = 'Database operation failed',
-    details?: Record<string, any>
+    details?: Record<string, any>,
   ) {
     super(message, 'DATABASE_ERROR', 500, details);
     this.name = 'DatabaseError';
@@ -168,7 +168,7 @@ export class FileUploadError extends FinMatterError {
     fileName: string,
     fileSize: number,
     message: string = 'File upload failed',
-    details?: Record<string, any>
+    details?: Record<string, any>,
   ) {
     super(message, 'FILE_UPLOAD_ERROR', 400, details);
     this.name = 'FileUploadError';
@@ -186,7 +186,7 @@ export class NetworkError extends FinMatterError {
   constructor(
     url: string,
     message: string = 'Network request failed',
-    details?: Record<string, any>
+    details?: Record<string, any>,
   ) {
     super(message, 'NETWORK_ERROR', 0, details);
     this.name = 'NetworkError';
@@ -203,7 +203,7 @@ export class TimeoutError extends FinMatterError {
   constructor(
     timeout: number,
     message: string = 'Request timeout',
-    details?: Record<string, any>
+    details?: Record<string, any>,
   ) {
     super(message, 'TIMEOUT_ERROR', 408, details);
     this.name = 'TimeoutError';
@@ -229,7 +229,7 @@ export const isValidationError = (error: any): error is ValidationError => {
  * Check if error is an authentication error
  */
 export const isAuthenticationError = (
-  error: any
+  error: any,
 ): error is AuthenticationError => {
   return error instanceof AuthenticationError;
 };
@@ -238,7 +238,7 @@ export const isAuthenticationError = (
  * Check if error is an authorization error
  */
 export const isAuthorizationError = (
-  error: any
+  error: any,
 ): error is AuthorizationError => {
   return error instanceof AuthorizationError;
 };
@@ -266,7 +266,7 @@ export const toFinMatterError = (error: any): FinMatterError => {
       {
         originalError: error.name,
         stack: error.stack,
-      }
+      },
     );
   }
 
@@ -281,7 +281,7 @@ export const toFinMatterError = (error: any): FinMatterError => {
  * Create error response object
  */
 export const createErrorResponse = (
-  error: any
+  error: any,
 ): {
   success: false;
   error: {
@@ -308,7 +308,7 @@ export const createErrorResponse = (
  * Handle async errors
  */
 export const handleAsyncError = <T extends any[], R>(
-  fn: (...args: T) => Promise<R>
+  fn: (...args: T) => Promise<R>,
 ) => {
   return async (...args: T): Promise<R> => {
     try {
@@ -343,7 +343,7 @@ export const retryWithBackoff = async <T>(
     maxDelay?: number;
     backoffFactor?: number;
     retryCondition?: (error: any) => boolean;
-  } = {}
+  } = {},
 ): Promise<T> => {
   const {
     maxAttempts = 3,
@@ -367,7 +367,7 @@ export const retryWithBackoff = async <T>(
 
       const delay = Math.min(
         baseDelay * Math.pow(backoffFactor, attempt - 1),
-        maxDelay
+        maxDelay,
       );
 
       await new Promise(resolve => setTimeout(resolve, delay));
@@ -441,7 +441,7 @@ export const logError = (
     userId?: string;
     requestId?: string;
     metadata?: Record<string, any>;
-  } = {}
+  } = {},
 ): void => {
   const finMatterError = toFinMatterError(error);
 

@@ -1,13 +1,22 @@
-import type { AuditFields, Currency, ID } from './common';
+import type { AuditFields, Currency } from './common';
 import type { TransactionCategory } from './card';
 
 /**
  * Transaction related types for FinMatter
  */
 
-export type TransactionType = 'debit' | 'credit' | 'refund' | 'fee' | 'interest';
+export type TransactionType =
+  | 'debit'
+  | 'credit'
+  | 'refund'
+  | 'fee'
+  | 'interest';
 
-export type TransactionStatus = 'completed' | 'pending' | 'failed' | 'cancelled';
+export type TransactionStatus =
+  | 'completed'
+  | 'pending'
+  | 'failed'
+  | 'cancelled';
 
 export type Transaction = AuditFields & {
   id: string;
@@ -177,7 +186,11 @@ export type TransactionExport = {
 
 export type TransactionInsight = {
   id: string;
-  type: 'spending_pattern' | 'unusual_transaction' | 'savings_opportunity' | 'goal_progress';
+  type:
+    | 'spending_pattern'
+    | 'unusual_transaction'
+    | 'savings_opportunity'
+    | 'goal_progress';
   title: string;
   description: string;
   actionItems?: string[];

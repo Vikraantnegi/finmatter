@@ -4,13 +4,13 @@
  */
 
 import { apiClient } from '@finmatter/shared';
-import type { 
-  SendOTPRequest, 
-  SendOTPResponse, 
-  VerifyOTPRequest, 
+import type {
+  SendOTPRequest,
+  SendOTPResponse,
+  VerifyOTPRequest,
   VerifyOTPResponse,
   AuthUserProfile,
-  AuthUserSession 
+  AuthUserSession,
 } from '@finmatter/types';
 import { storage } from '../lib/storage';
 
@@ -29,11 +29,17 @@ class AuthService {
   /**
    * Verifies OTP and creates user session
    */
-  async verifyOTP(phoneNumber: string, otp: string): Promise<VerifyOTPResponse> {
-    const response = await apiClient.post<VerifyOTPResponse>('/auth/verify-otp', {
-      phoneNumber,
-      otp,
-    } as VerifyOTPRequest);
+  async verifyOTP(
+    phoneNumber: string,
+    otp: string,
+  ): Promise<VerifyOTPResponse> {
+    const response = await apiClient.post<VerifyOTPResponse>(
+      '/auth/verify-otp',
+      {
+        phoneNumber,
+        otp,
+      } as VerifyOTPRequest,
+    );
 
     return response.data || response;
   }
@@ -41,7 +47,10 @@ class AuthService {
   /**
    * Stores user session securely on device
    */
-  async storeUserSession(data: { user: AuthUserProfile; session: AuthUserSession }): Promise<void> {
+  async storeUserSession(data: {
+    user: AuthUserProfile;
+    session: AuthUserSession;
+  }): Promise<void> {
     try {
       await storage.set('user_session', data);
       await storage.set('access_token', data.session.token);
@@ -56,9 +65,15 @@ class AuthService {
   /**
    * Retrieves stored user session
    */
-  async getUserSession(): Promise<{ user: AuthUserProfile; session: AuthUserSession } | null> {
+  async getUserSession(): Promise<{
+    user: AuthUserProfile;
+    session: AuthUserSession;
+  } | null> {
     try {
-      const userSession = await storage.get<{ user: AuthUserProfile; session: AuthUserSession }>('user_session');
+      const userSession = await storage.get<{
+        user: AuthUserProfile;
+        session: AuthUserSession;
+      }>('user_session');
       return userSession || null;
     } catch (error) {
       console.error('Failed to retrieve user session:', error);
@@ -69,7 +84,10 @@ class AuthService {
   /**
    * Updates user's biometric preference
    */
-  async updateBiometricPreference(userId: string, enabled: boolean): Promise<{ success: boolean; error?: string }> {
+  async updateBiometricPreference(
+    userId: string,
+    enabled: boolean,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       // Get current session
       const session = await this.getUserSession();
@@ -119,7 +137,7 @@ class AuthService {
     try {
       const session = await this.getUserSession();
       return !!session;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -130,7 +148,7 @@ class AuthService {
   async getAccessToken(): Promise<string | null> {
     try {
       return await storage.get<string>('access_token');
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -141,7 +159,7 @@ class AuthService {
   async getRefreshToken(): Promise<string | null> {
     try {
       return await storage.get<string>('refresh_token');
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -152,7 +170,7 @@ class AuthService {
   async getUserProfile(): Promise<AuthUserProfile | null> {
     try {
       return await storage.get<AuthUserProfile>('user_profile');
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -174,7 +192,7 @@ class AuthService {
 
       // Update user profile via API
       const response = await apiClient.put('/users/profile', data);
-      
+
       // Check if response indicates success (assuming response.data contains the result)
       if (response.data || response.status === 200) {
         // Update local storage

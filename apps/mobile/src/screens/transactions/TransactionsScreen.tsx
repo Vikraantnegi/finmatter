@@ -4,17 +4,19 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
-
-import { theme } from '../../constants/theme';
+import { View, Text, SafeAreaView } from 'react-native';
 
 const TransactionsScreen: React.FC = () => {
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Transactions</Text>
-        <Text style={styles.subtitle}>Coming Soon</Text>
-        <Text style={styles.description}>
+    <SafeAreaView className='flex-1 bg-background'>
+      <View className='flex-1 justify-center items-center p-8'>
+        <Text className='text-4xl font-bold text-text mb-4 text-center'>
+          Transactions
+        </Text>
+        <Text className='text-2xl font-semibold text-primary mb-6 text-center'>
+          Coming Soon
+        </Text>
+        <Text className='text-base text-text-secondary text-center leading-6'>
           Transaction history and categorization features will be available
           soon.
         </Text>
@@ -22,36 +24,5 @@ const TransactionsScreen: React.FC = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: theme.spacing.xl,
-  },
-  title: {
-    ...theme.typography.h1,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.md,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...theme.typography.h3,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.lg,
-    textAlign: 'center',
-  },
-  description: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-});
 
 export default TransactionsScreen;

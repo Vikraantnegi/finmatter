@@ -2,7 +2,7 @@
  * Utility functions for FinMatter
  */
 
-import { isString, isNumber, isObject, isArray, isEmpty } from 'lodash';
+import { isObject } from 'lodash';
 
 /**
  * Check if a value is null or undefined
@@ -23,7 +23,7 @@ export const isBlank = (value: string | null | undefined): boolean => {
  */
 export const safeJsonParse = <T = any>(
   jsonString: string,
-  defaultValue: T | null = null
+  defaultValue: T | null = null,
 ): T | null => {
   try {
     return JSON.parse(jsonString);
@@ -37,7 +37,7 @@ export const safeJsonParse = <T = any>(
  */
 export const safeJsonStringify = (
   obj: any,
-  defaultValue: string = '{}'
+  defaultValue: string = '{}',
 ): string => {
   try {
     return JSON.stringify(obj);
@@ -59,7 +59,7 @@ export const deepClone = <T>(obj: T): T => {
 export const getNestedProperty = (
   obj: any,
   path: string,
-  defaultValue: any = undefined
+  defaultValue: any = undefined,
 ): any => {
   const keys = path.split('.');
   let result = obj;
@@ -77,11 +77,7 @@ export const getNestedProperty = (
 /**
  * Set nested property safely
  */
-export const setNestedProperty = (
-  obj: any,
-  path: string,
-  value: any
-): void => {
+export const setNestedProperty = (obj: any, path: string, value: any): void => {
   const keys = path.split('.');
   let current = obj;
 
@@ -104,15 +100,17 @@ export const setNestedProperty = (
 /**
  * Remove undefined properties from object
  */
-export const removeUndefined = <T extends Record<string, any>>(obj: T): Partial<T> => {
+export const removeUndefined = <T extends Record<string, any>>(
+  obj: T,
+): Partial<T> => {
   const result: Partial<T> = {};
-  
+
   for (const [key, value] of Object.entries(obj)) {
     if (value !== undefined) {
       result[key as keyof T] = value;
     }
   }
-  
+
   return result;
 };
 
@@ -120,13 +118,14 @@ export const removeUndefined = <T extends Record<string, any>>(obj: T): Partial<
  * Generate a random string of specified length
  */
 export const generateRandomString = (length: number = 8): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const chars =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
-  
+
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  
+
   return result;
 };
 
@@ -134,7 +133,7 @@ export const generateRandomString = (length: number = 8): string => {
  * Generate a random UUID v4
  */
 export const generateUUID = (): string => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
     const r = (Math.random() * 16) | 0;
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
@@ -146,10 +145,10 @@ export const generateUUID = (): string => {
  */
 export const debounce = <T extends (...args: any[]) => any>(
   func: T,
-  wait: number
+  wait: number,
 ): ((...args: Parameters<T>) => void) => {
-  let timeout: NodeJS.Timeout;
-  
+  let timeout: any;
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
@@ -161,10 +160,10 @@ export const debounce = <T extends (...args: any[]) => any>(
  */
 export const throttle = <T extends (...args: any[]) => any>(
   func: T,
-  limit: number
+  limit: number,
 ): ((...args: Parameters<T>) => void) => {
   let inThrottle: boolean;
-  
+
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
       func(...args);
@@ -184,7 +183,7 @@ export const retry = async <T>(
     baseDelay?: number;
     maxDelay?: number;
     backoffFactor?: number;
-  } = {}
+  } = {},
 ): Promise<T> => {
   const {
     maxAttempts = 3,
@@ -194,26 +193,26 @@ export const retry = async <T>(
   } = options;
 
   let lastError: Error;
-  
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error as Error;
-      
+
       if (attempt === maxAttempts) {
         throw lastError;
       }
-      
+
       const delay = Math.min(
         baseDelay * Math.pow(backoffFactor, attempt - 1),
-        maxDelay
+        maxDelay,
       );
-      
+
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-  
+
   throw lastError!;
 };
 
@@ -235,22 +234,28 @@ export const isBrowser = (): boolean => {
  * Check if running in Node.js
  */
 export const isNode = (): boolean => {
-  return typeof process !== 'undefined' && process.versions && !!process.versions.node;
+  return (
+    typeof process !== 'undefined' &&
+    process.versions &&
+    !!process.versions.node
+  );
 };
 
 /**
  * Get device type from user agent
  */
-export const getDeviceType = (userAgent?: string): 'mobile' | 'tablet' | 'desktop' => {
+export const getDeviceType = (
+  userAgent?: string,
+): 'mobile' | 'tablet' | 'desktop' => {
   const ua = userAgent || (isBrowser() ? navigator.userAgent : '');
-  
+
   if (/Mobile|Android|iPhone|iPad/.test(ua)) {
     if (/iPad/.test(ua)) {
       return 'tablet';
     }
     return 'mobile';
   }
-  
+
   return 'desktop';
 };
 
@@ -307,12 +312,15 @@ export const isValidPhoneNumber = (phone: string): boolean => {
 /**
  * Mask sensitive data
  */
-export const maskSensitiveData = (data: string, visibleChars: number = 4): string => {
+export const maskSensitiveData = (
+  data: string,
+  visibleChars: number = 4,
+): string => {
   if (!data || data.length <= visibleChars) return data;
-  
+
   const masked = '*'.repeat(data.length - visibleChars);
   const visible = data.slice(-visibleChars);
-  
+
   return masked + visible;
 };
 
@@ -321,12 +329,12 @@ export const maskSensitiveData = (data: string, visibleChars: number = 4): strin
  */
 export const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
-  
+
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
 
 /**
@@ -334,11 +342,11 @@ export const formatFileSize = (bytes: number): string => {
  */
 export const arraysEqual = <T>(a: T[], b: T[]): boolean => {
   if (a.length !== b.length) return false;
-  
+
   for (let i = 0; i < a.length; i++) {
     if (a[i] !== b[i]) return false;
   }
-  
+
   return true;
 };
 
@@ -354,16 +362,19 @@ export const removeDuplicates = <T>(array: T[]): T[] => {
  */
 export const groupBy = <T, K extends keyof T>(
   array: T[],
-  key: K
+  key: K,
 ): Record<string, T[]> => {
-  return array.reduce((groups, item) => {
-    const groupKey = String(item[key]);
-    if (!groups[groupKey]) {
-      groups[groupKey] = [];
-    }
-    (groups[groupKey] as T[]).push(item);
-    return groups;
-  }, {} as Record<string, T[]>);
+  return array.reduce(
+    (groups, item) => {
+      const groupKey = String(item[key]);
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+      (groups[groupKey] as T[]).push(item);
+      return groups;
+    },
+    {} as Record<string, T[]>,
+  );
 };
 
 /**
@@ -372,12 +383,12 @@ export const groupBy = <T, K extends keyof T>(
 export const sortBy = <T>(
   array: T[],
   key: keyof T,
-  direction: 'asc' | 'desc' = 'asc'
+  direction: 'asc' | 'desc' = 'asc',
 ): T[] => {
   return [...array].sort((a, b) => {
     const aVal = a[key];
     const bVal = b[key];
-    
+
     if (aVal < bVal) return direction === 'asc' ? -1 : 1;
     if (aVal > bVal) return direction === 'asc' ? 1 : -1;
     return 0;
@@ -389,11 +400,11 @@ export const sortBy = <T>(
  */
 export const chunk = <T>(array: T[], size: number): T[][] => {
   const chunks: T[][] = [];
-  
+
   for (let i = 0; i < array.length; i += size) {
     chunks.push(array.slice(i, i + size));
   }
-  
+
   return chunks;
 };
 
@@ -402,16 +413,16 @@ export const chunk = <T>(array: T[], size: number): T[][] => {
  */
 export const pick = <T extends Record<string, any>, K extends keyof T>(
   obj: T,
-  keys: K[]
+  keys: K[],
 ): Pick<T, K> => {
   const result = {} as Pick<T, K>;
-  
+
   for (const key of keys) {
     if (key in obj) {
       result[key] = obj[key];
     }
   }
-  
+
   return result;
 };
 
@@ -420,13 +431,13 @@ export const pick = <T extends Record<string, any>, K extends keyof T>(
  */
 export const omit = <T extends Record<string, any>, K extends keyof T>(
   obj: T,
-  keys: K[]
+  keys: K[],
 ): Omit<T, K> => {
   const result = { ...obj };
-  
+
   for (const key of keys) {
     delete result[key];
   }
-  
+
   return result;
 };

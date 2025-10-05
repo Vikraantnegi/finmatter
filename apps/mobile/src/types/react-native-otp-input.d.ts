@@ -3,6 +3,7 @@
  */
 
 declare module 'react-native-otp-input' {
+  import * as React from 'react';
   import { StyleProp, ViewStyle } from 'react-native';
 
   interface OTPInputViewProps {
@@ -17,7 +18,13 @@ declare module 'react-native-otp-input' {
     codeInputHighlightStyle?: StyleProp<ViewStyle>;
     onCodeFilled?: (code: string) => void;
     editable?: boolean;
-    keyboardType?: 'default' | 'number-pad' | 'decimal-pad' | 'numeric' | 'email-address' | 'phone-pad';
+    keyboardType?:
+      | 'default'
+      | 'number-pad'
+      | 'decimal-pad'
+      | 'numeric'
+      | 'email-address'
+      | 'phone-pad';
     clearInputs?: boolean;
     placeholderCharacter?: string;
     placeholderTextColor?: string;

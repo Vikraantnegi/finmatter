@@ -30,20 +30,20 @@ const Stack = createStackNavigator<RootStackParamList>();
 const AuthNavigator: React.FC = () => {
   return (
     <Stack.Navigator
-      initialRouteName="PhoneInput"
+      initialRouteName='PhoneInput'
       screenOptions={{
         headerShown: false,
         cardStyle: { backgroundColor: '#ffffff' },
         gestureEnabled: false, // Disable swipe back for auth flow
       }}
     >
-      <Stack.Screen name="PhoneInput" component={PhoneInputScreen as any} />
+      <Stack.Screen name='PhoneInput' component={PhoneInputScreen as any} />
       <Stack.Screen
-        name="OTPVerification"
+        name='OTPVerification'
         component={OTPVerificationScreen as any}
       />
       <Stack.Screen
-        name="BiometricSetup"
+        name='BiometricSetup'
         component={BiometricSetupScreen as any}
       />
     </Stack.Navigator>

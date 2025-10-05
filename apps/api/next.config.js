@@ -14,7 +14,11 @@ const nextConfig = {
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
-  transpilePackages: ['@finmatter/types', '@finmatter/shared', '@finmatter/cc-engine'],
+  transpilePackages: [
+    '@finmatter/types',
+    '@finmatter/shared',
+    '@finmatter/cc-engine',
+  ],
 };
 
 module.exports = nextConfig;

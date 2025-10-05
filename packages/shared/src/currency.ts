@@ -55,13 +55,13 @@ export const formatCurrencyAmount = (
     showCode?: boolean;
     decimals?: number;
     locale?: string;
-  } = {}
+  } = {},
 ): string => {
   const {
     showSymbol = true,
     showCode = false,
     decimals,
-    locale = 'en-IN'
+    locale = 'en-IN',
   } = options;
 
   const config = getCurrencyConfig(currency);
@@ -94,14 +94,14 @@ export const formatCurrencyAmount = (
  */
 export const parseCurrencyAmount = (
   amountString: string,
-  currency: CurrencyCode = 'INR'
+  currency: CurrencyCode = 'INR',
 ): number => {
   if (!amountString || typeof amountString !== 'string') {
     return 0;
   }
 
   const config = getCurrencyConfig(currency);
-  
+
   // Remove currency symbol and code
   let cleaned = amountString
     .replace(config.symbol, '')
@@ -109,8 +109,11 @@ export const parseCurrencyAmount = (
     .trim();
 
   // Replace thousands separator
-  cleaned = cleaned.replace(new RegExp(`\\${config.thousandsSeparator}`, 'g'), '');
-  
+  cleaned = cleaned.replace(
+    new RegExp(`\\${config.thousandsSeparator}`, 'g'),
+    '',
+  );
+
   // Replace decimal separator with dot
   cleaned = cleaned.replace(config.decimalSeparator, '.');
 
@@ -125,7 +128,7 @@ export const convertCurrency = (
   amount: number,
   fromCurrency: CurrencyCode,
   toCurrency: CurrencyCode,
-  exchangeRate: number
+  exchangeRate: number,
 ): number => {
   if (fromCurrency === toCurrency) {
     return amount;
@@ -137,8 +140,16 @@ export const convertCurrency = (
 /**
  * Calculate percentage of amount
  */
-export const calculatePercentage = (amount: number, percentage: number): number => {
-  if (typeof amount !== 'number' || typeof percentage !== 'number' || isNaN(amount) || isNaN(percentage)) {
+export const calculatePercentage = (
+  amount: number,
+  percentage: number,
+): number => {
+  if (
+    typeof amount !== 'number' ||
+    typeof percentage !== 'number' ||
+    isNaN(amount) ||
+    isNaN(percentage)
+  ) {
     return 0;
   }
 
@@ -148,8 +159,16 @@ export const calculatePercentage = (amount: number, percentage: number): number 
 /**
  * Calculate percentage change
  */
-export const calculatePercentageChange = (oldAmount: number, newAmount: number): number => {
-  if (typeof oldAmount !== 'number' || typeof newAmount !== 'number' || isNaN(oldAmount) || isNaN(newAmount)) {
+export const calculatePercentageChange = (
+  oldAmount: number,
+  newAmount: number,
+): number => {
+  if (
+    typeof oldAmount !== 'number' ||
+    typeof newAmount !== 'number' ||
+    isNaN(oldAmount) ||
+    isNaN(newAmount)
+  ) {
     return 0;
   }
 
@@ -167,13 +186,21 @@ export const calculateCompoundInterest = (
   principal: number,
   rate: number,
   time: number,
-  frequency: number = 1
+  frequency: number = 1,
 ): number => {
-  if (typeof principal !== 'number' || typeof rate !== 'number' || typeof time !== 'number' || isNaN(principal) || isNaN(rate) || isNaN(time)) {
+  if (
+    typeof principal !== 'number' ||
+    typeof rate !== 'number' ||
+    typeof time !== 'number' ||
+    isNaN(principal) ||
+    isNaN(rate) ||
+    isNaN(time)
+  ) {
     return 0;
   }
 
-  const amount = principal * Math.pow(1 + (rate / 100) / frequency, frequency * time);
+  const amount =
+    principal * Math.pow(1 + rate / 100 / frequency, frequency * time);
   return amount - principal;
 };
 
@@ -183,9 +210,16 @@ export const calculateCompoundInterest = (
 export const calculateEMI = (
   principal: number,
   rate: number,
-  tenure: number
+  tenure: number,
 ): number => {
-  if (typeof principal !== 'number' || typeof rate !== 'number' || typeof tenure !== 'number' || isNaN(principal) || isNaN(rate) || isNaN(tenure)) {
+  if (
+    typeof principal !== 'number' ||
+    typeof rate !== 'number' ||
+    typeof tenure !== 'number' ||
+    isNaN(principal) ||
+    isNaN(rate) ||
+    isNaN(tenure)
+  ) {
     return 0;
   }
 
@@ -194,8 +228,9 @@ export const calculateEMI = (
   }
 
   const monthlyRate = rate / 100 / 12;
-  const emi = (principal * monthlyRate * Math.pow(1 + monthlyRate, tenure)) / 
-              (Math.pow(1 + monthlyRate, tenure) - 1);
+  const emi =
+    (principal * monthlyRate * Math.pow(1 + monthlyRate, tenure)) /
+    (Math.pow(1 + monthlyRate, tenure) - 1);
 
   return emi;
 };
@@ -206,7 +241,7 @@ export const calculateEMI = (
 export const calculateTotalEMIAmount = (
   principal: number,
   rate: number,
-  tenure: number
+  tenure: number,
 ): { emi: number; totalAmount: number; interest: number } => {
   const emi = calculateEMI(principal, rate, tenure);
   const totalAmount = emi * tenure;
@@ -215,7 +250,7 @@ export const calculateTotalEMIAmount = (
   return {
     emi,
     totalAmount,
-    interest
+    interest,
   };
 };
 
@@ -225,26 +260,34 @@ export const calculateTotalEMIAmount = (
 export const calculateSIPReturns = (
   monthlyInvestment: number,
   rate: number,
-  tenure: number
+  tenure: number,
 ): { totalInvestment: number; returns: number; totalValue: number } => {
-  if (typeof monthlyInvestment !== 'number' || typeof rate !== 'number' || typeof tenure !== 'number' || isNaN(monthlyInvestment) || isNaN(rate) || isNaN(tenure)) {
+  if (
+    typeof monthlyInvestment !== 'number' ||
+    typeof rate !== 'number' ||
+    typeof tenure !== 'number' ||
+    isNaN(monthlyInvestment) ||
+    isNaN(rate) ||
+    isNaN(tenure)
+  ) {
     return { totalInvestment: 0, returns: 0, totalValue: 0 };
   }
 
   const monthlyRate = rate / 100 / 12;
   const totalMonths = tenure * 12;
-  
-  const totalValue = monthlyInvestment * 
-    ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate) * 
+
+  const totalValue =
+    monthlyInvestment *
+    ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate) *
     (1 + monthlyRate);
-  
+
   const totalInvestment = monthlyInvestment * totalMonths;
   const returns = totalValue - totalInvestment;
 
   return {
     totalInvestment,
     returns,
-    totalValue
+    totalValue,
   };
 };
 
@@ -255,25 +298,37 @@ export const calculateFDReturns = (
   principal: number,
   rate: number,
   tenure: number,
-  frequency: 'monthly' | 'quarterly' | 'yearly' = 'yearly'
+  frequency: 'monthly' | 'quarterly' | 'yearly' = 'yearly',
 ): { maturityAmount: number; returns: number } => {
-  if (typeof principal !== 'number' || typeof rate !== 'number' || typeof tenure !== 'number' || isNaN(principal) || isNaN(rate) || isNaN(tenure)) {
+  if (
+    typeof principal !== 'number' ||
+    typeof rate !== 'number' ||
+    typeof tenure !== 'number' ||
+    isNaN(principal) ||
+    isNaN(rate) ||
+    isNaN(tenure)
+  ) {
     return { maturityAmount: 0, returns: 0 };
   }
 
   const frequencyMap = {
     monthly: 12,
     quarterly: 4,
-    yearly: 1
+    yearly: 1,
   };
 
   const compoundingFrequency = frequencyMap[frequency];
-  const maturityAmount = principal * Math.pow(1 + (rate / 100) / compoundingFrequency, compoundingFrequency * tenure);
+  const maturityAmount =
+    principal *
+    Math.pow(
+      1 + rate / 100 / compoundingFrequency,
+      compoundingFrequency * tenure,
+    );
   const returns = maturityAmount - principal;
 
   return {
     maturityAmount,
-    returns
+    returns,
   };
 };
 
@@ -282,9 +337,14 @@ export const calculateFDReturns = (
  */
 export const calculateTaxOnReturns = (
   returns: number,
-  taxRate: number
+  taxRate: number,
 ): number => {
-  if (typeof returns !== 'number' || typeof taxRate !== 'number' || isNaN(returns) || isNaN(taxRate)) {
+  if (
+    typeof returns !== 'number' ||
+    typeof taxRate !== 'number' ||
+    isNaN(returns) ||
+    isNaN(taxRate)
+  ) {
     return 0;
   }
 
@@ -296,7 +356,7 @@ export const calculateTaxOnReturns = (
  */
 export const calculateNetReturns = (
   returns: number,
-  taxRate: number
+  taxRate: number,
 ): number => {
   const tax = calculateTaxOnReturns(returns, taxRate);
   return returns - tax;
@@ -311,7 +371,7 @@ export const formatLargeNumber = (
   options: {
     showSymbol?: boolean;
     decimals?: number;
-  } = {}
+  } = {},
 ): string => {
   const { showSymbol = true, decimals = 1 } = options;
 
@@ -321,7 +381,7 @@ export const formatLargeNumber = (
 
   const config = getCurrencyConfig(currency);
   const absAmount = Math.abs(amount);
-  
+
   let formatted: string;
   let suffix: string;
 
@@ -342,7 +402,7 @@ export const formatLargeNumber = (
   }
 
   const sign = amount < 0 ? '-' : '';
-  
+
   if (showSymbol) {
     return `${sign}${config.symbol}${formatted}${suffix}`;
   } else {
@@ -356,9 +416,14 @@ export const formatLargeNumber = (
 export const calculateRewardAmount = (
   transactionAmount: number,
   rewardRate: number,
-  rewardType: 'cashback' | 'points' | 'miles'
+  rewardType: 'cashback' | 'points' | 'miles',
 ): number => {
-  if (typeof transactionAmount !== 'number' || typeof rewardRate !== 'number' || isNaN(transactionAmount) || isNaN(rewardRate)) {
+  if (
+    typeof transactionAmount !== 'number' ||
+    typeof rewardRate !== 'number' ||
+    isNaN(transactionAmount) ||
+    isNaN(rewardRate)
+  ) {
     return 0;
   }
 
@@ -378,9 +443,15 @@ export const calculateRewardAmount = (
  */
 export const calculateEffectiveRewardRate = (
   transactionAmount: number,
-  rewardAmount: number
+  rewardAmount: number,
 ): number => {
-  if (typeof transactionAmount !== 'number' || typeof rewardAmount !== 'number' || isNaN(transactionAmount) || isNaN(rewardAmount) || transactionAmount === 0) {
+  if (
+    typeof transactionAmount !== 'number' ||
+    typeof rewardAmount !== 'number' ||
+    isNaN(transactionAmount) ||
+    isNaN(rewardAmount) ||
+    transactionAmount === 0
+  ) {
     return 0;
   }
 
@@ -390,8 +461,16 @@ export const calculateEffectiveRewardRate = (
 /**
  * Compare two amounts
  */
-export const compareAmounts = (amount1: number, amount2: number): -1 | 0 | 1 => {
-  if (typeof amount1 !== 'number' || typeof amount2 !== 'number' || isNaN(amount1) || isNaN(amount2)) {
+export const compareAmounts = (
+  amount1: number,
+  amount2: number,
+): -1 | 0 | 1 => {
+  if (
+    typeof amount1 !== 'number' ||
+    typeof amount2 !== 'number' ||
+    isNaN(amount1) ||
+    isNaN(amount2)
+  ) {
     return 0;
   }
 

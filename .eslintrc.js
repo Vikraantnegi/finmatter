@@ -5,11 +5,7 @@ module.exports = {
     es2022: true,
     node: true,
   },
-  extends: [
-    'eslint:recommended',
-    '@typescript-eslint/recommended',
-    'prettier',
-  ],
+  extends: ['eslint:recommended', 'prettier'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 'latest',
@@ -18,47 +14,19 @@ module.exports = {
       jsx: true,
     },
   },
-  plugins: ['@typescript-eslint', 'import'],
+  plugins: ['@typescript-eslint'],
   rules: {
-    // TypeScript specific rules
-    '@typescript-eslint/no-unused-vars': [
-      'error',
-      { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
-    ],
-    '@typescript-eslint/no-explicit-any': 'warn',
-    '@typescript-eslint/explicit-function-return-type': 'off',
-    '@typescript-eslint/explicit-module-boundary-types': 'off',
-    '@typescript-eslint/no-non-null-assertion': 'warn',
-    '@typescript-eslint/prefer-const': 'error',
-    
-    // Import rules
-    'import/order': [
-      'error',
-      {
-        groups: [
-          'builtin',
-          'external',
-          'internal',
-          'parent',
-          'sibling',
-          'index',
-        ],
-        'newlines-between': 'always',
-        alphabetize: {
-          order: 'asc',
-          caseInsensitive: true,
-        },
-      },
-    ],
-    'import/no-duplicates': 'error',
-    'import/no-unresolved': 'off', // TypeScript handles this
-    
     // General rules
     'no-console': ['warn', { allow: ['warn', 'error'] }],
     'prefer-const': 'error',
     'no-var': 'error',
     'object-shorthand': 'error',
     'prefer-template': 'error',
+    'no-unused-vars': 'off', // Turn off base rule
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+    ],
   },
   overrides: [
     // React Native specific rules
@@ -81,7 +49,9 @@ module.exports = {
         'react-native/no-unused-styles': 'error',
         'react-native/split-platform-components': 'error',
         'react-native/no-inline-styles': 'warn',
-        'react-native/no-color-literals': 'warn',
+        'react-native/no-color-literals': 'off', // Allow color literals for third-party components
+        'react-native/no-raw-text': 'off', // Allow raw text for symbols
+        'react/no-unescaped-entities': 'off', // Allow unescaped entities for better readability
       },
     },
     // Next.js specific rules

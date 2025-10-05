@@ -35,10 +35,10 @@ export const validateCardNumber = (cardNumber: string): boolean => {
  */
 export const validateAmount = (amount: string | number): boolean => {
   if (amount === null || amount === undefined) return false;
-  
+
   const amountStr = typeof amount === 'string' ? amount : amount.toString();
   if (!amountStr.trim()) return false;
-  
+
   const num = parseFloat(amountStr);
   return !isNaN(num) && num > 0 && VALIDATION_RULES.amount.test(amountStr);
 };
@@ -46,48 +46,59 @@ export const validateAmount = (amount: string | number): boolean => {
 /**
  * Validate password strength
  */
-export const validatePassword = (password: string): {
+export const validatePassword = (
+  password: string,
+): {
   isValid: boolean;
   errors: string[];
 } => {
   const errors: string[] = [];
-  
+
   if (!password || typeof password !== 'string') {
     return { isValid: false, errors: ['Password is required'] };
   }
-  
-  const { minLength, requireUppercase, requireLowercase, requireNumbers, requireSpecialChars } = VALIDATION_RULES.password;
-  
+
+  const {
+    minLength,
+    requireUppercase,
+    requireLowercase,
+    requireNumbers,
+    requireSpecialChars,
+  } = VALIDATION_RULES.password;
+
   if (password.length < minLength) {
     errors.push(`Password must be at least ${minLength} characters long`);
   }
-  
+
   if (requireUppercase && !/[A-Z]/.test(password)) {
     errors.push('Password must contain at least one uppercase letter');
   }
-  
+
   if (requireLowercase && !/[a-z]/.test(password)) {
     errors.push('Password must contain at least one lowercase letter');
   }
-  
+
   if (requireNumbers && !/\d/.test(password)) {
     errors.push('Password must contain at least one number');
   }
-  
+
   if (requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
     errors.push('Password must contain at least one special character');
   }
-  
+
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 };
 
 /**
  * Validate required field
  */
-export const validateRequired = (value: any, fieldName: string): string | null => {
+export const validateRequired = (
+  value: any,
+  fieldName: string,
+): string | null => {
   if (value === null || value === undefined || value === '') {
     return `${fieldName} is required`;
   }
@@ -101,20 +112,20 @@ export const validateStringLength = (
   value: string,
   minLength: number,
   maxLength: number,
-  fieldName: string
+  fieldName: string,
 ): string | null => {
   if (!value || typeof value !== 'string') {
     return `${fieldName} must be a string`;
   }
-  
+
   if (value.length < minLength) {
     return `${fieldName} must be at least ${minLength} characters long`;
   }
-  
+
   if (value.length > maxLength) {
     return `${fieldName} must not exceed ${maxLength} characters`;
   }
-  
+
   return null;
 };
 
@@ -124,16 +135,16 @@ export const validateStringLength = (
 export const validateDateRange = (
   startDate: Date,
   endDate: Date,
-  fieldName: string = 'Date range'
+  fieldName: string = 'Date range',
 ): string | null => {
   if (!startDate || !endDate) {
     return `${fieldName} must have both start and end dates`;
   }
-  
+
   if (startDate >= endDate) {
     return `${fieldName} start date must be before end date`;
   }
-  
+
   return null;
 };
 
@@ -143,16 +154,16 @@ export const validateDateRange = (
 export const validateFileType = (
   file: File,
   allowedTypes: string[],
-  fieldName: string = 'File'
+  fieldName: string = 'File',
 ): string | null => {
   if (!file || !file.type) {
     return `${fieldName} is required`;
   }
-  
+
   if (!allowedTypes.includes(file.type)) {
     return `${fieldName} must be one of: ${allowedTypes.join(', ')}`;
   }
-  
+
   return null;
 };
 
@@ -162,17 +173,17 @@ export const validateFileType = (
 export const validateFileSize = (
   file: File,
   maxSizeInBytes: number,
-  fieldName: string = 'File'
+  fieldName: string = 'File',
 ): string | null => {
   if (!file) {
     return `${fieldName} is required`;
   }
-  
+
   if (file.size > maxSizeInBytes) {
     const maxSizeMB = Math.round(maxSizeInBytes / (1024 * 1024));
     return `${fieldName} size must not exceed ${maxSizeMB}MB`;
   }
-  
+
   return null;
 };
 
@@ -181,7 +192,7 @@ export const validateFileSize = (
  */
 export const validateUrl = (url: string): boolean => {
   if (!url || typeof url !== 'string') return false;
-  
+
   try {
     new URL(url);
     return true;
@@ -229,7 +240,9 @@ export const validateAadhaarNumber = (aadhaar: string): boolean => {
  */
 export const validateGstNumber = (gst: string): boolean => {
   if (!gst || typeof gst !== 'string') return false;
-  return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gst.toUpperCase());
+  return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(
+    gst.toUpperCase(),
+  );
 };
 
 /**
@@ -267,20 +280,20 @@ export const validateArrayLength = (
   array: any[],
   minLength: number,
   maxLength: number,
-  fieldName: string = 'Array'
+  fieldName: string = 'Array',
 ): string | null => {
   if (!Array.isArray(array)) {
     return `${fieldName} must be an array`;
   }
-  
+
   if (array.length < minLength) {
     return `${fieldName} must have at least ${minLength} items`;
   }
-  
+
   if (array.length > maxLength) {
     return `${fieldName} must not have more than ${maxLength} items`;
   }
-  
+
   return null;
 };
 
@@ -290,7 +303,7 @@ export const validateArrayLength = (
 export const validateEnum = (
   value: any,
   enumValues: readonly any[],
-  fieldName: string = 'Value'
+  fieldName: string = 'Value',
 ): string | null => {
   if (!enumValues.includes(value)) {
     return `${fieldName} must be one of: ${enumValues.join(', ')}`;
@@ -304,18 +317,18 @@ export const validateEnum = (
 export const validateObjectProperties = (
   obj: any,
   requiredProperties: string[],
-  fieldName: string = 'Object'
+  fieldName: string = 'Object',
 ): string | null => {
   if (!obj || typeof obj !== 'object') {
     return `${fieldName} must be an object`;
   }
-  
+
   const missingProperties = requiredProperties.filter(prop => !(prop in obj));
-  
+
   if (missingProperties.length > 0) {
     return `${fieldName} is missing required properties: ${missingProperties.join(', ')}`;
   }
-  
+
   return null;
 };
 
@@ -324,20 +337,20 @@ export const validateObjectProperties = (
  */
 export const validateFields = (
   data: Record<string, any>,
-  rules: Record<string, (value: any) => string | null>
+  rules: Record<string, (value: any) => string | null>,
 ): { isValid: boolean; errors: Record<string, string> } => {
   const errors: Record<string, string> = {};
-  
+
   for (const [field, validator] of Object.entries(rules)) {
     const error = validator(data[field]);
     if (error) {
       errors[field] = error;
     }
   }
-  
+
   return {
     isValid: Object.keys(errors).length === 0,
-    errors
+    errors,
   };
 };
 
@@ -346,17 +359,17 @@ export const validateFields = (
  */
 export const sanitizeString = (input: string): string => {
   if (!input || typeof input !== 'string') return '';
-  
+
   return input
     .trim()
     .replace(/[<>]/g, '') // Remove potential HTML tags
-    .replace(/[&<>"']/g, (char) => {
+    .replace(/[&<>"']/g, char => {
       const entities: Record<string, string> = {
         '&': '&amp;',
         '<': '&lt;',
         '>': '&gt;',
         '"': '&quot;',
-        "'": '&#x27;'
+        "'": '&#x27;',
       };
       return entities[char] || char;
     });
@@ -367,7 +380,7 @@ export const sanitizeString = (input: string): string => {
  */
 export const sanitizeNumber = (input: any): number | null => {
   if (input === null || input === undefined || input === '') return null;
-  
+
   const num = typeof input === 'number' ? input : parseFloat(input);
   return isNaN(num) ? null : num;
 };

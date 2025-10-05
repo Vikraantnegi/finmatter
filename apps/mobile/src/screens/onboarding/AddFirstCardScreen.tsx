@@ -1,27 +1,17 @@
 /**
- * Add First Card Prompt Screen
- * Final onboarding screen - prompts user to add their first credit card
+ * Add First Card Screen
+ * Final onboarding step - prompts user to add their first credit card
  */
 
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Platform,
-} from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import { theme } from '../../constants/theme';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { showSuccessToast } from '../../utils/toast';
+import { haptics } from '../../utils/haptics';
 
 interface AddFirstCardScreenProps {
   navigation: any;
   route: any;
 }
-
-// Check if we're in development mode
-const isDev = __DEV__;
 
 export const AddFirstCardScreen: React.FC<AddFirstCardScreenProps> = ({
   navigation,
@@ -29,48 +19,34 @@ export const AddFirstCardScreen: React.FC<AddFirstCardScreenProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAddCard = () => {
-    // TODO: Navigate to AddCardScreen when it's implemented
-    // For now, show a message and go to home
+    haptics.success();
     showSuccessToast(
-      'Coming Soon',
-      'Card management will be available in the next update!',
+      'Ready to Add Cards!',
+      'You can add your credit cards now or later from the main menu.',
     );
-    
-    // Complete onboarding and go to main app
-    setTimeout(() => {
-      completeOnboarding();
-    }, 1500);
+
+    // TODO: Navigate to add card screen when implemented
+    // For now, complete onboarding
+    handleCompleteOnboarding();
   };
 
-  const handleLater = () => {
-    if (isDev) {
-      // Only allow skipping in development mode
-      showSuccessToast(
-        'Skipped',
-        'You can add cards later from the Cards tab',
-      );
-      
-      // Complete onboarding and go to main app
-      setTimeout(() => {
-        completeOnboarding();
-      }, 1000);
-    }
-  };
-
-  const completeOnboarding = async () => {
+  const handleCompleteOnboarding = async () => {
     setIsLoading(true);
-    
+
     try {
-      // TODO: Update authStore to mark onboarding as completed
+      // Mark onboarding as completed
       // await authService.completeOnboarding();
-      
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Navigate to main app
       navigation.reset({
         index: 0,
         routes: [{ name: 'Main' }],
       });
     } catch (error) {
-      console.error('Onboarding completion error:', error);
+      console.error('Complete onboarding error:', error);
       // Still navigate to main app even if API fails
       navigation.reset({
         index: 0,
@@ -81,172 +57,140 @@ export const AddFirstCardScreen: React.FC<AddFirstCardScreenProps> = ({
     }
   };
 
+  const handleSkip = () => {
+    handleCompleteOnboarding();
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.illustrationContainer}>
-            <Text style={styles.illustration}>💳</Text>
-            <View style={styles.cardStack}>
-              <View style={[styles.card, styles.card1]} />
-              <View style={[styles.card, styles.card2]} />
-              <View style={[styles.card, styles.card3]} />
+    <ScrollView className='flex-1 bg-background flex-grow p-4'>
+      {/* Header Section */}
+      <View className='items-center mb-12 px-4'>
+        <Text className='text-4xl font-bold text-text text-center mb-4'>
+          You're All Set! 🎉
+        </Text>
+        <Text className='text-lg text-text-secondary text-center leading-6'>
+          Now let's add your first credit card to start tracking your finances
+        </Text>
+      </View>
+
+      {/* Illustration Section */}
+      <View className='items-center mb-12'>
+        <View className='w-40 h-40 bg-success/10 rounded-full items-center justify-center mb-6'>
+          <Text className='text-8xl'>💳</Text>
+        </View>
+        <Text className='text-base text-text-secondary text-center'>
+          Add your cards to unlock powerful insights
+        </Text>
+      </View>
+
+      {/* Benefits Section */}
+      <View className='mb-12 px-4'>
+        <Text className='text-lg font-semibold text-text mb-4'>
+          What you can do with your cards:
+        </Text>
+        <View className='space-y-4'>
+          <View className='flex-row items-start'>
+            <Text className='text-success text-xl mr-3'>📊</Text>
+            <View className='flex-1'>
+              <Text className='text-base font-medium text-text'>
+                Track All Spending
+              </Text>
+              <Text className='text-sm text-text-secondary'>
+                See spending patterns across all your cards
+              </Text>
             </View>
           </View>
-          
-          <Text style={styles.title}>Add Your First Card</Text>
-          <Text style={styles.description}>
-            We need at least one credit card to start optimizing your spending
-          </Text>
-        </View>
 
-        {/* Buttons */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleAddCard}
-            disabled={isLoading}>
-            <LinearGradient
-              colors={[theme.colors.primary, theme.colors.primaryDark]}
-              style={styles.buttonGradient}>
-              <Text style={styles.primaryButtonText}>
-                {isLoading ? 'Setting up...' : 'Add Card'}
+          <View className='flex-row items-start'>
+            <Text className='text-success text-xl mr-3'>🎯</Text>
+            <View className='flex-1'>
+              <Text className='text-base font-medium text-text'>
+                Optimize Rewards
               </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <Text className='text-sm text-text-secondary'>
+                Get suggestions on which card to use for maximum rewards
+              </Text>
+            </View>
+          </View>
 
-          {/* Only show "Later" button in development mode */}
-          {isDev && (
-            <TouchableOpacity
-              style={styles.skipButton}
-              onPress={handleLater}
-              disabled={isLoading}>
-              <Text style={styles.skipButtonText}>I'll do this later</Text>
-            </TouchableOpacity>
-          )}
+          <View className='flex-row items-start'>
+            <Text className='text-success text-xl mr-3'>📈</Text>
+            <View className='flex-1'>
+              <Text className='text-base font-medium text-text'>
+                Monitor Utilization
+              </Text>
+              <Text className='text-sm text-text-secondary'>
+                Keep track of credit utilization and payment due dates
+              </Text>
+            </View>
+          </View>
+
+          <View className='flex-row items-start'>
+            <Text className='text-success text-xl mr-3'>🔍</Text>
+            <View className='flex-1'>
+              <Text className='text-base font-medium text-text'>
+                Analyze Trends
+              </Text>
+              <Text className='text-sm text-text-secondary'>
+                Get insights into your spending habits and trends
+              </Text>
+            </View>
+          </View>
         </View>
+      </View>
 
-        {/* Help Text */}
-        <View style={styles.helpContainer}>
-          <Text style={styles.helpText}>
-            💡 You can add more cards later from the Cards tab
+      {/* Security Notice */}
+      <View className='mb-12 px-4'>
+        <View className='bg-surface rounded-md p-4 border border-border'>
+          <Text className='text-base font-medium text-text mb-2'>
+            🔒 Bank-Level Security
+          </Text>
+          <Text className='text-sm text-text-secondary leading-5'>
+            Your card information is encrypted and stored securely. We never
+            store your CVV or full card numbers. Only the last 4 digits are used
+            for identification.
           </Text>
         </View>
       </View>
-    </View>
+
+      {/* Action Buttons */}
+      <View className='px-4 space-y-4'>
+        <TouchableOpacity
+          className={`rounded-md py-4 px-6 items-center ${
+            isLoading ? 'bg-disabled' : 'bg-primary'
+          }`}
+          onPress={handleAddCard}
+          disabled={isLoading}
+        >
+          <Text
+            className={`text-base font-semibold ${
+              isLoading ? 'text-text-secondary' : 'text-white'
+            }`}
+          >
+            {isLoading ? 'Setting up...' : 'Add My First Card'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className='py-3 px-6 items-center'
+          onPress={handleSkip}
+          disabled={isLoading}
+        >
+          <Text className='text-base font-medium text-text-secondary'>
+            I'll add cards later
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Completion Note */}
+      <View className='mt-8 px-4'>
+        <Text className='text-xs text-text-tertiary text-center leading-4'>
+          You can always add, edit, or remove cards from the main menu. Your
+          onboarding will be completed when you're ready.
+        </Text>
+      </View>
+    </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  content: {
-    flex: 1,
-    padding: theme.spacing.xl,
-    justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.xxl,
-  },
-  illustrationContainer: {
-    position: 'relative',
-    marginBottom: theme.spacing.xl,
-  },
-  illustration: {
-    fontSize: 80,
-    zIndex: 3,
-  },
-  cardStack: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    width: 40,
-    height: 60,
-  },
-  card: {
-    position: 'absolute',
-    width: 40,
-    height: 60,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  card1: {
-    backgroundColor: theme.colors.primaryLight,
-    zIndex: 1,
-  },
-  card2: {
-    backgroundColor: theme.colors.primary,
-    top: 2,
-    left: 2,
-    zIndex: 2,
-  },
-  card3: {
-    backgroundColor: theme.colors.primaryDark,
-    top: 4,
-    left: 4,
-    zIndex: 3,
-  },
-  title: {
-    ...theme.typography.h2,
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  description: {
-    ...theme.typography.bodyLarge,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: theme.spacing.lg,
-  },
-  buttonContainer: {
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.xl,
-  },
-  primaryButton: {
-    borderRadius: theme.borderRadius.lg,
-    overflow: 'hidden',
-    elevation: 4,
-    shadowColor: theme.colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  buttonGradient: {
-    paddingVertical: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.white,
-    fontWeight: theme.typography.weights.semibold,
-  },
-  skipButton: {
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xl,
-    alignItems: 'center',
-  },
-  skipButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.textSecondary,
-    fontWeight: theme.typography.weights.medium,
-  },
-  helpContainer: {
-    alignItems: 'center',
-  },
-  helpText: {
-    ...theme.typography.bodySmall,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-});
 
 export default AddFirstCardScreen;

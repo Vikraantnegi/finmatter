@@ -6,7 +6,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/home/HomeScreen';
-import CardsScreen from '../screens/cards/CardsScreen';
+import CardsStackNavigator from './CardsStackNavigator';
 import TransactionsScreen from '../screens/transactions/TransactionsScreen';
 import OptimizerScreen from '../screens/optimizer/OptimizerScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
@@ -81,7 +81,7 @@ const MainNavigator: React.FC = () => {
       />
       <Tab.Screen
         name='Cards'
-        component={CardsScreen as any}
+        component={CardsStackNavigator as any}
         options={{ tabBarLabel: 'Cards' }}
       />
       <Tab.Screen

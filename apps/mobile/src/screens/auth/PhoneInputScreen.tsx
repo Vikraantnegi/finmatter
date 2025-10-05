@@ -31,6 +31,7 @@ import { AuthScreenProps } from '../../navigation/types';
 import { theme } from '../../constants/theme';
 import { authService } from '../../services/AuthService';
 import { showErrorToast, showSuccessToast } from '../../utils/toast';
+import { haptics } from '../../utils/haptics';
 
 interface PhoneInputScreenProps extends AuthScreenProps<'PhoneInput'> {}
 
@@ -171,6 +172,7 @@ export const PhoneInputScreen: React.FC<PhoneInputScreenProps> = ({
       const response = await authService.sendOTP(fullPhoneNumber);
 
       if (response.success) {
+        haptics.success();
         // Navigate to OTP verification screen
         navigation.navigate('OTPVerification', {
           phoneNumber: fullPhoneNumber,
@@ -178,6 +180,7 @@ export const PhoneInputScreen: React.FC<PhoneInputScreenProps> = ({
           countryCode,
         });
       } else {
+        haptics.error();
         // Handle API errors
         const errorMessage =
           typeof response.error === 'string'

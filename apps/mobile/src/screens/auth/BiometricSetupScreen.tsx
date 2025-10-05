@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import ReactNativeBiometrics from 'react-native-biometrics';
 import { showErrorToast, showSuccessToast } from '../../utils/toast';
+import { haptics } from '../../utils/haptics';
 
 // Define BiometryTypes enum locally to avoid type issues
 enum BiometryTypes {
@@ -157,21 +158,24 @@ export const BiometricSetupScreen: React.FC<BiometricSetupScreenProps> = ({
         );
 
         if (updateResponse.success) {
+          haptics.success();
           showSuccessToast(
             `${config?.name} Enabled`,
             `Your ${config?.name} has been set up successfully. You can now use it to unlock the app.`,
           );
-          // Navigate to main app after a short delay
+          // Navigate to onboarding flow after a short delay
           setTimeout(() => {
             navigation.reset({
               index: 0,
-              routes: [{ name: 'Main' }],
+              routes: [{ name: 'Onboarding' }],
             });
           }, 1500);
         } else {
+          haptics.error();
           setError('Failed to save biometric preference. Please try again.');
         }
       } else {
+        haptics.warning();
         setError('Biometric setup was cancelled or failed');
       }
     } catch (error) {
@@ -197,10 +201,10 @@ export const BiometricSetupScreen: React.FC<BiometricSetupScreenProps> = ({
       );
 
       if (updateResponse.success) {
-        // Navigate to main app
+        // Navigate to onboarding flow
         navigation.reset({
           index: 0,
-          routes: [{ name: 'Main' }],
+          routes: [{ name: 'Onboarding' }],
         });
       } else {
         setError('Failed to save preference. Please try again.');

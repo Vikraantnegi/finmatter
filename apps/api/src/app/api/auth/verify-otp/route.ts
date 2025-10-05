@@ -131,12 +131,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingUser) {
-      // Update last login
+      // Update last login and OTP verification
       const { data: updatedUser, error: updateError } = await supabaseAdmin
         .from('users')
         .update({ 
           last_login: new Date().toISOString(),
           is_verified: true,
+          last_otp_verification: new Date().toISOString(), // Track OTP verification for 30-day logic
         })
         .eq('id', existingUser.id)
         .select()
@@ -156,6 +157,7 @@ export async function POST(request: NextRequest) {
           phone_number: phoneNumber,
           is_verified: true,
           last_login: new Date().toISOString(),
+          last_otp_verification: new Date().toISOString(), // Track OTP verification for 30-day logic
           profile_data: {},
         })
         .select()

@@ -4,11 +4,14 @@
 
 import { RootStackParamList as AuthStackParamList } from './AuthNavigator';
 import { RootStackParamList as MainStackParamList } from './MainNavigator';
+import { OnboardingStackParamList } from './OnboardingNavigator';
 
 export type RootStackParamList = {
   Auth: undefined;
+  Onboarding: undefined;
   Main: undefined;
 } & AuthStackParamList &
+  OnboardingStackParamList &
   MainStackParamList;
 
 // Auth screen props type

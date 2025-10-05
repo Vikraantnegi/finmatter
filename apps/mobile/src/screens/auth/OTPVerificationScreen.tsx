@@ -26,6 +26,10 @@ import { AuthScreenProps } from '../../navigation/types';
 import { theme } from '../../constants/theme';
 import { authService } from '../../services/AuthService';
 import { showErrorToast, showSuccessToast } from '../../utils/toast';
+import { haptics } from '../../utils/haptics';
+import AnimatedCheckmark from '../../components/AnimatedCheckmark';
+import ShakeAnimation from '../../components/ShakeAnimation';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 interface OTPVerificationScreenProps
   extends AuthScreenProps<'OTPVerification'> {}
@@ -49,6 +53,8 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
   const [canResend, setCanResend] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attemptCount, setAttemptCount] = useState(0);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [shouldShake, setShouldShake] = useState(false);
 
   // Refs
   const cooldownIntervalRef = useRef<number | null>(null);
@@ -137,6 +143,10 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
         const response = await authService.verifyOTP(phoneNumber, codeToVerify);
 
         if (response.success && response.data) {
+          // Show success animation and haptic feedback
+          setShowSuccessAnimation(true);
+          haptics.success();
+
           // Transform the response data to match expected format
           const transformedData = {
             user: {
@@ -155,24 +165,29 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
           // Store user session
           await authService.storeUserSession(transformedData);
 
-          // Navigate to biometric setup or main app
-          if (transformedData.user.biometricEnabled) {
-            // User already has biometric enabled, go to main app
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Main' }],
-            });
-          } else {
-            // Navigate to biometric setup
-            navigation.navigate('BiometricSetup', {
-              userId: transformedData.user.id,
-              phoneNumber,
-            });
-          }
+          // Navigate after animation completes
+          setTimeout(() => {
+            if (transformedData.user.biometricEnabled) {
+              // User already has biometric enabled, go to onboarding
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Onboarding' }],
+              });
+            } else {
+              // Navigate to biometric setup
+              navigation.navigate('BiometricSetup', {
+                userId: transformedData.user.id,
+                phoneNumber,
+              });
+            }
+          }, 1500);
         } else {
-          // Handle verification failure
+          // Handle verification failure with shake animation and haptic feedback
           const newAttemptCount = attemptCount + 1;
           setAttemptCount(newAttemptCount);
+
+          setShouldShake(true);
+          haptics.error();
 
           // Handle specific error cases
           const errorMessage =
@@ -193,6 +208,9 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
           } else {
             setError(errorMessage);
           }
+
+          // Clear OTP input on error
+          setOtp('');
 
           // Show alert after multiple failed attempts
           if (newAttemptCount >= 3) {
@@ -238,12 +256,14 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
       const response = await authService.sendOTP(phoneNumber);
 
       if (response.success) {
+        haptics.success();
         showSuccessToast(
           'OTP Sent',
           'A new verification code has been sent to your phone.',
         );
         startResendCooldown(); // Start new cooldown
       } else {
+        haptics.error();
         const errorMessage =
           typeof response.error === 'string'
             ? response.error
@@ -325,30 +345,35 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
         </View>
 
         {/* OTP Input Section */}
-        <View style={styles.otpSection}>
-          <OTPInputView
-            style={styles.otpInput}
-            pinCount={6}
-            code={otp}
-            onCodeChanged={handleOTPChange}
-            autoFocusOnLoad
-            secureTextEntry
-            codeInputFieldStyle={[
-              styles.otpInputField,
-              error && styles.otpInputFieldError,
-            ]}
-            codeInputHighlightStyle={styles.otpInputHighlight}
-            editable={!isLoading}
-          />
+        <ShakeAnimation
+          shouldShake={shouldShake}
+          onShakeComplete={() => setShouldShake(false)}
+        >
+          <View style={styles.otpSection}>
+            <OTPInputView
+              style={styles.otpInput}
+              pinCount={6}
+              code={otp}
+              onCodeChanged={handleOTPChange}
+              autoFocusOnLoad
+              secureTextEntry
+              codeInputFieldStyle={[
+                styles.otpInputField,
+                error && styles.otpInputFieldError,
+              ]}
+              codeInputHighlightStyle={styles.otpInputHighlight}
+              editable={!isLoading}
+            />
 
-          {/* Error Message */}
-          {error && <Text style={styles.errorText}>{error}</Text>}
+            {/* Error Message */}
+            {error && <Text style={styles.errorText}>{error}</Text>}
 
-          {/* Attempt Count */}
-          {attemptCount > 0 && (
-            <Text style={styles.attemptText}>Attempts: {attemptCount}/3</Text>
-          )}
-        </View>
+            {/* Attempt Count */}
+            {attemptCount > 0 && (
+              <Text style={styles.attemptText}>Attempts: {attemptCount}/3</Text>
+            )}
+          </View>
+        </ShakeAnimation>
 
         {/* Action Buttons */}
         <View style={styles.actionSection}>
@@ -390,6 +415,16 @@ export const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
           </Text>
         </View>
       </ScrollView>
+
+      {/* Success Animation Overlay */}
+      <AnimatedCheckmark isVisible={showSuccessAnimation} />
+
+      {/* Loading Spinner Overlay */}
+      <LoadingSpinner
+        isLoading={isLoading}
+        message="Verifying OTP..."
+        overlay={true}
+      />
     </KeyboardAvoidingView>
   );
 };

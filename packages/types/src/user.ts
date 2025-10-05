@@ -19,6 +19,12 @@ export type CustomUsersTableUser = {
   is_verified: boolean;
   profile_data?: UserProfileData;
   updated_at: string;
+  name?: string;
+  email?: string;
+  notifications_enabled?: boolean;
+  sms_permission_granted?: boolean;
+  onboarding_completed?: boolean;
+  last_otp_verification?: string; // ISO date string of last OTP verification
 };
 
 // Application User (transformed from database)

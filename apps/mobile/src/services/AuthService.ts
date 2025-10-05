@@ -156,6 +156,50 @@ class AuthService {
       return null;
     }
   }
+
+  /**
+   * Updates user profile (name, email, onboarding status)
+   */
+  async updateUserProfile(data: {
+    name?: string;
+    email?: string;
+    onboardingCompleted?: boolean;
+  }): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Get current session
+      const session = await this.getUserSession();
+      if (!session) {
+        return { success: false, error: 'No active session' };
+      }
+
+      // Update user profile via API
+      const response = await apiClient.put('/users/profile', data);
+      
+      // Check if response indicates success (assuming response.data contains the result)
+      if (response.data || response.status === 200) {
+        // Update local storage
+        const updatedUser = {
+          ...session.user,
+          // Note: AuthUserProfile doesn't have these fields yet
+          // This will be updated when we extend the type
+        };
+
+        await storage.set('user_profile', updatedUser);
+        const updatedSession = {
+          ...session,
+          user: updatedUser,
+        };
+        await storage.set('user_session', updatedSession);
+
+        return { success: true };
+      } else {
+        return { success: false, error: 'Failed to update profile' };
+      }
+    } catch (error) {
+      console.error('Failed to update user profile:', error);
+      return { success: false, error: 'Failed to update profile' };
+    }
+  }
 }
 
 export const authService = new AuthService();

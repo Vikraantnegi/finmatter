@@ -69,6 +69,7 @@ export type AuthUserProfile = {
   createdAt: string;
   lastLogin?: string;
   updatedAt: string;
+  lastOtpVerification?: string; // ISO date string of last OTP verification
   profileData?: {
     firstName?: string;
     lastName?: string;

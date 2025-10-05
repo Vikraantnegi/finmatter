@@ -108,6 +108,11 @@ export const theme = {
       fontWeight: '400' as const,
       lineHeight: 24,
     },
+    bodyLarge: {
+      fontSize: 18,
+      fontWeight: '400' as const,
+      lineHeight: 26,
+    },
     bodySmall: {
       fontSize: 14,
       fontWeight: '400' as const,

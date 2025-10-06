@@ -5,8 +5,22 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import { Card, CardBenefit, CreateCardRequest } from '@finmatter/types';
+import { Card, CardBenefit, CreateCardRequest, GetCardsResponse } from '@finmatter/types';
 import { cardService } from '../services/cardService';
+
+// Helper function to convert API response to Card type
+const convertApiCardToCard = (apiCard: any): Card => ({
+  ...apiCard,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  userId: '', // This should come from auth context
+  currency: 'INR' as const,
+  issueDate: undefined,
+  expiryDate: undefined,
+  creditLimit: undefined,
+  availableCredit: undefined,
+  usage: undefined,
+});
 
 interface CardState {
   // State
@@ -72,16 +86,17 @@ export const useCardStore = create<CardState>()(
           try {
             const response = await cardService.getCards();
             
-            if (response.success && response.data) {
+            if (response.data) {
+              const cards = response.data.map(convertApiCardToCard);
               set({ 
-                cards: response.data.cards, 
+                cards, 
                 loading: false,
                 lastFetched: Date.now(),
                 error: null 
               });
             } else {
               set({ 
-                error: response.error?.message || 'Failed to fetch cards',
+                error: 'Failed to fetch cards',
                 loading: false 
               });
             }
@@ -101,8 +116,8 @@ export const useCardStore = create<CardState>()(
           try {
             const response = await cardService.createCard(cardData);
             
-            if (response.success && response.data) {
-              const newCard = response.data.card;
+            if (response.data) {
+              const newCard = convertApiCardToCard(response.data);
               set(state => ({
                 cards: [...state.cards, newCard],
                 loading: false,
@@ -112,7 +127,7 @@ export const useCardStore = create<CardState>()(
               return newCard;
             } else {
               set({ 
-                error: response.error?.message || 'Failed to create card',
+                error: 'Failed to create card',
                 loading: false 
               });
               return null;
@@ -134,7 +149,7 @@ export const useCardStore = create<CardState>()(
           try {
             const response = await cardService.updateCard(cardId, updates);
             
-            if (response.success && response.data) {
+            if (response.data) {
               const updatedCard = response.data.card;
               set(state => ({
                 cards: state.cards.map(card => 
@@ -147,7 +162,7 @@ export const useCardStore = create<CardState>()(
               return updatedCard;
             } else {
               set({ 
-                error: response.error?.message || 'Failed to update card',
+                error: 'Failed to update card',
                 loading: false 
               });
               return null;
@@ -179,7 +194,7 @@ export const useCardStore = create<CardState>()(
               return true;
             } else {
               set({ 
-                error: response.error?.message || 'Failed to delete card',
+                error: 'Failed to delete card',
                 loading: false 
               });
               return false;

@@ -212,8 +212,14 @@ export const useAuthStore = create<AuthState>()(
       },
 
       // Biometric handlers
-      handleBiometricSuccess: () => {
+      handleBiometricSuccess: async () => {
         set({ showBiometricPrompt: false });
+        // Store timestamp of successful biometric authentication
+        try {
+          await storage.set('last_biometric_prompt', Date.now().toString());
+        } catch (error) {
+          console.error('Error storing biometric prompt timestamp:', error);
+        }
         // User is now authenticated with biometric
       },
 
@@ -230,10 +236,29 @@ export const useAuthStore = create<AuthState>()(
 
       // Helper functions
       shouldShowBiometricPrompt: async (): Promise<boolean> => {
-        // TODO: Implement logic to check if biometric prompt should be shown
-        // For now, we'll show it if the app was launched from background (not fresh launch)
-        // This would require tracking app state changes
-        return true; // Simplified for now
+        try {
+          // Check if this is a fresh app launch or returning from background
+          // We'll use a simple timestamp-based approach for now
+          const lastBiometricPrompt = await storage.getString('last_biometric_prompt');
+          const now = Date.now();
+          
+          // Show biometric prompt if:
+          // 1. Never shown before, OR
+          // 2. Last shown more than 5 minutes ago (app was in background)
+          if (!lastBiometricPrompt) {
+            return true;
+          }
+          
+          const lastPromptTime = parseInt(lastBiometricPrompt, 10);
+          const timeSinceLastPrompt = now - lastPromptTime;
+          const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
+          
+          return timeSinceLastPrompt > fiveMinutes;
+        } catch (error) {
+          console.error('Error checking biometric prompt timing:', error);
+          // Default to showing prompt if there's an error
+          return true;
+        }
       },
     }),
     {

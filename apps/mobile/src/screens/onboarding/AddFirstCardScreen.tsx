@@ -25,9 +25,8 @@ export const AddFirstCardScreen: React.FC<AddFirstCardScreenProps> = ({
       'You can add your credit cards now or later from the main menu.',
     );
 
-    // TODO: Navigate to add card screen when implemented
-    // For now, complete onboarding
-    handleCompleteOnboarding();
+    // Navigate to add card screen
+    navigation.navigate('AddCard');
   };
 
   const handleCompleteOnboarding = async () => {

@@ -4,7 +4,7 @@
  * Displays user's credit card portfolio
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,9 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
-import { Plus, CreditCard, Filter } from 'lucide-react-native';
+import { Plus, CreditCard, Filter, X } from 'lucide-react-native';
 
 // Types
 import { Card } from '@finmatter/types';
@@ -36,6 +37,13 @@ interface CardsScreenProps {
 }
 
 const CardsScreen: React.FC<CardsScreenProps> = ({ navigation }) => {
+  // Filter state
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'name' | 'limit' | 'utilization'>(
+    'name',
+  );
+
   // Use SWR hook for data fetching and caching
   const { cards, loading, error, refresh } = useCardsSWR({
     revalidateOnFocus: true,
@@ -45,9 +53,71 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ navigation }) => {
   // Get card actions from Zustand store
   const { deleteCard } = useCardActions();
 
+  // Filter and sort cards
+  const filteredCards = useMemo(() => {
+    let filtered = [...cards];
+
+    // Filter by category if selected
+    if (selectedCategory) {
+      filtered = filtered.filter(card =>
+        card.benefits?.some(benefit => benefit.category === selectedCategory),
+      );
+    }
+
+    // Sort cards
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.cardName.localeCompare(b.cardName);
+        case 'limit':
+          return (b.creditLimit || 0) - (a.creditLimit || 0);
+        case 'utilization':
+          const aUtil =
+            a.availableCredit && a.creditLimit
+              ? ((a.creditLimit - a.availableCredit) / a.creditLimit) * 100
+              : 0;
+          const bUtil =
+            b.availableCredit && b.creditLimit
+              ? ((b.creditLimit - b.availableCredit) / b.creditLimit) * 100
+              : 0;
+          return bUtil - aUtil;
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  }, [cards, selectedCategory, sortBy]);
+
+  // Get unique categories from all cards
+  const categories = useMemo(() => {
+    const categorySet = new Set<string>();
+    cards.forEach(card => {
+      card.benefits?.forEach(benefit => {
+        categorySet.add(benefit.category);
+      });
+    });
+    return Array.from(categorySet).sort();
+  }, [cards]);
+
   const handleAddCard = () => {
     haptics.light();
     navigation.navigate('AddCard');
+  };
+
+  const handleFilterPress = () => {
+    haptics.light();
+    setShowFilterModal(true);
+  };
+
+  const handleClearFilters = () => {
+    setSelectedCategory(null);
+    setSortBy('name');
+    setShowFilterModal(false);
+  };
+
+  const handleApplyFilters = () => {
+    setShowFilterModal(false);
   };
 
   const handleCardPress = (card: Card) => {
@@ -148,9 +218,7 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ navigation }) => {
         </View>
         <View className='flex-row space-x-2'>
           <TouchableOpacity
-            onPress={() => {
-              /* TODO: Implement filter */
-            }}
+            onPress={handleFilterPress}
             className='bg-secondary p-3 rounded-lg'
           >
             <Filter size={20} color='#6B7280' />
@@ -166,7 +234,7 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ navigation }) => {
 
       {/* Cards List */}
       <FlatList
-        data={cards}
+        data={filteredCards}
         renderItem={renderCard}
         keyExtractor={item => item.id}
         refreshControl={
@@ -183,6 +251,124 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ navigation }) => {
         }}
         showsVerticalScrollIndicator={false}
       />
+
+      {/* Filter Modal */}
+      <Modal
+        visible={showFilterModal}
+        transparent
+        animationType='slide'
+        onRequestClose={() => setShowFilterModal(false)}
+      >
+        <View className='flex-1 bg-black/50 justify-end'>
+          <View className='bg-background rounded-t-3xl p-6 max-h-[80%]'>
+            <View className='flex-row justify-between items-center mb-6'>
+              <Text className='text-xl font-bold text-text'>Filter Cards</Text>
+              <TouchableOpacity
+                onPress={() => setShowFilterModal(false)}
+                className='p-2'
+              >
+                <X size={24} color='#6B7280' />
+              </TouchableOpacity>
+            </View>
+
+            {/* Sort Options */}
+            <View className='mb-6'>
+              <Text className='text-lg font-semibold text-text mb-3'>
+                Sort By
+              </Text>
+              <View className='space-y-2'>
+                {[
+                  { key: 'name', label: 'Card Name' },
+                  { key: 'limit', label: 'Credit Limit' },
+                  { key: 'utilization', label: 'Utilization' },
+                ].map(option => (
+                  <TouchableOpacity
+                    key={option.key}
+                    onPress={() => setSortBy(option.key as any)}
+                    className={`p-3 rounded-lg border ${
+                      sortBy === option.key
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border'
+                    }`}
+                  >
+                    <Text
+                      className={`font-medium ${
+                        sortBy === option.key ? 'text-primary' : 'text-text'
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Category Filter */}
+            <View className='mb-6'>
+              <Text className='text-lg font-semibold text-text mb-3'>
+                Category
+              </Text>
+              <View className='space-y-2'>
+                <TouchableOpacity
+                  onPress={() => setSelectedCategory(null)}
+                  className={`p-3 rounded-lg border ${
+                    selectedCategory === null
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border'
+                  }`}
+                >
+                  <Text
+                    className={`font-medium ${
+                      selectedCategory === null ? 'text-primary' : 'text-text'
+                    }`}
+                  >
+                    All Categories
+                  </Text>
+                </TouchableOpacity>
+                {categories.map(category => (
+                  <TouchableOpacity
+                    key={category}
+                    onPress={() => setSelectedCategory(category)}
+                    className={`p-3 rounded-lg border ${
+                      selectedCategory === category
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border'
+                    }`}
+                  >
+                    <Text
+                      className={`font-medium capitalize ${
+                        selectedCategory === category
+                          ? 'text-primary'
+                          : 'text-text'
+                      }`}
+                    >
+                      {category}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <View className='flex-row space-x-3'>
+              <TouchableOpacity
+                onPress={handleClearFilters}
+                className='flex-1 bg-surface border border-border py-3 rounded-lg'
+              >
+                <Text className='text-center font-medium text-text'>Clear</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleApplyFilters}
+                className='flex-1 bg-primary py-3 rounded-lg'
+              >
+                <Text className='text-center font-medium text-white'>
+                  Apply
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

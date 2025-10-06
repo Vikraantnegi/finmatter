@@ -305,7 +305,7 @@ importers:
         specifier: 0.81.4
         version: 0.81.4
       '@types/jest':
-        specifier: ^29.5.13
+        specifier: ^29.5.14
         version: 29.5.14
       '@types/react':
         specifier: ^19.1.0

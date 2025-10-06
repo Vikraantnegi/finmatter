@@ -16,19 +16,11 @@ import { DatabaseCardBenefit } from '@finmatter/types';
 const CreateBenefitSchema = z.object({
   category: z.string().min(1, 'Category is required').max(50),
   rewardRate: z.number().min(0, 'Reward rate must be positive').max(100, 'Reward rate cannot exceed 100%'),
+  rewardType: z.enum(['cashback', 'points', 'miles']).default('cashback'),
   rewardCap: z.number().min(0, 'Reward cap must be positive').optional(),
   conditions: z.record(z.any()).optional(),
   isActive: z.boolean().default(true),
 });
-
-// TODO: fix this ts error, UpdateBenefitSchema is not used
-// const UpdateBenefitSchema = z.object({
-//   category: z.string().min(1).max(50).optional(),
-//   rewardRate: z.number().min(0).max(100).optional(),
-//   rewardCap: z.number().min(0).optional(),
-//   conditions: z.record(z.any()).optional(),
-//   isActive: z.boolean().optional(),
-// });
 
 /**
  * Helper function to get authenticated user ID
@@ -198,11 +190,10 @@ export async function POST(
       card_id: cardId,
       category: benefitData.category,
       reward_rate: benefitData.rewardRate,
+      reward_type: benefitData.rewardType,
       reward_cap: benefitData.rewardCap || 0,
       conditions: benefitData.conditions || {},
       is_active: benefitData.isActive,
-      // TODO: fix this ts error, reward_type is missing in benefit data
-      reward_type: 'cashback',
     };
 
     // Insert benefit

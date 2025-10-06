@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
     const cardData = validation.data;
 
     // Prepare database insert data
-    const insertData: Omit<DatabaseCard, 'id' | 'created_at' | 'updated_at'> = {
+    const insertData: Omit<DatabaseCard, 'id' | 'createdAt' | 'updatedAt'> = {
       user_id: userId,
       bank_name: cardData.bankName,
       card_name: cardData.cardName,
@@ -219,9 +219,6 @@ export async function POST(request: NextRequest) {
       expiry_date: cardData.expiryDate ? new Date(cardData.expiryDate) : undefined,
       credit_limit: cardData.creditLimit || undefined,
       available_credit: cardData.availableCredit || undefined,
-      // TODO: fix this ts error, createdAt and updatedAt are missing
-      createdAt: new Date(),
-      updatedAt: new Date(),
     };
 
     // Insert card

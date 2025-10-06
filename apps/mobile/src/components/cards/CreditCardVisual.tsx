@@ -6,6 +6,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Animated } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { Eye, EyeOff, MoreVertical, Trash2 } from 'lucide-react-native';
 import { Card as CardType, CardNetwork, RewardType } from '@finmatter/types';
 
@@ -167,102 +168,102 @@ const CreditCardVisual: React.FC<CreditCardVisualProps> = ({
     <View className='relative'>
       {/* Card Container */}
       <Animated.View
-        className='rounded-2xl p-6 shadow-lg'
-        style={[
-          {
-            backgroundColor: gradient[0],
-            // TODO: fix this ts error
-            // background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`,
-          },
-          frontAnimatedStyle,
-        ]}
+        className='rounded-2xl shadow-lg overflow-hidden'
+        style={frontAnimatedStyle}
       >
-        {/* Card Header */}
-        <View className='flex-row justify-between items-start mb-6'>
-          <View className='flex-1'>
-            <Text className='text-white/80 text-sm font-medium mb-1'>
-              {card.bankName}
-            </Text>
-            <Text className='text-white text-lg font-bold'>
-              {card.cardName}
-            </Text>
-          </View>
-
-          {showActions && (
-            <View className='relative'>
-              <TouchableOpacity
-                onPress={toggleActionsMenu}
-                className='p-2'
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <MoreVertical size={20} color='white' />
-              </TouchableOpacity>
-
-              {showActionsMenu && (
-                <View className='absolute top-10 right-0 bg-white rounded-lg shadow-lg z-10 min-w-[120px]'>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowActionsMenu(false);
-                      onDelete?.();
-                    }}
-                    className='flex-row items-center px-4 py-3 border-b border-gray-100'
-                  >
-                    <Trash2 size={16} color='#EF4444' />
-                    <Text className='text-red-500 ml-2 font-medium'>
-                      Delete
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+        <LinearGradient
+          colors={gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className='p-6'
+        >
+          {/* Card Header */}
+          <View className='flex-row justify-between items-start mb-6'>
+            <View className='flex-1'>
+              <Text className='text-white/80 text-sm font-medium mb-1'>
+                {card.bankName}
+              </Text>
+              <Text className='text-white text-lg font-bold'>
+                {card.cardName}
+              </Text>
             </View>
-          )}
-        </View>
 
-        {/* Card Number */}
-        <View className='flex-row items-center justify-between mb-6'>
-          <View className='flex-row items-center'>
-            <Text className='text-white text-2xl font-mono tracking-wider'>
-              •••• •••• •••• {showNumber ? card.lastFourDigits : '••••'}
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={toggleNumberVisibility}
-            className='p-1'
-            hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
-          >
-            {showNumber ? (
-              <EyeOff size={20} color='white' />
-            ) : (
-              <Eye size={20} color='white' />
+            {showActions && (
+              <View className='relative'>
+                <TouchableOpacity
+                  onPress={toggleActionsMenu}
+                  className='p-2'
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <MoreVertical size={20} color='white' />
+                </TouchableOpacity>
+
+                {showActionsMenu && (
+                  <View className='absolute top-10 right-0 bg-white rounded-lg shadow-lg z-10 min-w-[120px]'>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowActionsMenu(false);
+                        onDelete?.();
+                      }}
+                      className='flex-row items-center px-4 py-3 border-b border-gray-100'
+                    >
+                      <Trash2 size={16} color='#EF4444' />
+                      <Text className='text-red-500 ml-2 font-medium'>
+                        Delete
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
             )}
-          </TouchableOpacity>
-        </View>
+          </View>
 
-        {/* Card Footer */}
-        <View className='flex-row justify-between items-end'>
-          <View>
-            <Text className='text-white/80 text-xs font-medium mb-1'>
-              {card.cardType.toUpperCase()}
-            </Text>
-            <Text className='text-white/80 text-xs'>
-              {card.rewardType !== 'none' && (
-                <>
-                  {getRewardTypeIcon(card.rewardType)}{' '}
-                  {card.rewardType.toUpperCase()}
-                </>
+          {/* Card Number */}
+          <View className='flex-row items-center justify-between mb-6'>
+            <View className='flex-row items-center'>
+              <Text className='text-white text-2xl font-mono tracking-wider'>
+                •••• •••• •••• {showNumber ? card.lastFourDigits : '••••'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={toggleNumberVisibility}
+              className='p-1'
+              hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
+            >
+              {showNumber ? (
+                <EyeOff size={20} color='white' />
+              ) : (
+                <Eye size={20} color='white' />
               )}
-            </Text>
+            </TouchableOpacity>
           </View>
 
-          <View className='items-end'>
-            <Text className='text-white text-lg font-bold'>
-              {getNetworkLogo(card.network)}
-            </Text>
-            <Text className='text-white/80 text-xs'>
-              {card.status.toUpperCase()}
-            </Text>
+          {/* Card Footer */}
+          <View className='flex-row justify-between items-end'>
+            <View>
+              <Text className='text-white/80 text-xs font-medium mb-1'>
+                {card.cardType.toUpperCase()}
+              </Text>
+              <Text className='text-white/80 text-xs'>
+                {card.rewardType !== 'none' && (
+                  <>
+                    {getRewardTypeIcon(card.rewardType)}{' '}
+                    {card.rewardType.toUpperCase()}
+                  </>
+                )}
+              </Text>
+            </View>
+
+            <View className='items-end'>
+              <Text className='text-white text-lg font-bold'>
+                {getNetworkLogo(card.network)}
+              </Text>
+              <Text className='text-white/80 text-xs'>
+                {card.status.toUpperCase()}
+              </Text>
+            </View>
           </View>
-        </View>
+        </LinearGradient>
       </Animated.View>
 
       {/* Benefits Summary */}

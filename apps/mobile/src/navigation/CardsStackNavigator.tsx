@@ -11,6 +11,8 @@ import CardsScreen from '../screens/cards/CardsScreen';
 import AddCardScreen from '../screens/cards/AddCardScreen';
 import CardDetailScreen from '../screens/cards/CardDetailScreen';
 import AddBenefitScreen from '../screens/cards/AddBenefitScreen';
+import EditCardScreen from '../screens/cards/EditCardScreen';
+import EditBenefitScreen from '../screens/cards/EditBenefitScreen';
 
 // Types
 export type CardsStackParamList = {
@@ -49,7 +51,8 @@ const CardsStackNavigator: React.FC = () => {
       <Stack.Screen name='AddCard' component={AddCardScreen as any} />
       <Stack.Screen name='CardDetail' component={CardDetailScreen as any} />
       <Stack.Screen name='AddBenefit' component={AddBenefitScreen as any} />
-      {/* TODO: Add EditCard, EditBenefit screens */}
+      <Stack.Screen name='EditCard' component={EditCardScreen as any} />
+      <Stack.Screen name='EditBenefit' component={EditBenefitScreen as any} />
     </Stack.Navigator>
   );
 };

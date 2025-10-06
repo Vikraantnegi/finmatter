@@ -208,8 +208,8 @@ export async function PUT(
     if (validatedData.annualFee !== undefined) updateData.annual_fee = validatedData.annualFee;
     if (validatedData.currency !== undefined) updateData.currency = validatedData.currency;
     if (validatedData.status !== undefined) updateData.status = validatedData.status;
-    if (validatedData.issueDate !== undefined) updateData.issue_date = validatedData.issueDate ? new Date(validatedData.issueDate) : null;
-    if (validatedData.expiryDate !== undefined) updateData.expiry_date = validatedData.expiryDate ? new Date(validatedData.expiryDate) : null;
+    if (validatedData.issueDate !== undefined) updateData.issue_date = validatedData.issueDate ? new Date(validatedData.issueDate) : undefined;
+    if (validatedData.expiryDate !== undefined) updateData.expiry_date = validatedData.expiryDate ? new Date(validatedData.expiryDate) : undefined;
     if (validatedData.creditLimit !== undefined) updateData.credit_limit = validatedData.creditLimit;
     if (validatedData.availableCredit !== undefined) updateData.available_credit = validatedData.availableCredit;
 

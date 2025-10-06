@@ -8,7 +8,9 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { storageService } from '../lib/storage';
 
 // API Configuration
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+const API_BASE_URL = __DEV__ 
+  ? 'http://localhost:3000'  // Development URL
+  : 'https://api.finmatter.com';  // Production URL
 
 class APIClient {
   private client: AxiosInstance;

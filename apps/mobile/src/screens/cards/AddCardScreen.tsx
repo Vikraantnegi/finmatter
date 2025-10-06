@@ -133,7 +133,7 @@ const AddCardScreen: React.FC<AddCardScreenProps> = ({ navigation }) => {
           },
         ]);
       } else {
-        Alert.alert('Error', response.error?.message || 'Failed to add card');
+        Alert.alert('Error', 'Failed to add card');
       }
     } catch (error) {
       console.error('Add card error:', error);

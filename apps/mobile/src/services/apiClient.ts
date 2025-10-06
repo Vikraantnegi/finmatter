@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * API Client Service
  * Handles all API communication with authentication

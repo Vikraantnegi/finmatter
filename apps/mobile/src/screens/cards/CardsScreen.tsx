@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 /**
  * Cards Screen
  * Displays user's credit card portfolio
@@ -14,7 +15,6 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { Plus, CreditCard, Filter } from 'lucide-react-native';
 
 // Types

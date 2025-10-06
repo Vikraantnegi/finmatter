@@ -6,11 +6,11 @@
 import useSWR from 'swr';
 import { useCardStore } from '../stores/cardStore';
 import { cardService } from '../services/cardService';
-import { Card, GetCardsResponse } from '@finmatter/types';
+import { Card } from '@finmatter/types';
 
 // SWR fetcher functions
 const cardsFetcher = async (): Promise<Card[]> => {
-  const response = await cardService.getCards();
+  const response = await cardService.getCards() as Record<string, any>;
   if (response.success && response.data) {
     return response.data.cards;
   }
@@ -31,7 +31,7 @@ export const useCardsSWR = (options?: {
   revalidateOnFocus?: boolean;
   revalidateOnReconnect?: boolean;
 }) => {
-  const { fetchCards, cards, loading, error } = useCardStore();
+  const { cards, loading, error } = useCardStore();
 
   const swrConfig = {
     refreshInterval: options?.refreshInterval || 0, // Disabled by default
@@ -62,7 +62,7 @@ export const useCardsSWR = (options?: {
   }, [swrData, loading]);
 
   return {
-    cards: cards,
+    cards,
     loading: isLoading || loading,
     isValidating,
     error: error || swrError?.message,

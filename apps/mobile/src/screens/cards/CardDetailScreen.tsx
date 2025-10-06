@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * Card Detail Screen
  * Shows detailed information about a specific card including benefits

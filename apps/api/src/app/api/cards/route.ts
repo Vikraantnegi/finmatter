@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { FinMatterError } from '@finmatter/shared';
 import { z } from 'zod';
-import { DatabaseCard, DatabaseCardBenefit } from '@finmatter/types';
+import { DatabaseCard } from '@finmatter/types';
 
 // Request validation schemas
 const CreateCardSchema = z.object({
@@ -215,10 +215,13 @@ export async function POST(request: NextRequest) {
       annual_fee: cardData.annualFee,
       currency: cardData.currency,
       status: 'active',
-      issue_date: cardData.issueDate ? new Date(cardData.issueDate) : null,
-      expiry_date: cardData.expiryDate ? new Date(cardData.expiryDate) : null,
-      credit_limit: cardData.creditLimit || null,
-      available_credit: cardData.availableCredit || null,
+      issue_date: cardData.issueDate ? new Date(cardData.issueDate) : undefined,
+      expiry_date: cardData.expiryDate ? new Date(cardData.expiryDate) : undefined,
+      credit_limit: cardData.creditLimit || undefined,
+      available_credit: cardData.availableCredit || undefined,
+      // TODO: fix this ts error, createdAt and updatedAt are missing
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     // Insert card

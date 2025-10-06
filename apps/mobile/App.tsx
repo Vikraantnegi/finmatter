@@ -16,23 +16,35 @@ import './global.css';
 // Navigation
 import AppNavigator from './src/navigation/AppNavigator';
 
-// Providers
-import { AuthProvider } from './src/providers/AuthProvider';
+// Stores
+import './src/stores/authStore';
+import { useAuthStore } from './src/stores/authStore';
 
-// Styles
-// Theme is now defined in tailwind.config.js
+// Components
+import BiometricPrompt from './src/components/BiometricPrompt';
 
 const App: React.FC = () => {
+  const {
+    showBiometricPrompt,
+    handleBiometricSuccess,
+    handleBiometricFallback,
+    handleBiometricCancel,
+  } = useAuthStore();
+
   return (
     <GestureHandlerRootView className='flex-1'>
       <SafeAreaProvider>
-        <AuthProvider>
-          <NavigationContainer>
-            <StatusBar barStyle='light-content' backgroundColor='#3B82F6' />
-            <AppNavigator />
-            <FlashMessage position='top' />
-          </NavigationContainer>
-        </AuthProvider>
+        <NavigationContainer>
+          <StatusBar barStyle='light-content' backgroundColor='#3B82F6' />
+          <AppNavigator />
+          <FlashMessage position='top' />
+        </NavigationContainer>
+        <BiometricPrompt
+          isVisible={showBiometricPrompt}
+          onSuccess={handleBiometricSuccess}
+          onFallback={handleBiometricFallback}
+          onCancel={handleBiometricCancel}
+        />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

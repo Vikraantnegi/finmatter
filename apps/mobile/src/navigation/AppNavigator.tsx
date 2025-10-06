@@ -12,8 +12,8 @@ import AuthNavigator from './AuthNavigator';
 import OnboardingNavigator from './OnboardingNavigator';
 import MainNavigator from './MainNavigator';
 
-// Hooks
-import { useAuth } from '../providers/AuthProvider';
+// Stores
+import { useAuthStore } from '../stores/authStore';
 
 // Components
 import { ToastComponent } from '../components/Toast';
@@ -24,7 +24,7 @@ import { RootStackParamList } from './types';
 const Stack = createStackNavigator<RootStackParamList>();
 
 const AppNavigator: React.FC = () => {
-  const { isLoading, isAuthenticated, onboardingCompleted } = useAuth();
+  const { isLoading, isAuthenticated, onboardingCompleted } = useAuthStore();
 
   if (isLoading) {
     return <LoadingScreen />;

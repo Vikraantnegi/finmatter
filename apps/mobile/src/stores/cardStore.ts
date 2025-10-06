@@ -5,7 +5,7 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import { Card, CardBenefit, CreateCardRequest, GetCardsResponse } from '@finmatter/types';
+import { Card, CardBenefit, CreateCardRequest } from '@finmatter/types';
 import { cardService } from '../services/cardService';
 
 // Helper function to convert API response to Card type

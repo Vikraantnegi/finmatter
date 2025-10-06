@@ -3,7 +3,7 @@
  * Allows users to edit existing card benefit details
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -40,7 +40,7 @@ const EditBenefitScreen: React.FC<EditBenefitScreenProps> = ({
   navigation,
   route,
 }) => {
-  const { cardId, benefit, card } = route.params;
+  const { cardId, benefit } = route.params;
 
   const [formData, setFormData] = useState({
     category: benefit.category,

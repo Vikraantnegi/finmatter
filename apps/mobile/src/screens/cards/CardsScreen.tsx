@@ -71,7 +71,7 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ navigation }) => {
           return a.cardName.localeCompare(b.cardName);
         case 'limit':
           return (b.creditLimit || 0) - (a.creditLimit || 0);
-        case 'utilization':
+        case 'utilization': {
           const aUtil =
             a.availableCredit && a.creditLimit
               ? ((a.creditLimit - a.availableCredit) / a.creditLimit) * 100
@@ -81,6 +81,7 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ navigation }) => {
               ? ((b.creditLimit - b.availableCredit) / b.creditLimit) * 100
               : 0;
           return bUtil - aUtil;
+        }
         default:
           return 0;
       }

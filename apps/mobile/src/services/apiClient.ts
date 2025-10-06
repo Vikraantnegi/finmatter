@@ -7,6 +7,9 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { storageService } from '../lib/storage';
 
+// Declare __DEV__ for TypeScript
+declare const __DEV__: boolean;
+
 // API Configuration
 const API_BASE_URL = __DEV__ 
   ? 'http://localhost:3000'  // Development URL

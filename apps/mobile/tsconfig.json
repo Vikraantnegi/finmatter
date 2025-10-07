@@ -1,7 +1,16 @@
 {
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
-    "types": ["nativewind/types", "jest"]
+    "types": ["nativewind/types", "jest"],
+    "jsx": "react-native",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "strict": true
   },
   "include": [
     "**/*.ts",

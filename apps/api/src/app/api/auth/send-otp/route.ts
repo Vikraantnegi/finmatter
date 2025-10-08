@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send OTP using Supabase Auth
+    // Send OTP using Supabase Auth with Twilio
     const { error } = await supabaseAdmin.auth.signInWithOtp({
       phone: phoneNumber,
       options: {

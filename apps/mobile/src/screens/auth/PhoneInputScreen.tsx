@@ -118,7 +118,10 @@ export const PhoneInputScreen: React.FC<PhoneInputScreenProps> = ({
         // Add space after 5 digits for Indian format
         const cleanedText = text.replace(/\s/g, '');
         if (cleanedText.length > 5) {
-          formattedText = `${cleanedText.slice(0, 5)} ${cleanedText.slice(5, 10)}`;
+          formattedText = `${cleanedText.slice(0, 5)} ${cleanedText.slice(
+            5,
+            10,
+          )}`;
         } else {
           formattedText = cleanedText;
         }

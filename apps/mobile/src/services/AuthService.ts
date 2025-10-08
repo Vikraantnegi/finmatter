@@ -3,7 +3,7 @@
  * Handles API calls for phone-based authentication with OTP
  */
 
-import { apiClient } from '@finmatter/shared';
+import { apiClient } from './apiClient';
 import type {
   SendOTPRequest,
   SendOTPResponse,
@@ -19,7 +19,7 @@ class AuthService {
    * Sends OTP to the provided phone number
    */
   async sendOTP(phoneNumber: string): Promise<SendOTPResponse> {
-    const response = await apiClient.post<SendOTPResponse>('/auth/send-otp', {
+    const response = await apiClient.post<SendOTPResponse>('/api/auth/send-otp', {
       phoneNumber,
     } as SendOTPRequest);
 
@@ -34,7 +34,7 @@ class AuthService {
     otp: string,
   ): Promise<VerifyOTPResponse> {
     const response = await apiClient.post<VerifyOTPResponse>(
-      '/auth/verify-otp',
+      '/api/auth/verify-otp',
       {
         phoneNumber,
         otp,

@@ -25,6 +25,7 @@ import BenefitItem from '../../components/cards/BenefitItem';
 
 // Services
 import { cardService } from '../../services/cardService';
+import { cardSearchService } from '@finmatter/cc-engine';
 
 // Utils
 import { haptics } from '../../utils/haptics';
@@ -213,6 +214,11 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
     );
   }
 
+  // Get card metadata if available
+  const metadata = card.cardMetadataId
+    ? cardSearchService.getCardById(card.cardMetadataId)
+    : null;
+
   return (
     <SafeAreaView className='flex-1 bg-background'>
       {/* Header */}
@@ -248,6 +254,100 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
         <View className='px-4 py-6'>
           <CreditCardVisual card={card} showActions={false} />
         </View>
+
+        {/* Card Metadata - Reward Rules & Benefits */}
+        {metadata && (
+          <>
+            {/* Reward Structure */}
+            {metadata.rewardRules && metadata.rewardRules.length > 0 && (
+              <View className='px-4 mb-6'>
+                <Text className='text-xl font-bold text-text mb-4'>
+                  Reward Structure
+                </Text>
+                {metadata.rewardRules.map((rule: any, idx: number) => (
+                  <View
+                    key={idx}
+                    className='mb-3 p-4 bg-secondary rounded-xl border border-border'
+                  >
+                    <Text className='text-base font-semibold text-text capitalize mb-2'>
+                      {rule.category === 'default'
+                        ? 'All Purchases'
+                        : rule.category}
+                    </Text>
+                    <Text className='text-lg font-bold text-blue-600 mb-1'>
+                      {rule.rewardRate}
+                      {rule.rewardUnit === 'percent'
+                        ? '% cashback'
+                        : rule.rewardUnit === 'points_per_100'
+                        ? ' points per ₹100'
+                        : ' miles per ₹100'}
+                    </Text>
+                    {rule.cap && (
+                      <Text className='text-sm text-text-secondary'>
+                        Cap: ₹{rule.cap.toLocaleString('en-IN')}/
+                        {rule.capPeriod}
+                      </Text>
+                    )}
+                    {rule.minTransaction && (
+                      <Text className='text-sm text-text-secondary'>
+                        Min. transaction: ₹{rule.minTransaction}
+                      </Text>
+                    )}
+                    {rule.conditions && rule.conditions.length > 0 && (
+                      <View className='mt-2 pt-2 border-t border-border'>
+                        <Text className='text-xs text-text-secondary'>
+                          * {rule.conditions.join(', ')}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Key Benefits */}
+            {metadata.benefits && metadata.benefits.length > 0 && (
+              <View className='px-4 mb-6'>
+                <Text className='text-xl font-bold text-text mb-4'>
+                  Key Benefits
+                </Text>
+                <View className='bg-secondary rounded-xl p-4 border border-border'>
+                  {metadata.benefits.map((benefit: string, idx: number) => (
+                    <View key={idx} className='flex-row mb-3'>
+                      <Text className='mr-3 text-green-600 text-lg'>✓</Text>
+                      <Text className='flex-1 text-text'>{benefit}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Annual Fee Info */}
+            <View className='px-4 mb-6'>
+              <View className='bg-secondary rounded-xl p-4 border border-border'>
+                <Text className='text-sm text-text-secondary mb-1'>
+                  Annual Fee
+                </Text>
+                <Text className='text-2xl font-bold text-text mb-2'>
+                  {metadata.annualFee === 0
+                    ? 'FREE'
+                    : `₹${metadata.annualFee.toLocaleString('en-IN')}`}
+                </Text>
+                {metadata.joiningFee > 0 && (
+                  <Text className='text-sm text-text-secondary mb-2'>
+                    Joining Fee: ₹{metadata.joiningFee.toLocaleString('en-IN')}
+                  </Text>
+                )}
+                {metadata.minIncome && (
+                  <Text className='text-sm text-text-secondary'>
+                    Min. Income Required: ₹
+                    {metadata.minIncome.toLocaleString('en-IN')}/month
+                  </Text>
+                )}
+              </View>
+            </View>
+          </>
+        )}
 
         {/* Card Information */}
         <View className='px-4 mb-6'>

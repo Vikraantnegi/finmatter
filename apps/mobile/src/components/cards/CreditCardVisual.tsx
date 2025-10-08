@@ -9,6 +9,7 @@ import { View, Text, TouchableOpacity, Animated } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Eye, EyeOff, MoreVertical, Trash2 } from 'lucide-react-native';
 import { Card as CardType, CardNetwork, RewardType } from '@finmatter/types';
+import { cardSearchService } from '@finmatter/cc-engine';
 
 interface CreditCardVisualProps {
   card: CardType;
@@ -105,9 +106,28 @@ const CreditCardVisual: React.FC<CreditCardVisualProps> = ({
   //   }),
   // };
 
-  const getCardGradient = (network: CardNetwork, bankName: string) => {
-    // Bank-specific gradients
-    const bankGradients = {
+  const getCardGradient = (
+    network: CardNetwork,
+    bankName: string,
+    cardMetadataId?: string,
+    storedPrimaryColor?: string,
+    storedSecondaryColor?: string,
+  ): [string, string] => {
+    // Priority 1: Use card metadata colors if available
+    if (cardMetadataId) {
+      const metadata = cardSearchService.getCardById(cardMetadataId);
+      if (metadata) {
+        return [metadata.primaryColor, metadata.secondaryColor];
+      }
+    }
+
+    // Priority 2: Use stored colors from database
+    if (storedPrimaryColor && storedSecondaryColor) {
+      return [storedPrimaryColor, storedSecondaryColor];
+    }
+
+    // Priority 3: Bank-specific gradients (fallback for legacy cards)
+    const bankGradients: Record<string, [string, string]> = {
       HDFC: ['#1E3A8A', '#3B82F6'],
       ICICI: ['#059669', '#10B981'],
       SBI: ['#DC2626', '#EF4444'],
@@ -115,8 +135,8 @@ const CreditCardVisual: React.FC<CreditCardVisualProps> = ({
       Kotak: ['#EA580C', '#F97316'],
     };
 
-    // Network-specific gradients as fallback
-    const networkGradients = {
+    // Priority 4: Network-specific gradients as fallback
+    const networkGradients: Record<CardNetwork, [string, string]> = {
       visa: ['#1E3A8A', '#3B82F6'],
       mastercard: ['#DC2626', '#EF4444'],
       amex: ['#059669', '#10B981'],
@@ -162,7 +182,13 @@ const CreditCardVisual: React.FC<CreditCardVisualProps> = ({
     }
   };
 
-  const gradient = getCardGradient(card.network, card.bankName);
+  const gradient = getCardGradient(
+    card.network,
+    card.bankName,
+    card.cardMetadataId,
+    card.primaryColor,
+    card.secondaryColor,
+  );
 
   return (
     <View className='relative'>

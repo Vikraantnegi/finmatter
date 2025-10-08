@@ -3,11 +3,6 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['pdf-parse'],
   },
-  api: {
-    bodyParser: {
-      sizeLimit: '5mb',
-    },
-  },
   images: {
     domains: ['localhost'],
   },

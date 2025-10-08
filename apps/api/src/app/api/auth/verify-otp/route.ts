@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     const { phoneNumber, otp } = validation.data;
 
-    // Verify OTP using Supabase Auth
+    // Verify OTP using Supabase Auth with Twilio
     const { data, error } = await supabaseAdmin.auth.verifyOtp({
       phone: phoneNumber,
       token: otp,

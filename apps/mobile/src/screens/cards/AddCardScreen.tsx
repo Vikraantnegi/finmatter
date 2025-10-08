@@ -1,6 +1,6 @@
 /**
  * Add Card Screen
- * Form for adding a new credit card to user's portfolio
+ * Two-step card selection: Bank -> Card -> Form
  */
 
 import React, { useState } from 'react';
@@ -14,18 +14,21 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { ArrowLeft, Check } from 'lucide-react-native';
+import { ArrowLeft, Check, Search, ChevronRight } from 'lucide-react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
-// Types
-import {
-  CreateCardRequest,
-  CardType,
-  CardNetwork,
-  RewardType,
-} from '@finmatter/types';
+// Types - Note: Some types imported for future use
+// import {
+//   CreateCardRequest,
+//   CardType,
+//   CardNetwork,
+//   RewardType,
+// } from '@finmatter/types';
 
 // Services
 import { cardService } from '../../services/cardService';
+import { cardSearchService } from '@finmatter/cc-engine';
+import type { CardMetadata, BankMetadata } from '@finmatter/cc-engine';
 
 // Utils
 import { haptics } from '../../utils/haptics';
@@ -35,78 +38,93 @@ interface AddCardScreenProps {
   route: any;
 }
 
+type SelectionStep = 'bank' | 'card' | 'form';
+
 const AddCardScreen: React.FC<AddCardScreenProps> = ({ navigation }) => {
-  const [formData, setFormData] = useState<CreateCardRequest>({
-    bankName: '',
-    cardName: '',
-    lastFourDigits: '',
-    cardType: 'credit',
-    network: 'visa',
-    rewardType: 'cashback',
-    annualFee: 0,
-    currency: 'INR',
-  });
+  // Step management
+  const [step, setStep] = useState<SelectionStep>('bank');
+  const [selectedBank, setSelectedBank] = useState<BankMetadata | null>(null);
+  const [selectedCard, setSelectedCard] = useState<CardMetadata | null>(null);
+
+  // Search
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Form data
+  const [lastFourDigits, setLastFourDigits] = useState('');
+  const [creditLimit, setCreditLimit] = useState('');
+  const [billingDay, setBillingDay] = useState('');
 
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Partial<CreateCardRequest>>({});
+  const [errors, setErrors] = useState<any>({});
 
-  // Bank options
-  const bankOptions = [
-    'HDFC Bank',
-    'ICICI Bank',
-    'State Bank of India',
-    'Axis Bank',
-    'Kotak Mahindra Bank',
-    'IndusInd Bank',
-    'Yes Bank',
-    'Federal Bank',
-    'IDBI Bank',
-    'Bank of Baroda',
-    'Punjab National Bank',
-    'Canara Bank',
-    'Union Bank of India',
-    'Other',
-  ];
+  // Get banks with card counts
+  const banks = cardSearchService.getBanksWithCardCounts();
 
-  // Card type options
-  const cardTypeOptions: { value: CardType; label: string }[] = [
-    { value: 'credit', label: 'Credit Card' },
-    { value: 'debit', label: 'Debit Card' },
-    { value: 'prepaid', label: 'Prepaid Card' },
-  ];
+  // Filter banks by search
+  const filteredBanks = searchQuery
+    ? banks.filter((bank: BankMetadata & { cardCount: number }) =>
+        bank.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : banks;
 
-  // Network options
-  const networkOptions: { value: CardNetwork; label: string }[] = [
-    { value: 'visa', label: 'Visa' },
-    { value: 'mastercard', label: 'Mastercard' },
-    { value: 'rupay', label: 'RuPay' },
-    { value: 'amex', label: 'American Express' },
-    { value: 'discover', label: 'Discover' },
-  ];
+  // Get cards for selected bank
+  const availableCards = selectedBank
+    ? cardSearchService.getCardsByBank(selectedBank.id)
+    : [];
 
-  // Reward type options
-  const rewardTypeOptions: { value: RewardType; label: string }[] = [
-    { value: 'cashback', label: 'Cashback' },
-    { value: 'points', label: 'Points' },
-    { value: 'miles', label: 'Miles' },
-    { value: 'none', label: 'No Rewards' },
-  ];
+  // Filter cards by search
+  const filteredCards = searchQuery
+    ? availableCards.filter((card: CardMetadata) =>
+        card.cardName.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : availableCards;
+
+  const handleBankSelect = (bank: BankMetadata) => {
+    haptics.selection();
+    setSelectedBank(bank);
+    setSearchQuery('');
+    setStep('card');
+  };
+
+  const handleCardSelect = (card: CardMetadata) => {
+    haptics.selection();
+    setSelectedCard(card);
+    setStep('form');
+  };
+
+  const handleManualEntry = () => {
+    haptics.selection();
+    setSelectedCard(null);
+    setStep('form');
+  };
+
+  const handleBack = () => {
+    haptics.selection();
+    if (step === 'card') {
+      setStep('bank');
+      setSelectedBank(null);
+      setSearchQuery('');
+    } else if (step === 'form') {
+      setStep('card');
+      setSelectedCard(null);
+    } else {
+      navigation.goBack();
+    }
+  };
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<CreateCardRequest> = {};
+    const newErrors: any = {};
 
-    if (!formData.bankName.trim()) {
-      newErrors.bankName = 'Bank name is required';
+    if (!lastFourDigits || lastFourDigits.length !== 4) {
+      newErrors.lastFourDigits = 'Please enter last 4 digits';
     }
 
-    if (!formData.cardName.trim()) {
-      newErrors.cardName = 'Card name is required';
+    if (creditLimit && isNaN(parseInt(creditLimit))) {
+      newErrors.creditLimit = 'Please enter a valid amount';
     }
 
-    if (!formData.lastFourDigits.trim()) {
-      newErrors.lastFourDigits = 'Last four digits are required';
-    } else if (!/^\d{4}$/.test(formData.lastFourDigits)) {
-      newErrors.lastFourDigits = 'Must be exactly 4 digits';
+    if (billingDay && (parseInt(billingDay) < 1 || parseInt(billingDay) > 31)) {
+      newErrors.billingDay = 'Please enter a day between 1-31';
     }
 
     setErrors(newErrors);
@@ -121,243 +139,387 @@ const AddCardScreen: React.FC<AddCardScreenProps> = ({ navigation }) => {
 
     try {
       setLoading(true);
+      haptics.medium();
+
+      const cardData: any = {
+        card_metadata_id: selectedCard?.id || null,
+        bank_id: selectedCard?.bankId || selectedBank?.id || 'unknown',
+        bank_name:
+          selectedCard?.bankId?.toUpperCase() ||
+          selectedBank?.name ||
+          'Unknown Bank',
+        card_name: selectedCard?.cardName || 'Custom Card',
+        last_four_digits: lastFourDigits,
+        card_type: selectedCard?.cardType || 'credit',
+        network: selectedCard?.network || 'visa',
+        credit_limit: creditLimit ? parseInt(creditLimit) : null,
+        billing_day: billingDay ? parseInt(billingDay) : null,
+
+        // Metadata colors
+        primary_color: selectedCard?.primaryColor || '#6B7280',
+        secondary_color: selectedCard?.secondaryColor || '#4B5563',
+        reward_type: selectedCard?.rewardType || 'none',
+
+        // Flags
+        is_custom: !selectedCard,
+        is_active: true,
+      };
+
+      await cardService.createCard(cardData);
+
       haptics.success();
-
-      const response = await cardService.createCard(formData);
-
-      if (response.success) {
-        Alert.alert('Success', 'Card added successfully!', [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]);
-      } else {
-        Alert.alert('Error', 'Failed to add card');
-      }
-    } catch (error) {
-      console.error('Add card error:', error);
-      Alert.alert('Error', 'An unexpected error occurred');
+      Alert.alert('Success', 'Card added successfully', [
+        {
+          text: 'OK',
+          onPress: () => navigation.goBack(),
+        },
+      ]);
+    } catch (error: any) {
+      console.error('Error adding card:', error);
+      haptics.error();
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to add card. Please try again.',
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const updateFormData = (field: keyof CreateCardRequest, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  };
+  // Render Bank Selection Step
+  const renderBankSelection = () => (
+    <View className='flex-1'>
+      {/* Search Bar */}
+      <View className='px-4 pb-4'>
+        <View className='flex-row items-center bg-gray-100 rounded-xl px-4 py-3'>
+          <Search size={20} color='#6B7280' />
+          <TextInput
+            className='flex-1 ml-3 text-base'
+            placeholder='Search banks...'
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor='#9CA3AF'
+          />
+        </View>
+      </View>
+
+      {/* Banks Grid */}
+      <ScrollView className='flex-1 px-4' showsVerticalScrollIndicator={false}>
+        <View className='flex-row flex-wrap justify-between'>
+          {filteredBanks.map((bank: BankMetadata & { cardCount: number }) => (
+            <TouchableOpacity
+              key={bank.id}
+              onPress={() => handleBankSelect(bank)}
+              className='w-[48%] mb-4 bg-white rounded-xl p-4 shadow-sm border border-gray-100'
+              activeOpacity={0.7}
+            >
+              <View className='items-center'>
+                {/* Bank Icon Placeholder */}
+                <View
+                  className='w-16 h-16 rounded-full mb-3 items-center justify-center'
+                  style={{ backgroundColor: `${bank.primaryColor}20` }}
+                >
+                  <Text
+                    className='text-2xl font-bold'
+                    style={{ color: bank.primaryColor }}
+                  >
+                    {bank.name.charAt(0)}
+                  </Text>
+                </View>
+
+                {/* Bank Name */}
+                <Text className='text-base font-semibold text-gray-900 text-center mb-1'>
+                  {bank.name}
+                </Text>
+
+                {/* Card Count */}
+                <Text className='text-sm text-gray-500'>
+                  {bank.cardCount} {bank.cardCount === 1 ? 'card' : 'cards'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {filteredBanks.length === 0 && (
+          <View className='items-center justify-center py-12'>
+            <Text className='text-gray-500 text-base'>No banks found</Text>
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+
+  // Render Card Selection Step
+  const renderCardSelection = () => (
+    <View className='flex-1'>
+      {/* Bank Header */}
+      <View className='px-4 pb-4'>
+        <Text className='text-lg font-semibold text-gray-900 mb-1'>
+          {selectedBank?.name}
+        </Text>
+        <Text className='text-sm text-gray-500'>
+          Select your card or add manually
+        </Text>
+      </View>
+
+      {/* Search Bar */}
+      <View className='px-4 pb-4'>
+        <View className='flex-row items-center bg-gray-100 rounded-xl px-4 py-3'>
+          <Search size={20} color='#6B7280' />
+          <TextInput
+            className='flex-1 ml-3 text-base'
+            placeholder='Search cards...'
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor='#9CA3AF'
+          />
+        </View>
+      </View>
+
+      {/* Cards List */}
+      <ScrollView className='flex-1 px-4' showsVerticalScrollIndicator={false}>
+        {filteredCards.map((card: any) => (
+          <TouchableOpacity
+            key={card.id}
+            onPress={() => handleCardSelect(card as CardMetadata)}
+            className='mb-4'
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={[card.primaryColor, card.secondaryColor]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className='rounded-xl p-4'
+            >
+              {/* Card Name */}
+              <Text className='text-white text-lg font-bold mb-2'>
+                {card.cardName}
+              </Text>
+
+              {/* Details Row */}
+              <View className='flex-row items-center justify-between'>
+                <View className='flex-row items-center space-x-3'>
+                  {/* Annual Fee */}
+                  <View className='bg-white/20 rounded-lg px-3 py-1'>
+                    <Text className='text-white text-xs font-medium'>
+                      {card.annualFee === 0 ? 'FREE' : `₹${card.annualFee}/yr`}
+                    </Text>
+                  </View>
+
+                  {/* Reward Type */}
+                  <View className='bg-white/20 rounded-lg px-3 py-1'>
+                    <Text className='text-white text-xs font-medium capitalize'>
+                      {card.rewardType === 'none'
+                        ? 'No Rewards'
+                        : card.rewardType}
+                    </Text>
+                  </View>
+                </View>
+
+                <ChevronRight size={20} color='white' />
+              </View>
+
+              {/* Brief Description */}
+              {card.rewardRules.length > 0 && (
+                <Text className='text-white/80 text-xs mt-2' numberOfLines={1}>
+                  {card.rewardRules[0].category === 'default'
+                    ? `${card.rewardRules[0].rewardRate}${
+                        card.rewardRules[0].rewardUnit === 'percent' ? '%' : 'x'
+                      } rewards`
+                    : `${card.rewardRules[0].rewardRate}${
+                        card.rewardRules[0].rewardUnit === 'percent' ? '%' : 'x'
+                      } on ${card.rewardRules[0].category}`}
+                </Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        ))}
+
+        {filteredCards.length === 0 && !searchQuery && (
+          <View className='items-center justify-center py-8'>
+            <Text className='text-gray-500 text-base mb-4'>
+              No cards available
+            </Text>
+          </View>
+        )}
+
+        {filteredCards.length === 0 && searchQuery && (
+          <View className='items-center justify-center py-8'>
+            <Text className='text-gray-500 text-base'>No cards found</Text>
+          </View>
+        )}
+
+        {/* Manual Entry Button */}
+        <TouchableOpacity
+          onPress={handleManualEntry}
+          className='bg-gray-100 rounded-xl p-4 mb-6 border-2 border-dashed border-gray-300'
+          activeOpacity={0.7}
+        >
+          <Text className='text-gray-700 font-semibold text-center'>
+            Don't see your card? Add manually →
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
+  );
+
+  // Render Form Step
+  const renderForm = () => (
+    <ScrollView className='flex-1 px-4' showsVerticalScrollIndicator={false}>
+      {/* Selected Card Preview */}
+      {selectedCard && (
+        <View className='mb-6'>
+          <Text className='text-sm text-gray-600 mb-2'>Selected Card</Text>
+          <LinearGradient
+            colors={[selectedCard.primaryColor, selectedCard.secondaryColor]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className='rounded-xl p-4'
+          >
+            <Text className='text-white text-lg font-bold'>
+              {selectedCard.cardName}
+            </Text>
+            <Text className='text-white/80 text-sm'>{selectedBank?.name}</Text>
+          </LinearGradient>
+        </View>
+      )}
+
+      {/* Manual Entry Info */}
+      {!selectedCard && (
+        <View className='mb-6 bg-gray-100 rounded-xl p-4'>
+          <Text className='text-sm text-gray-600'>
+            Adding custom card for{' '}
+            <Text className='font-semibold'>{selectedBank?.name}</Text>
+          </Text>
+        </View>
+      )}
+
+      {/* Last 4 Digits (Required) */}
+      <View className='mb-6'>
+        <Text className='text-sm font-medium text-gray-700 mb-2'>
+          Last 4 Digits <Text className='text-red-500'>*</Text>
+        </Text>
+        <TextInput
+          className='bg-gray-100 rounded-xl px-4 py-3 text-base'
+          placeholder='1234'
+          value={lastFourDigits}
+          onChangeText={setLastFourDigits}
+          keyboardType='number-pad'
+          maxLength={4}
+        />
+        {errors.lastFourDigits && (
+          <Text className='text-red-500 text-xs mt-1'>
+            {errors.lastFourDigits}
+          </Text>
+        )}
+      </View>
+
+      {/* Credit Limit (Optional) */}
+      <View className='mb-6'>
+        <Text className='text-sm font-medium text-gray-700 mb-2'>
+          Credit Limit (Optional)
+        </Text>
+        <View className='flex-row items-center bg-gray-100 rounded-xl px-4 py-3'>
+          <Text className='text-gray-500 mr-2'>₹</Text>
+          <TextInput
+            className='flex-1 text-base'
+            placeholder='50000'
+            value={creditLimit}
+            onChangeText={setCreditLimit}
+            keyboardType='numeric'
+          />
+        </View>
+        {errors.creditLimit && (
+          <Text className='text-red-500 text-xs mt-1'>
+            {errors.creditLimit}
+          </Text>
+        )}
+      </View>
+
+      {/* Billing Day (Optional) */}
+      <View className='mb-6'>
+        <Text className='text-sm font-medium text-gray-700 mb-2'>
+          Billing Day (Optional)
+        </Text>
+        <TextInput
+          className='bg-gray-100 rounded-xl px-4 py-3 text-base'
+          placeholder='Day of month (1-31)'
+          value={billingDay}
+          onChangeText={setBillingDay}
+          keyboardType='number-pad'
+          maxLength={2}
+        />
+        {errors.billingDay && (
+          <Text className='text-red-500 text-xs mt-1'>{errors.billingDay}</Text>
+        )}
+      </View>
+
+      {/* Submit Button */}
+      <TouchableOpacity
+        onPress={handleSubmit}
+        disabled={loading}
+        className='bg-blue-600 rounded-xl py-4 mb-6'
+        activeOpacity={0.8}
+      >
+        {loading ? (
+          <ActivityIndicator color='white' />
+        ) : (
+          <View className='flex-row items-center justify-center'>
+            <Check size={20} color='white' />
+            <Text className='text-white font-semibold text-base ml-2'>
+              Add Card
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    </ScrollView>
+  );
 
   return (
-    <SafeAreaView className='flex-1 bg-background'>
+    <SafeAreaView className='flex-1 bg-white'>
       {/* Header */}
-      <View className='flex-row items-center justify-between px-4 py-4 border-b border-border'>
+      <View className='flex-row items-center justify-between px-4 py-3 border-b border-gray-200'>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={handleBack}
           className='p-2'
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <ArrowLeft size={24} color='#374151' />
+          <ArrowLeft size={24} color='#111827' />
         </TouchableOpacity>
-        <Text className='text-xl font-bold text-text'>Add Card</Text>
-        <View className='w-8' />
+
+        <Text className='text-lg font-semibold text-gray-900'>
+          {step === 'bank' && 'Select Bank'}
+          {step === 'card' && 'Select Card'}
+          {step === 'form' && 'Card Details'}
+        </Text>
+
+        <View className='w-10' />
       </View>
 
-      <ScrollView
-        className='flex-1 px-4 py-6'
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Bank Name */}
-        <View className='mb-6'>
-          <Text className='text-text font-semibold mb-2'>Bank Name</Text>
-          <View className='flex-row flex-wrap'>
-            {bankOptions.map(bank => (
-              <TouchableOpacity
-                key={bank}
-                onPress={() => updateFormData('bankName', bank)}
-                className={`px-4 py-2 rounded-lg mr-2 mb-2 ${
-                  formData.bankName === bank ? 'bg-primary' : 'bg-secondary'
-                }`}
-              >
-                <Text
-                  className={`font-medium ${
-                    formData.bankName === bank ? 'text-white' : 'text-text'
-                  }`}
-                >
-                  {bank}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          {errors.bankName && (
-            <Text className='text-red-500 text-sm mt-1'>{errors.bankName}</Text>
-          )}
-        </View>
-
-        {/* Card Name */}
-        <View className='mb-6'>
-          <Text className='text-text font-semibold mb-2'>Card Name</Text>
-          <TextInput
-            value={formData.cardName}
-            onChangeText={value => updateFormData('cardName', value)}
-            placeholder='e.g., Millennia Credit Card'
-            placeholderTextColor='#9CA3AF'
-            className='bg-secondary px-4 py-3 rounded-lg text-text text-base'
-            autoCapitalize='words'
-          />
-          {errors.cardName && (
-            <Text className='text-red-500 text-sm mt-1'>{errors.cardName}</Text>
-          )}
-        </View>
-
-        {/* Last Four Digits */}
-        <View className='mb-6'>
-          <Text className='text-text font-semibold mb-2'>Last 4 Digits</Text>
-          <TextInput
-            value={formData.lastFourDigits}
-            onChangeText={value =>
-              updateFormData(
-                'lastFourDigits',
-                value.replace(/\D/g, '').slice(0, 4),
-              )
-            }
-            placeholder='1234'
-            placeholderTextColor='#9CA3AF'
-            className='bg-secondary px-4 py-3 rounded-lg text-text text-base font-mono'
-            keyboardType='numeric'
-            maxLength={4}
-          />
-          {errors.lastFourDigits && (
-            <Text className='text-red-500 text-sm mt-1'>
-              {errors.lastFourDigits}
-            </Text>
-          )}
-        </View>
-
-        {/* Card Type */}
-        <View className='mb-6'>
-          <Text className='text-text font-semibold mb-2'>Card Type</Text>
-          <View className='flex-row flex-wrap'>
-            {cardTypeOptions.map(option => (
-              <TouchableOpacity
-                key={option.value}
-                onPress={() => updateFormData('cardType', option.value)}
-                className={`px-4 py-2 rounded-lg mr-2 mb-2 ${
-                  formData.cardType === option.value
-                    ? 'bg-primary'
-                    : 'bg-secondary'
-                }`}
-              >
-                <Text
-                  className={`font-medium ${
-                    formData.cardType === option.value
-                      ? 'text-white'
-                      : 'text-text'
-                  }`}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Network */}
-        <View className='mb-6'>
-          <Text className='text-text font-semibold mb-2'>Network</Text>
-          <View className='flex-row flex-wrap'>
-            {networkOptions.map(option => (
-              <TouchableOpacity
-                key={option.value}
-                onPress={() => updateFormData('network', option.value)}
-                className={`px-4 py-2 rounded-lg mr-2 mb-2 ${
-                  formData.network === option.value
-                    ? 'bg-primary'
-                    : 'bg-secondary'
-                }`}
-              >
-                <Text
-                  className={`font-medium ${
-                    formData.network === option.value
-                      ? 'text-white'
-                      : 'text-text'
-                  }`}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Reward Type */}
-        <View className='mb-6'>
-          <Text className='text-text font-semibold mb-2'>Reward Type</Text>
-          <View className='flex-row flex-wrap'>
-            {rewardTypeOptions.map(option => (
-              <TouchableOpacity
-                key={option.value}
-                onPress={() => updateFormData('rewardType', option.value)}
-                className={`px-4 py-2 rounded-lg mr-2 mb-2 ${
-                  formData.rewardType === option.value
-                    ? 'bg-primary'
-                    : 'bg-secondary'
-                }`}
-              >
-                <Text
-                  className={`font-medium ${
-                    formData.rewardType === option.value
-                      ? 'text-white'
-                      : 'text-text'
-                  }`}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Annual Fee */}
-        <View className='mb-8'>
-          <Text className='text-text font-semibold mb-2'>Annual Fee (₹)</Text>
-          <TextInput
-            value={formData.annualFee.toString()}
-            onChangeText={value =>
-              updateFormData('annualFee', parseFloat(value) || 0)
-            }
-            placeholder='0'
-            placeholderTextColor='#9CA3AF'
-            className='bg-secondary px-4 py-3 rounded-lg text-text text-base'
-            keyboardType='numeric'
-          />
-        </View>
-      </ScrollView>
-
-      {/* Submit Button */}
-      <View className='px-4 py-6 border-t border-border'>
-        <TouchableOpacity
-          onPress={handleSubmit}
-          disabled={loading}
-          className={`py-4 rounded-lg flex-row items-center justify-center ${
-            loading ? 'bg-gray-400' : 'bg-primary'
+      {/* Step Indicator */}
+      <View className='flex-row items-center px-4 py-3 bg-gray-50'>
+        <View
+          className={`flex-1 h-1 rounded ${
+            step === 'bank' ? 'bg-blue-600' : 'bg-gray-300'
           }`}
-        >
-          {loading ? (
-            <ActivityIndicator size='small' color='white' />
-          ) : (
-            <>
-              <Check size={20} color='white' className='mr-2' />
-              <Text className='text-white font-semibold text-lg ml-2'>
-                Add Card
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
+        />
+        <View
+          className={`flex-1 h-1 rounded mx-2 ${
+            step === 'card' || step === 'form' ? 'bg-blue-600' : 'bg-gray-300'
+          }`}
+        />
+        <View
+          className={`flex-1 h-1 rounded ${
+            step === 'form' ? 'bg-blue-600' : 'bg-gray-300'
+          }`}
+        />
       </View>
+
+      {/* Content */}
+      {step === 'bank' && renderBankSelection()}
+      {step === 'card' && renderCardSelection()}
+      {step === 'form' && renderForm()}
     </SafeAreaView>
   );
 };

@@ -159,7 +159,7 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ navigation }) => {
     refresh();
   }, [refresh]);
 
-  const renderCard = ({ item: card }: { item: Card }) => (
+  const renderCard = ({ item: card }: { item: any }) => (
     <TouchableOpacity
       onPress={() => handleCardPress(card)}
       className='mb-4 mx-4'
@@ -207,6 +207,21 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ navigation }) => {
     );
   }
 
+  // Calculate portfolio stats
+  const totalCards = cards.length;
+  const totalLimit = cards.reduce(
+    (sum, card) => sum + (card.creditLimit || 0),
+    0,
+  );
+  const totalUsed = cards.reduce((sum, card) => {
+    if (card.creditLimit && card.availableCredit) {
+      return sum + (card.creditLimit - card.availableCredit);
+    }
+    return sum;
+  }, 0);
+  const totalAvailable = totalLimit - totalUsed;
+  const avgUtilization = totalLimit > 0 ? (totalUsed / totalLimit) * 100 : 0;
+
   return (
     <SafeAreaView className='flex-1 bg-background'>
       {/* Header */}
@@ -233,11 +248,67 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ navigation }) => {
         </View>
       </View>
 
+      {/* Portfolio Stats */}
+      {cards.length > 0 && (
+        <View className='mx-4 my-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl border border-purple-200'>
+          <Text className='text-sm text-gray-600 font-medium mb-3'>
+            Your Card Portfolio
+          </Text>
+
+          <View className='flex-row justify-between mb-4'>
+            <View>
+              <Text className='text-3xl font-bold text-gray-900'>
+                {totalCards}
+              </Text>
+              <Text className='text-sm text-gray-600'>Total Cards</Text>
+            </View>
+
+            {totalLimit > 0 && (
+              <View className='items-end'>
+                <Text className='text-3xl font-bold text-gray-900'>
+                  ₹{(totalLimit / 100000).toFixed(1)}L
+                </Text>
+                <Text className='text-sm text-gray-600'>Total Limit</Text>
+              </View>
+            )}
+          </View>
+
+          {totalLimit > 0 && (
+            <View>
+              <View className='flex-row justify-between mb-2'>
+                <Text className='text-sm text-gray-600'>
+                  Available: ₹{(totalAvailable / 100000).toFixed(1)}L
+                </Text>
+                <Text className='text-sm text-gray-600'>
+                  Utilization: {avgUtilization.toFixed(1)}%
+                </Text>
+              </View>
+
+              {/* Progress Bar */}
+              <View className='h-2 bg-gray-200 rounded-full overflow-hidden'>
+                <View
+                  style={{
+                    width: `${Math.min(avgUtilization, 100)}%`,
+                    backgroundColor:
+                      avgUtilization > 70
+                        ? '#EF4444'
+                        : avgUtilization > 40
+                        ? '#F59E0B'
+                        : '#10B981',
+                  }}
+                  className='h-full rounded-full'
+                />
+              </View>
+            </View>
+          )}
+        </View>
+      )}
+
       {/* Cards List */}
       <FlatList
         data={filteredCards}
         renderItem={renderCard}
-        keyExtractor={item => item.id}
+        keyExtractor={(item: any) => item.id}
         refreshControl={
           <RefreshControl
             refreshing={loading}

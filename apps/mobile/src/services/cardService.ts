@@ -3,12 +3,12 @@
  * Handles all card-related API calls
  */
 
-import { 
-  GetCardsResponse, 
-  CreateCardRequest, 
+import {
+  GetCardsResponse,
+  CreateCardRequest,
   CreateCardResponse,
   Card,
-  CardBenefit
+  CardBenefit,
 } from '@finmatter/types';
 import { apiClient } from './apiClient';
 
@@ -25,16 +25,17 @@ export const cardService = {
   }): Promise<GetCardsResponse> {
     try {
       const queryParams = new URLSearchParams();
-      
+
       if (params?.status) queryParams.append('status', params.status);
       if (params?.cardType) queryParams.append('cardType', params.cardType);
       if (params?.bankName) queryParams.append('bankName', params.bankName);
       if (params?.limit) queryParams.append('limit', params.limit.toString());
-      if (params?.offset) queryParams.append('offset', params.offset.toString());
+      if (params?.offset)
+        queryParams.append('offset', params.offset.toString());
 
       const url = `/api/cards${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await apiClient.get(url);
-      
+
       return response.data;
     } catch (error) {
       console.error('Get cards error:', error);
@@ -45,7 +46,9 @@ export const cardService = {
   /**
    * Get specific card details
    */
-  async getCard(cardId: string): Promise<{ success: boolean; data?: { card: Card }; error?: any }> {
+  async getCard(
+    cardId: string,
+  ): Promise<{ success: boolean; data?: { card: Card }; error?: any }> {
     try {
       const response = await apiClient.get(`/api/cards/${cardId}`);
       return response.data;
@@ -72,8 +75,8 @@ export const cardService = {
    * Update card details
    */
   async updateCard(
-    cardId: string, 
-    updateData: Partial<CreateCardRequest>
+    cardId: string,
+    updateData: Partial<CreateCardRequest>,
   ): Promise<{ success: boolean; data?: { card: Card }; error?: any }> {
     try {
       const response = await apiClient.put(`/api/cards/${cardId}`, updateData);
@@ -100,7 +103,11 @@ export const cardService = {
   /**
    * Get card benefits
    */
-  async getCardBenefits(cardId: string): Promise<{ success: boolean; data?: { benefits: CardBenefit[] }; error?: any }> {
+  async getCardBenefits(cardId: string): Promise<{
+    success: boolean;
+    data?: { benefits: CardBenefit[] };
+    error?: any;
+  }> {
     try {
       const response = await apiClient.get(`/api/cards/${cardId}/benefits`);
       return response.data;
@@ -114,17 +121,24 @@ export const cardService = {
    * Add card benefit
    */
   async addCardBenefit(
-    cardId: string, 
+    cardId: string,
     benefitData: {
       category: string;
       rewardRate: number;
       rewardCap?: number;
       conditions?: Record<string, any>;
       isActive?: boolean;
-    }
-  ): Promise<{ success: boolean; data?: { benefit: CardBenefit }; error?: any }> {
+    },
+  ): Promise<{
+    success: boolean;
+    data?: { benefit: CardBenefit };
+    error?: any;
+  }> {
     try {
-      const response = await apiClient.post(`/api/cards/${cardId}/benefits`, benefitData);
+      const response = await apiClient.post(
+        `/api/cards/${cardId}/benefits`,
+        benefitData,
+      );
       return response.data;
     } catch (error) {
       console.error('Add card benefit error:', error);
@@ -144,10 +158,17 @@ export const cardService = {
       rewardCap?: number;
       conditions?: Record<string, any>;
       isActive?: boolean;
-    }
-  ): Promise<{ success: boolean; data?: { benefit: CardBenefit }; error?: any }> {
+    },
+  ): Promise<{
+    success: boolean;
+    data?: { benefit: CardBenefit };
+    error?: any;
+  }> {
     try {
-      const response = await apiClient.put(`/api/cards/${cardId}/benefits/${benefitId}`, updateData);
+      const response = await apiClient.put(
+        `/api/cards/${cardId}/benefits/${benefitId}`,
+        updateData,
+      );
       return response.data;
     } catch (error) {
       console.error('Update card benefit error:', error);
@@ -160,10 +181,12 @@ export const cardService = {
    */
   async deleteCardBenefit(
     cardId: string,
-    benefitId: string
+    benefitId: string,
   ): Promise<{ success: boolean; error?: any }> {
     try {
-      const response = await apiClient.delete(`/api/cards/${cardId}/benefits/${benefitId}`);
+      const response = await apiClient.delete(
+        `/api/cards/${cardId}/benefits/${benefitId}`,
+      );
       return response.data;
     } catch (error) {
       console.error('Delete card benefit error:', error);

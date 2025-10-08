@@ -279,8 +279,8 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
                       {rule.rewardUnit === 'percent'
                         ? '% cashback'
                         : rule.rewardUnit === 'points_per_100'
-                        ? ' points per ₹100'
-                        : ' miles per ₹100'}
+                          ? ' points per ₹100'
+                          : ' miles per ₹100'}
                     </Text>
                     {rule.cap && (
                       <Text className='text-sm text-text-secondary'>

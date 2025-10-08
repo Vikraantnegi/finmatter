@@ -256,24 +256,28 @@ pnpm --filter web-pwa test
 ## 🎯 Roadmap
 
 ### Phase 1: Core Features (Current)
+
 - ✅ Authentication (Phone OTP)
 - ✅ Card Management
 - ✅ Portfolio Dashboard
 - ✅ Card Metadata Integration
 
 ### Phase 2: Transactions
+
 - [ ] Transaction tracking
 - [ ] Statement upload
 - [ ] Auto-categorization
 - [ ] Spending analytics
 
 ### Phase 3: Optimization
+
 - [ ] Card optimizer
 - [ ] Reward calculator
 - [ ] Best card recommendations
 - [ ] Spending insights
 
 ### Phase 4: AI Features
+
 - [ ] AI chat assistant
 - [ ] Smart notifications
 - [ ] Predictive analytics

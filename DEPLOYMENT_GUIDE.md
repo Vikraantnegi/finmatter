@@ -5,17 +5,21 @@
 ### Local Development
 
 1. **Start the API server:**
+
    ```bash
    cd /Users/vikrantnegi/finmatter
    pnpm dev:api
    ```
+
    API will be available at `http://localhost:3000`
 
 2. **Start the PWA:**
+
    ```bash
    cd /Users/vikrantnegi/finmatter
    pnpm dev:pwa
    ```
+
    PWA will be available at `http://localhost:3001`
 
 3. **Access the app:**
@@ -34,11 +38,13 @@
 ### Deploy API Server
 
 1. **Navigate to API directory:**
+
    ```bash
    cd apps/api
    ```
 
 2. **Deploy to Vercel:**
+
    ```bash
    vercel --prod
    ```
@@ -54,12 +60,14 @@
 ### Deploy Web PWA
 
 1. **Navigate to PWA directory:**
+
    ```bash
    cd apps/web-pwa
    ```
 
 2. **Update environment variables:**
    Create `.env.production`:
+
    ```env
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
@@ -67,6 +75,7 @@
    ```
 
 3. **Deploy to Vercel:**
+
    ```bash
    vercel --prod
    ```
@@ -105,6 +114,7 @@ npx supabase db push
 ### 4. Set up RLS Policies
 
 All policies are already defined in migrations. Verify:
+
 - `users` table has RLS enabled
 - `cards` table has RLS enabled
 - Policies allow users to access only their own data
@@ -157,6 +167,7 @@ curl https://api.finmatter.com/api/health
 ```
 
 Expected response:
+
 ```json
 {
   "status": "ok",
@@ -177,20 +188,20 @@ Expected response:
 
 ### API Server
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Yes |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | Yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | Yes |
-| `OPENAI_API_KEY` | OpenAI API key | No |
+| Variable                        | Description               | Required |
+| ------------------------------- | ------------------------- | -------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL      | Yes      |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key         | Yes      |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service role key | Yes      |
+| `OPENAI_API_KEY`                | OpenAI API key            | No       |
 
 ### Web PWA
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Yes |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | Yes |
-| `NEXT_PUBLIC_API_BASE_URL` | API server URL | Yes |
+| Variable                        | Description          | Required |
+| ------------------------------- | -------------------- | -------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL | Yes      |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key    | Yes      |
+| `NEXT_PUBLIC_API_BASE_URL`      | API server URL       | Yes      |
 
 ## 🐛 Troubleshooting
 
@@ -239,6 +250,7 @@ Expected response:
 ### Error Tracking (Optional)
 
 Consider adding:
+
 - Sentry for error tracking
 - LogRocket for session replay
 - PostHog for analytics

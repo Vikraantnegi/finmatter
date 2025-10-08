@@ -15,9 +15,14 @@ import { DatabaseCard } from '@finmatter/types';
 const UpdateCardSchema = z.object({
   bankName: z.string().min(1).max(100).optional(),
   cardName: z.string().min(1).max(100).optional(),
-  lastFourDigits: z.string().regex(/^\d{4}$/, 'Last four digits must be exactly 4 digits').optional(),
+  lastFourDigits: z
+    .string()
+    .regex(/^\d{4}$/, 'Last four digits must be exactly 4 digits')
+    .optional(),
   cardType: z.enum(['credit', 'debit', 'prepaid']).optional(),
-  network: z.enum(['visa', 'mastercard', 'rupay', 'amex', 'discover']).optional(),
+  network: z
+    .enum(['visa', 'mastercard', 'rupay', 'amex', 'discover'])
+    .optional(),
   rewardType: z.enum(['cashback', 'points', 'miles', 'none']).optional(),
   annualFee: z.number().min(0).optional(),
   currency: z.string().optional(),
@@ -33,13 +38,14 @@ const UpdateCardSchema = z.object({
  */
 async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
   const authHeader = request.headers.get('Authorization');
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new FinMatterError('Unauthorized', 'AUTH_REQUIRED', 401);
   }
 
   const token = authHeader.split(' ')[1];
-  const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser(token);
+  const { data: userResponse, error: userError } =
+    await supabaseAdmin.auth.getUser(token);
 
   if (userError || !userResponse?.user) {
     throw new FinMatterError('Unauthorized', 'INVALID_TOKEN', 401);
@@ -51,7 +57,10 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
 /**
  * Helper function to verify card ownership
  */
-async function verifyCardOwnership(cardId: string, userId: string): Promise<DatabaseCard> {
+async function verifyCardOwnership(
+  cardId: string,
+  userId: string,
+): Promise<DatabaseCard> {
   const { data: card, error } = await supabaseAdmin
     .from('cards')
     .select('*')
@@ -72,7 +81,7 @@ async function verifyCardOwnership(cardId: string, userId: string): Promise<Data
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const userId = await getAuthenticatedUserId(request);
@@ -94,10 +103,12 @@ export async function GET(
     // Verify ownership and get card
     const { data: card, error } = await supabaseAdmin
       .from('cards')
-      .select(`
+      .select(
+        `
         *,
         card_benefits (*)
-      `)
+      `,
+      )
       .eq('id', cardId)
       .eq('user_id', userId)
       .single();
@@ -155,7 +166,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const userId = await getAuthenticatedUserId(request);
@@ -199,19 +210,36 @@ export async function PUT(
     const updateData: Partial<DatabaseCard> = {};
     const validatedData = validation.data;
 
-    if (validatedData.bankName !== undefined) updateData.bank_name = validatedData.bankName;
-    if (validatedData.cardName !== undefined) updateData.card_name = validatedData.cardName;
-    if (validatedData.lastFourDigits !== undefined) updateData.last_four_digits = validatedData.lastFourDigits;
-    if (validatedData.cardType !== undefined) updateData.card_type = validatedData.cardType;
-    if (validatedData.network !== undefined) updateData.network = validatedData.network;
-    if (validatedData.rewardType !== undefined) updateData.reward_type = validatedData.rewardType;
-    if (validatedData.annualFee !== undefined) updateData.annual_fee = validatedData.annualFee;
-    if (validatedData.currency !== undefined) updateData.currency = validatedData.currency;
-    if (validatedData.status !== undefined) updateData.status = validatedData.status;
-    if (validatedData.issueDate !== undefined) updateData.issue_date = validatedData.issueDate ? new Date(validatedData.issueDate) : undefined;
-    if (validatedData.expiryDate !== undefined) updateData.expiry_date = validatedData.expiryDate ? new Date(validatedData.expiryDate) : undefined;
-    if (validatedData.creditLimit !== undefined) updateData.credit_limit = validatedData.creditLimit;
-    if (validatedData.availableCredit !== undefined) updateData.available_credit = validatedData.availableCredit;
+    if (validatedData.bankName !== undefined)
+      updateData.bank_name = validatedData.bankName;
+    if (validatedData.cardName !== undefined)
+      updateData.card_name = validatedData.cardName;
+    if (validatedData.lastFourDigits !== undefined)
+      updateData.last_four_digits = validatedData.lastFourDigits;
+    if (validatedData.cardType !== undefined)
+      updateData.card_type = validatedData.cardType;
+    if (validatedData.network !== undefined)
+      updateData.network = validatedData.network;
+    if (validatedData.rewardType !== undefined)
+      updateData.reward_type = validatedData.rewardType;
+    if (validatedData.annualFee !== undefined)
+      updateData.annual_fee = validatedData.annualFee;
+    if (validatedData.currency !== undefined)
+      updateData.currency = validatedData.currency;
+    if (validatedData.status !== undefined)
+      updateData.status = validatedData.status;
+    if (validatedData.issueDate !== undefined)
+      updateData.issue_date = validatedData.issueDate
+        ? new Date(validatedData.issueDate)
+        : undefined;
+    if (validatedData.expiryDate !== undefined)
+      updateData.expiry_date = validatedData.expiryDate
+        ? new Date(validatedData.expiryDate)
+        : undefined;
+    if (validatedData.creditLimit !== undefined)
+      updateData.credit_limit = validatedData.creditLimit;
+    if (validatedData.availableCredit !== undefined)
+      updateData.available_credit = validatedData.availableCredit;
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
@@ -226,10 +254,12 @@ export async function PUT(
       .update(updateData)
       .eq('id', cardId)
       .eq('user_id', userId)
-      .select(`
+      .select(
+        `
         *,
         card_benefits (*)
-      `)
+      `,
+      )
       .single();
 
     if (error) {
@@ -282,7 +312,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const userId = await getAuthenticatedUserId(request);

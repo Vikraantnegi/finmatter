@@ -10,7 +10,7 @@ import { Card } from '@finmatter/types';
 
 // SWR fetcher functions
 const cardsFetcher = async (): Promise<Card[]> => {
-  const response = await cardService.getCards() as Record<string, any>;
+  const response = (await cardService.getCards()) as Record<string, any>;
   if (response.success && response.data) {
     return response.data.cards;
   }
@@ -82,14 +82,14 @@ export const useCardSWR = (cardId: string | null) => {
     mutate,
   } = useSWR(
     cardId ? `card-${cardId}` : null,
-    () => cardId ? cardFetcher(cardId) : null,
+    () => (cardId ? cardFetcher(cardId) : null),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 60000, // 1 minute
       errorRetryCount: 2,
       fallbackData: cardId ? cards.find(c => c.id === cardId) : undefined,
-    }
+    },
   );
 
   return {
@@ -115,7 +115,11 @@ export const useFilteredCards = (filters?: {
     return cards.filter(card => {
       if (filters.status && card.status !== filters.status) return false;
       if (filters.cardType && card.cardType !== filters.cardType) return false;
-      if (filters.bankName && !card.bankName.toLowerCase().includes(filters.bankName.toLowerCase())) return false;
+      if (
+        filters.bankName &&
+        !card.bankName.toLowerCase().includes(filters.bankName.toLowerCase())
+      )
+        return false;
       return true;
     });
   }, [cards, filters]);
@@ -135,16 +139,22 @@ export const useCardStats = () => {
     const prepaid = cards.filter(c => c.cardType === 'prepaid').length;
 
     // Bank distribution
-    const bankDistribution = cards.reduce((acc, card) => {
-      acc[card.bankName] = (acc[card.bankName] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const bankDistribution = cards.reduce(
+      (acc, card) => {
+        acc[card.bankName] = (acc[card.bankName] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     // Reward type distribution
-    const rewardDistribution = cards.reduce((acc, card) => {
-      acc[card.rewardType] = (acc[card.rewardType] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const rewardDistribution = cards.reduce(
+      (acc, card) => {
+        acc[card.rewardType] = (acc[card.rewardType] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return {
       total,

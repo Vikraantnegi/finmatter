@@ -36,17 +36,24 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
 
-      const response = await authService.sendOTP(data.phone);
+      const phoneWithCountryCode = data.phone.startsWith('+91')
+        ? data.phone
+        : `+91${data.phone}`;
+      const response = await authService.sendOTP(phoneWithCountryCode);
 
       if (response.success) {
         toast.success('OTP sent successfully!');
-        router.push(`/auth/verify-otp?phone=${encodeURIComponent(data.phone)}`);
+        // Store phone number securely in session storage
+        sessionStorage.setItem('pendingPhoneNumber', phoneWithCountryCode);
+        router.push('/auth/verify-otp');
       } else {
         toast.error(response.error || 'Failed to send OTP');
       }
     } catch (error) {
-      console.error('Send OTP error:', error);
-      toast.error('Network error. Please try again.');
+      // Error message is already user-friendly from authService
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to send OTP',
+      );
     } finally {
       setIsLoading(false);
     }

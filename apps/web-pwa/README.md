@@ -137,6 +137,7 @@ src/
 ### Components
 
 All components follow a consistent design pattern:
+
 - Cards with shadow and hover effects
 - Gradient backgrounds for visual cards
 - Smooth transitions (200-300ms)
@@ -207,6 +208,7 @@ vercel --prod
 ### Environment Variables
 
 Set these in Vercel:
+
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_API_BASE_URL`
@@ -242,6 +244,7 @@ Custom colors, animations, and utilities defined in `tailwind.config.js`.
 ### TypeScript Config
 
 Strict mode enabled with path aliases:
+
 - `@/*` → `./src/*`
 - `@/components/*` → `./src/components/*`
 - `@/lib/*` → `./src/lib/*`
@@ -251,6 +254,7 @@ Strict mode enabled with path aliases:
 ### API Client
 
 Axios-based client with:
+
 - Request/response interceptors
 - Auto token injection
 - Error handling
@@ -264,21 +268,25 @@ Axios-based client with:
 ## 🎯 Roadmap
 
 ### Phase 1 (Current)
+
 - ✅ Authentication
 - ✅ Card management
 - ✅ Portfolio dashboard
 
 ### Phase 2
+
 - [ ] Transaction tracking
 - [ ] Statement upload
 - [ ] Spending analytics
 
 ### Phase 3
+
 - [ ] Card optimizer
 - [ ] Reward calculator
 - [ ] Best card recommendations
 
 ### Phase 4
+
 - [ ] AI chat assistant
 - [ ] Smart notifications
 - [ ] Predictive analytics

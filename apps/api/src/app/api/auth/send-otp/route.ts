@@ -4,8 +4,15 @@
  * Sends OTP to user's phone number for authentication
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
+import { createCorsResponse, handleCorsPreflight } from '@/lib/cors';
+import {
+  createErrorResponse,
+  handleSupabaseError,
+  logError,
+  ErrorCodes,
+} from '@/lib/errorHandler';
 import { z } from 'zod';
 
 // Request validation schema
@@ -14,7 +21,24 @@ const SendOTPSchema = z.object({
     .string()
     .min(10, 'Phone number must be at least 10 digits')
     .max(15, 'Phone number must be at most 15 digits')
-    .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format'),
+    .regex(/^\+?[0-9]\d{1,14}$/, 'Invalid phone number format')
+    .refine(
+      phone => {
+        // Check if it starts with +91 for Indian numbers
+        if (phone.startsWith('+91') || phone.startsWith('91')) {
+          return true;
+        }
+        // Check if it's a 10-digit number that should have +91
+        if (phone.length === 10 && /^[6-9]\d{9}$/.test(phone)) {
+          return false; // This should have +91 prefix
+        }
+        return true;
+      },
+      {
+        message:
+          'Indian phone numbers must include +91 country code (e.g., +918950494219)',
+      },
+    ),
 });
 
 // Rate limiting storage (in production, use Redis or database)
@@ -58,27 +82,30 @@ function checkRateLimit(phoneNumber: string): {
 }
 
 /**
+ * Handle CORS preflight requests
+ */
+export async function OPTIONS() {
+  return handleCorsPreflight();
+}
+
+/**
  * POST /api/auth/send-otp
  * Send OTP to phone number
  */
 export async function POST(request: NextRequest) {
+  let body: any;
   try {
     // Parse and validate request body
-    const body = await request.json();
+    body = await request.json();
     const validation = SendOTPSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid phone number format',
-            details: validation.error.errors,
-          },
-        },
-        { status: 400 },
+      const errorResponse = createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Invalid phone number format',
+        validation.error.errors,
       );
+      return createCorsResponse(errorResponse, { status: 400 });
     }
 
     const { phoneNumber } = validation.data;
@@ -86,24 +113,30 @@ export async function POST(request: NextRequest) {
     // Check rate limit
     const rateLimit = checkRateLimit(phoneNumber);
     if (!rateLimit.allowed) {
-      return NextResponse.json(
+      const errorResponse = createErrorResponse(
+        ErrorCodes.RATE_LIMIT_EXCEEDED,
+        `Too many OTP requests. Please try again in ${rateLimit.retryAfter} seconds.`,
+        undefined,
         {
-          success: false,
-          error: {
-            code: 'RATE_LIMIT_EXCEEDED',
-            message: `Too many OTP requests. Please try again in ${rateLimit.retryAfter} seconds.`,
-          },
-          rateLimit: {
-            attempts: RATE_LIMIT.maxAttempts,
-            remaining: 0,
-            resetTime: new Date(
-              Date.now() + rateLimit.retryAfter! * 1000,
-            ).toISOString(),
-            retryAfter: rateLimit.retryAfter,
-          },
+          retryAfter: rateLimit.retryAfter,
+          retryable: true,
         },
-        { status: 429 },
       );
+
+      // Add rate limit info to the response
+      const response = {
+        ...errorResponse,
+        rateLimit: {
+          attempts: RATE_LIMIT.maxAttempts,
+          remaining: 0,
+          resetTime: new Date(
+            Date.now() + rateLimit.retryAfter! * 1000,
+          ).toISOString(),
+          retryAfter: rateLimit.retryAfter,
+        },
+      };
+
+      return createCorsResponse(response, { status: 429 });
     }
 
     // Send OTP using Supabase Auth with Twilio
@@ -115,22 +148,28 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Supabase OTP error:', error);
-      return NextResponse.json(
+      logError(error, {
+        phoneNumber,
+        endpoint: '/api/auth/send-otp',
+        additionalData: { error: error.message },
+      });
+
+      const appError = handleSupabaseError(error, 'sending');
+      const errorResponse = createErrorResponse(
+        appError.code as keyof typeof ErrorCodes,
+        appError.message,
+        { originalError: error.message },
         {
-          success: false,
-          error: {
-            code: 'OTP_SEND_FAILED',
-            message: 'Failed to send OTP. Please try again.',
-            details: error.message,
-          },
+          statusCode: appError.statusCode,
+          retryable: appError.statusCode >= 500,
         },
-        { status: 500 },
       );
+
+      return createCorsResponse(errorResponse, { status: appError.statusCode });
     }
 
     // Return success response
-    return NextResponse.json({
+    return createCorsResponse({
       success: true,
       data: {
         success: true,
@@ -139,16 +178,18 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Send OTP error:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'An unexpected error occurred',
-        },
-      },
-      { status: 500 },
+    logError(error as Error, {
+      endpoint: '/api/auth/send-otp',
+      additionalData: { requestBody: body },
+    });
+
+    const errorResponse = createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'An unexpected error occurred while sending OTP',
+      undefined,
+      { retryable: true },
     );
+
+    return createCorsResponse(errorResponse, { status: 500 });
   }
 }

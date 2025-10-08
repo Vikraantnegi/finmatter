@@ -19,9 +19,12 @@ class AuthService {
    * Sends OTP to the provided phone number
    */
   async sendOTP(phoneNumber: string): Promise<SendOTPResponse> {
-    const response = await apiClient.post<SendOTPResponse>('/api/auth/send-otp', {
-      phoneNumber,
-    } as SendOTPRequest);
+    const response = await apiClient.post<SendOTPResponse>(
+      '/api/auth/send-otp',
+      {
+        phoneNumber,
+      } as SendOTPRequest,
+    );
 
     return response.data || response;
   }

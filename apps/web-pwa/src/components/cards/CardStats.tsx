@@ -28,7 +28,9 @@ export function CardStats({ card }: CardStatsProps) {
       <div className='space-y-4'>
         {/* Header */}
         <div className='flex items-center justify-between'>
-          <h3 className='text-lg font-semibold text-gray-900'>{card.cardName}</h3>
+          <h3 className='text-lg font-semibold text-gray-900'>
+            {card.cardName}
+          </h3>
           <span className='text-sm text-gray-500'>
             {card.network?.toUpperCase()}
           </span>

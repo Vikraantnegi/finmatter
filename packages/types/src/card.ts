@@ -24,10 +24,11 @@ export type Card = AuditFields & {
   currency: Currency;
   status: CardStatus;
   issueDate?: Date;
-  expiryDate?: Date;
+  expiryDate?: Date | string;
   creditLimit?: number;
   availableCredit?: number;
-  benefits: CardBenefit[];
+  billingDay?: number; // Billing day of the month (1-31)
+  benefits?: CardBenefit[];
   usage?: CardUsage;
   // Card metadata fields
   cardMetadataId?: string; // Reference to card metadata
@@ -40,12 +41,14 @@ export type Card = AuditFields & {
 export type CardBenefit = {
   id: string;
   cardId: string;
-  category: TransactionCategory;
-  rewardRate: number; // e.g., 5 for 5% or 5 points per ₹100
-  rewardType: RewardType;
+  category: TransactionCategory | string; // Allow custom categories
+  description: string; // Benefit description
+  value?: string; // Optional value (e.g., "5%" or "₹500")
+  rewardRate?: number; // e.g., 5 for 5% or 5 points per ₹100
+  rewardType?: RewardType;
   rewardCap?: number; // Monthly/yearly cap
   conditions?: string[]; // Additional conditions
-  isActive: boolean;
+  isActive?: boolean;
   validFrom?: Date;
   validUntil?: Date;
 };

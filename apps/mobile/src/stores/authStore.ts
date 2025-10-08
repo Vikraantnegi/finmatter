@@ -92,14 +92,19 @@ export const useAuthStore = create<AuthState>()(
       showBiometricPrompt: false,
 
       // Setters
-      setUser: (user) => set({ user, isAuthenticated: !!user && !!get().session }),
-      setSession: (session) => set({ session, isAuthenticated: !!get().user && !!session }),
-      setLoading: (isLoading) => set({ isLoading }),
-      setOnboardingCompleted: (onboardingCompleted) => set({ onboardingCompleted }),
-      setUserName: (userName) => set({ userName }),
-      setNotificationPermission: (notificationsEnabled) => set({ notificationsEnabled }),
-      setSMSPermission: (smsPermissionGranted) => set({ smsPermissionGranted }),
-      setShowBiometricPrompt: (showBiometricPrompt) => set({ showBiometricPrompt }),
+      setUser: user =>
+        set({ user, isAuthenticated: !!user && !!get().session }),
+      setSession: session =>
+        set({ session, isAuthenticated: !!get().user && !!session }),
+      setLoading: isLoading => set({ isLoading }),
+      setOnboardingCompleted: onboardingCompleted =>
+        set({ onboardingCompleted }),
+      setUserName: userName => set({ userName }),
+      setNotificationPermission: notificationsEnabled =>
+        set({ notificationsEnabled }),
+      setSMSPermission: smsPermissionGranted => set({ smsPermissionGranted }),
+      setShowBiometricPrompt: showBiometricPrompt =>
+        set({ showBiometricPrompt }),
 
       // Auth operations
       checkAuthStatus: async () => {
@@ -108,10 +113,10 @@ export const useAuthStore = create<AuthState>()(
           const userSession = await authService.getUserSession();
 
           if (userSession) {
-            set({ 
-              user: userSession.user, 
+            set({
+              user: userSession.user,
               session: userSession.session,
-              isAuthenticated: true 
+              isAuthenticated: true,
             });
 
             // Check if OTP re-verification is required (30-day security requirement)
@@ -127,24 +132,25 @@ export const useAuthStore = create<AuthState>()(
 
             // Check if user has biometric enabled and show prompt
             if (userSession.user.biometricEnabled) {
-              const shouldShowBiometric = await get().shouldShowBiometricPrompt();
+              const shouldShowBiometric =
+                await get().shouldShowBiometricPrompt();
               if (shouldShowBiometric) {
                 set({ showBiometricPrompt: true });
               }
             }
           } else {
-            set({ 
-              user: null, 
-              session: null, 
-              isAuthenticated: false 
+            set({
+              user: null,
+              session: null,
+              isAuthenticated: false,
             });
           }
         } catch (error) {
           console.error('Auth status check error:', error);
-          set({ 
-            user: null, 
-            session: null, 
-            isAuthenticated: false 
+          set({
+            user: null,
+            session: null,
+            isAuthenticated: false,
           });
         } finally {
           set({ isLoading: false });
@@ -182,7 +188,7 @@ export const useAuthStore = create<AuthState>()(
                   ...currentUser,
                   // Note: AuthUserProfile doesn't have name/email fields yet
                   // This will be updated when we extend the type
-                }
+                },
               });
             }
           } else {
@@ -239,20 +245,22 @@ export const useAuthStore = create<AuthState>()(
         try {
           // Check if this is a fresh app launch or returning from background
           // We'll use a simple timestamp-based approach for now
-          const lastBiometricPrompt = await storage.getString('last_biometric_prompt');
+          const lastBiometricPrompt = await storage.getString(
+            'last_biometric_prompt',
+          );
           const now = Date.now();
-          
+
           // Show biometric prompt if:
           // 1. Never shown before, OR
           // 2. Last shown more than 5 minutes ago (app was in background)
           if (!lastBiometricPrompt) {
             return true;
           }
-          
+
           const lastPromptTime = parseInt(lastBiometricPrompt, 10);
           const timeSinceLastPrompt = now - lastPromptTime;
           const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
-          
+
           return timeSinceLastPrompt > fiveMinutes;
         } catch (error) {
           console.error('Error checking biometric prompt timing:', error);
@@ -265,7 +273,7 @@ export const useAuthStore = create<AuthState>()(
       name: 'auth-store',
       storage: createJSONStorage(() => zustandStorage),
       // Only persist certain fields, not functions or derived state
-      partialize: (state) => ({
+      partialize: state => ({
         user: state.user,
         session: state.session,
         onboardingCompleted: state.onboardingCompleted,
@@ -273,8 +281,8 @@ export const useAuthStore = create<AuthState>()(
         notificationsEnabled: state.notificationsEnabled,
         smsPermissionGranted: state.smsPermissionGranted,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // Initialize auth state on app start

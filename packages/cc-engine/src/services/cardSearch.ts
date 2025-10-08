@@ -7,7 +7,7 @@ import {
   getBankById as dbGetBankById,
   searchCards as dbSearchCards,
   getAllBanks as dbGetAllBanks,
-  getAllCards as dbGetAllCards
+  getAllCards as dbGetAllCards,
 } from '../data/cards';
 
 export class CardSearchService {
@@ -42,11 +42,15 @@ export class CardSearchService {
   }
 
   // Fuzzy match for card identification (from PDF parsing)
-  matchCardFromStatement(bankName: string, cardName?: string): CardMetadata | null {
+  matchCardFromStatement(
+    bankName: string,
+    cardName?: string,
+  ): CardMetadata | null {
     // Try to match bank first
-    const bank = BANK_DATABASE.find(b =>
-      bankName.toLowerCase().includes(b.name.toLowerCase()) ||
-      b.name.toLowerCase().includes(bankName.toLowerCase())
+    const bank = BANK_DATABASE.find(
+      b =>
+        bankName.toLowerCase().includes(b.name.toLowerCase()) ||
+        b.name.toLowerCase().includes(bankName.toLowerCase()),
     );
 
     if (!bank) return null;
@@ -54,9 +58,15 @@ export class CardSearchService {
     // If card name provided, try to match
     if (cardName) {
       const cards = this.getCardsByBank(bank.id);
-      return cards.find(c =>
-        cardName.toLowerCase().includes(c.cardName.toLowerCase().replace('credit card', '').trim())
-      ) || null;
+      return (
+        cards.find(c =>
+          cardName
+            .toLowerCase()
+            .includes(
+              c.cardName.toLowerCase().replace('credit card', '').trim(),
+            ),
+        ) || null
+      );
     }
 
     return null;
@@ -78,7 +88,9 @@ export class CardSearchService {
     let cards = dbGetAllCards();
 
     if (filters.minIncome) {
-      cards = cards.filter(c => !c.minIncome || c.minIncome <= filters.minIncome!);
+      cards = cards.filter(
+        c => !c.minIncome || c.minIncome <= filters.minIncome!,
+      );
     }
 
     if (filters.maxAnnualFee !== undefined) {
@@ -105,11 +117,10 @@ export class CardSearchService {
   getBanksWithCardCounts(): Array<BankMetadata & { cardCount: number }> {
     return this.getAllBanks().map(bank => ({
       ...bank,
-      cardCount: this.getCardCountByBank(bank.id)
+      cardCount: this.getCardCountByBank(bank.id),
     }));
   }
 }
 
 // Export singleton instance
 export const cardSearchService = new CardSearchService();
-

@@ -15,7 +15,10 @@ import { DatabaseCardBenefit } from '@finmatter/types';
 // Request validation schemas
 const CreateBenefitSchema = z.object({
   category: z.string().min(1, 'Category is required').max(50),
-  rewardRate: z.number().min(0, 'Reward rate must be positive').max(100, 'Reward rate cannot exceed 100%'),
+  rewardRate: z
+    .number()
+    .min(0, 'Reward rate must be positive')
+    .max(100, 'Reward rate cannot exceed 100%'),
   rewardType: z.enum(['cashback', 'points', 'miles']).default('cashback'),
   rewardCap: z.number().min(0, 'Reward cap must be positive').optional(),
   conditions: z.record(z.any()).optional(),
@@ -27,13 +30,14 @@ const CreateBenefitSchema = z.object({
  */
 async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
   const authHeader = request.headers.get('Authorization');
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new FinMatterError('Unauthorized', 'AUTH_REQUIRED', 401);
   }
 
   const token = authHeader.split(' ')[1];
-  const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser(token);
+  const { data: userResponse, error: userError } =
+    await supabaseAdmin.auth.getUser(token);
 
   if (userError || !userResponse?.user) {
     throw new FinMatterError('Unauthorized', 'INVALID_TOKEN', 401);
@@ -45,7 +49,10 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
 /**
  * Helper function to verify card ownership
  */
-async function verifyCardOwnership(cardId: string, userId: string): Promise<void> {
+async function verifyCardOwnership(
+  cardId: string,
+  userId: string,
+): Promise<void> {
   const { data: card, error } = await supabaseAdmin
     .from('cards')
     .select('id')
@@ -64,7 +71,7 @@ async function verifyCardOwnership(cardId: string, userId: string): Promise<void
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const userId = await getAuthenticatedUserId(request);
@@ -143,7 +150,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const userId = await getAuthenticatedUserId(request);
@@ -186,7 +193,10 @@ export async function POST(
     const benefitData = validation.data;
 
     // Prepare database insert data
-    const insertData: Omit<DatabaseCardBenefit, 'id' | 'created_at' | 'updated_at'> = {
+    const insertData: Omit<
+      DatabaseCardBenefit,
+      'id' | 'created_at' | 'updated_at'
+    > = {
       card_id: cardId,
       category: benefitData.category,
       reward_rate: benefitData.rewardRate,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,7 +20,6 @@ type OtpFormData = z.infer<typeof otpSchema>;
 
 function VerifyOtpContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { setUser } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [otp, setOtp] = useState('');
@@ -34,13 +33,15 @@ function VerifyOtpContent() {
   });
 
   useEffect(() => {
-    const phoneParam = searchParams.get('phone');
-    if (!phoneParam) {
+    // Get phone number from session storage instead of URL
+    const pendingPhoneNumber = sessionStorage.getItem('pendingPhoneNumber');
+    if (pendingPhoneNumber) {
+      setPhone(pendingPhoneNumber);
+    } else {
+      // If no phone number in session, redirect to login
       router.push('/auth/login');
-      return;
     }
-    setPhone(phoneParam);
-  }, [searchParams, router]);
+  }, [router]);
 
   const onSubmit = async (data: OtpFormData) => {
     try {
@@ -63,14 +64,25 @@ function VerifyOtpContent() {
             lastName: '',
           },
         };
+
+        // Store auth token
+        if (response.data.session?.token) {
+          localStorage.setItem('auth-token', response.data.session.token);
+        }
+
         setUser(user);
-        router.push('/dashboard');
+        // Clear the pending phone number from session storage
+        sessionStorage.removeItem('pendingPhoneNumber');
+        // Redirect to onboarding for new users
+        router.push('/onboarding');
       } else {
         toast.error('Invalid OTP');
       }
     } catch (error) {
-      console.error('Verify OTP error:', error);
-      toast.error('Network error. Please try again.');
+      // Error message is already user-friendly from authService
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to verify OTP',
+      );
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +98,10 @@ function VerifyOtpContent() {
   const handleResendOtp = async () => {
     try {
       setIsLoading(true);
-      const response = await authService.sendOTP(phone);
+      const phoneWithCountryCode = phone.startsWith('+91')
+        ? phone
+        : `+91${phone}`;
+      const response = await authService.sendOTP(phoneWithCountryCode);
 
       if (response.success) {
         toast.success('OTP resent successfully!');
@@ -95,8 +110,10 @@ function VerifyOtpContent() {
         toast.error(response.error || 'Failed to resend OTP');
       }
     } catch (error) {
-      console.error('Resend OTP error:', error);
-      toast.error('Network error. Please try again.');
+      // Error message is already user-friendly from authService
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to resend OTP',
+      );
     } finally {
       setIsLoading(false);
     }
@@ -134,7 +151,12 @@ function VerifyOtpContent() {
                   value={otp}
                   onChange={handleOtpChange}
                   numInputs={6}
-                  renderInput={props => <input {...props} />}
+                  renderInput={props => (
+                    <input
+                      {...props}
+                      className='text-gray-900 bg-white border-gray-300 focus:border-primary-500 focus:ring-primary-500'
+                    />
+                  )}
                   inputStyle={{
                     width: '3rem',
                     height: '3rem',
@@ -143,6 +165,8 @@ function VerifyOtpContent() {
                     borderRadius: '0.5rem',
                     border: '1px solid #d1d5db',
                     textAlign: 'center' as const,
+                    color: '#111827',
+                    backgroundColor: '#ffffff',
                   }}
                   containerStyle={{
                     justifyContent: 'center',

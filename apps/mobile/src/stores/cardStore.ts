@@ -28,37 +28,47 @@ interface CardState {
   loading: boolean;
   error: string | null;
   lastFetched: number | null;
-  
+
   // Actions
   fetchCards: () => Promise<void>;
   createCard: (cardData: CreateCardRequest) => Promise<Card | null>;
-  updateCard: (cardId: string, updates: Partial<CreateCardRequest>) => Promise<Card | null>;
+  updateCard: (
+    cardId: string,
+    updates: Partial<CreateCardRequest>,
+  ) => Promise<Card | null>;
   deleteCard: (cardId: string) => Promise<boolean>;
   refreshCards: () => Promise<void>;
   clearError: () => void;
-  
+
   // Optimistic updates
   addCardOptimistic: (card: Card) => void;
   updateCardOptimistic: (cardId: string, updates: Partial<Card>) => void;
   removeCardOptimistic: (cardId: string) => void;
-  
+
   // Benefits management
-  addCardBenefit: (cardId: string, benefitData: {
-    category: string;
-    rewardRate: number;
-    rewardCap?: number;
-    conditions?: Record<string, any>;
-    isActive?: boolean;
-  }) => Promise<CardBenefit | null>;
-  
-  updateCardBenefit: (cardId: string, benefitId: string, updates: {
-    category?: string;
-    rewardRate?: number;
-    rewardCap?: number;
-    conditions?: Record<string, any>;
-    isActive?: boolean;
-  }) => Promise<CardBenefit | null>;
-  
+  addCardBenefit: (
+    cardId: string,
+    benefitData: {
+      category: string;
+      rewardRate: number;
+      rewardCap?: number;
+      conditions?: Record<string, any>;
+      isActive?: boolean;
+    },
+  ) => Promise<CardBenefit | null>;
+
+  updateCardBenefit: (
+    cardId: string,
+    benefitId: string,
+    updates: {
+      category?: string;
+      rewardRate?: number;
+      rewardCap?: number;
+      conditions?: Record<string, any>;
+      isActive?: boolean;
+    },
+  ) => Promise<CardBenefit | null>;
+
   deleteCardBenefit: (cardId: string, benefitId: string) => Promise<boolean>;
 }
 
@@ -75,9 +85,12 @@ export const useCardStore = create<CardState>()(
         // Fetch cards from API
         fetchCards: async () => {
           const state = get();
-          
+
           // Skip if already loading or recently fetched (within 30 seconds)
-          if (state.loading || (state.lastFetched && Date.now() - state.lastFetched < 30000)) {
+          if (
+            state.loading ||
+            (state.lastFetched && Date.now() - state.lastFetched < 30000)
+          ) {
             return;
           }
 
@@ -85,26 +98,26 @@ export const useCardStore = create<CardState>()(
 
           try {
             const response = await cardService.getCards();
-            
+
             if (response.data) {
               const cards = response.data.map(convertApiCardToCard);
-              set({ 
-                cards, 
+              set({
+                cards,
                 loading: false,
                 lastFetched: Date.now(),
-                error: null 
+                error: null,
               });
             } else {
-              set({ 
+              set({
                 error: 'Failed to fetch cards',
-                loading: false 
+                loading: false,
               });
             }
           } catch (error) {
             console.error('Fetch cards error:', error);
-            set({ 
+            set({
               error: 'An unexpected error occurred',
-              loading: false 
+              loading: false,
             });
           }
         },
@@ -115,63 +128,66 @@ export const useCardStore = create<CardState>()(
 
           try {
             const response = await cardService.createCard(cardData);
-            
+
             if (response.data) {
               const newCard = convertApiCardToCard(response.data);
               set(state => ({
                 cards: [...state.cards, newCard],
                 loading: false,
                 error: null,
-                lastFetched: Date.now()
+                lastFetched: Date.now(),
               }));
               return newCard;
             } else {
-              set({ 
+              set({
                 error: 'Failed to create card',
-                loading: false 
+                loading: false,
               });
               return null;
             }
           } catch (error) {
             console.error('Create card error:', error);
-            set({ 
+            set({
               error: 'An unexpected error occurred',
-              loading: false 
+              loading: false,
             });
             return null;
           }
         },
 
         // Update existing card
-        updateCard: async (cardId: string, updates: Partial<CreateCardRequest>) => {
+        updateCard: async (
+          cardId: string,
+          updates: Partial<CreateCardRequest>,
+        ) => {
           set({ loading: true, error: null });
 
           try {
             const response = await cardService.updateCard(cardId, updates);
-            
+
             if (response.data) {
               const updatedCard = response.data.card;
               set(state => ({
-                cards: state.cards.map(card => 
-                  card.id === cardId ? updatedCard : card
+                cards: state.cards.map(card =>
+                  card.id === cardId ? updatedCard : card,
                 ),
                 loading: false,
                 error: null,
-                lastFetched: Date.now()
+                lastFetched: Date.now(),
               }));
               return updatedCard;
             } else {
-              set({ 
+              set({
                 error: 'Failed to update card',
-                loading: false 
+                loading: false,
               });
               return null;
             }
           } catch (error) {
             console.error('Update card error:', error);
-            set({ 
+            set({
               error: 'An unexpected error occurred',
-              loading: false 
+              loading: false,
             });
             return null;
           }
@@ -183,27 +199,27 @@ export const useCardStore = create<CardState>()(
 
           try {
             const response = await cardService.deleteCard(cardId);
-            
+
             if (response.success) {
               set(state => ({
                 cards: state.cards.filter(card => card.id !== cardId),
                 loading: false,
                 error: null,
-                lastFetched: Date.now()
+                lastFetched: Date.now(),
               }));
               return true;
             } else {
-              set({ 
+              set({
                 error: 'Failed to delete card',
-                loading: false 
+                loading: false,
               });
               return false;
             }
           } catch (error) {
             console.error('Delete card error:', error);
-            set({ 
+            set({
               error: 'An unexpected error occurred',
-              loading: false 
+              loading: false,
             });
             return false;
           }
@@ -223,37 +239,43 @@ export const useCardStore = create<CardState>()(
         // Optimistic updates for better UX
         addCardOptimistic: (card: Card) => {
           set(state => ({
-            cards: [...state.cards, card]
+            cards: [...state.cards, card],
           }));
         },
 
         updateCardOptimistic: (cardId: string, updates: Partial<Card>) => {
           set(state => ({
-            cards: state.cards.map(card => 
-              card.id === cardId ? { ...card, ...updates } : card
-            )
+            cards: state.cards.map(card =>
+              card.id === cardId ? { ...card, ...updates } : card,
+            ),
           }));
         },
 
         removeCardOptimistic: (cardId: string) => {
           set(state => ({
-            cards: state.cards.filter(card => card.id !== cardId)
+            cards: state.cards.filter(card => card.id !== cardId),
           }));
         },
 
         // Benefits management
         addCardBenefit: async (cardId: string, benefitData) => {
           try {
-            const response = await cardService.addCardBenefit(cardId, benefitData);
-            
+            const response = await cardService.addCardBenefit(
+              cardId,
+              benefitData,
+            );
+
             if (response.success && response.data) {
               const newBenefit = response.data.benefit;
               set(state => ({
-                cards: state.cards.map(card => 
-                  card.id === cardId 
-                    ? { ...card, benefits: [...(card.benefits || []), newBenefit] }
-                    : card
-                )
+                cards: state.cards.map(card =>
+                  card.id === cardId
+                    ? {
+                        ...card,
+                        benefits: [...(card.benefits || []), newBenefit],
+                      }
+                    : card,
+                ),
               }));
               return newBenefit;
             }
@@ -264,23 +286,32 @@ export const useCardStore = create<CardState>()(
           }
         },
 
-        updateCardBenefit: async (cardId: string, benefitId: string, updates) => {
+        updateCardBenefit: async (
+          cardId: string,
+          benefitId: string,
+          updates,
+        ) => {
           try {
-            const response = await cardService.updateCardBenefit(cardId, benefitId, updates);
-            
+            const response = await cardService.updateCardBenefit(
+              cardId,
+              benefitId,
+              updates,
+            );
+
             if (response.success && response.data) {
               const updatedBenefit = response.data.benefit;
               set(state => ({
-                cards: state.cards.map(card => 
-                  card.id === cardId 
-                    ? { 
-                        ...card, 
-                        benefits: card.benefits?.map(benefit => 
-                          benefit.id === benefitId ? updatedBenefit : benefit
-                        ) || []
+                cards: state.cards.map(card =>
+                  card.id === cardId
+                    ? {
+                        ...card,
+                        benefits:
+                          card.benefits?.map(benefit =>
+                            benefit.id === benefitId ? updatedBenefit : benefit,
+                          ) || [],
                       }
-                    : card
-                )
+                    : card,
+                ),
               }));
               return updatedBenefit;
             }
@@ -293,18 +324,24 @@ export const useCardStore = create<CardState>()(
 
         deleteCardBenefit: async (cardId: string, benefitId: string) => {
           try {
-            const response = await cardService.deleteCardBenefit(cardId, benefitId);
-            
+            const response = await cardService.deleteCardBenefit(
+              cardId,
+              benefitId,
+            );
+
             if (response.success) {
               set(state => ({
-                cards: state.cards.map(card => 
-                  card.id === cardId 
-                    ? { 
-                        ...card, 
-                        benefits: card.benefits?.filter(benefit => benefit.id !== benefitId) || []
+                cards: state.cards.map(card =>
+                  card.id === cardId
+                    ? {
+                        ...card,
+                        benefits:
+                          card.benefits?.filter(
+                            benefit => benefit.id !== benefitId,
+                          ) || [],
                       }
-                    : card
-                )
+                    : card,
+                ),
               }));
               return true;
             }
@@ -317,30 +354,31 @@ export const useCardStore = create<CardState>()(
       }),
       {
         name: 'card-store',
-        partialize: (state) => ({ 
+        partialize: state => ({
           cards: state.cards,
-          lastFetched: state.lastFetched 
+          lastFetched: state.lastFetched,
         }),
-      }
+      },
     ),
     {
       name: 'card-store',
-    }
-  )
+    },
+  ),
 );
 
 // Selectors for common use cases
 export const useCards = () => useCardStore(state => state.cards);
 export const useCardLoading = () => useCardStore(state => state.loading);
 export const useCardError = () => useCardStore(state => state.error);
-export const useCardActions = () => useCardStore(state => ({
-  fetchCards: state.fetchCards,
-  createCard: state.createCard,
-  updateCard: state.updateCard,
-  deleteCard: state.deleteCard,
-  refreshCards: state.refreshCards,
-  clearError: state.clearError,
-  addCardBenefit: state.addCardBenefit,
-  updateCardBenefit: state.updateCardBenefit,
-  deleteCardBenefit: state.deleteCardBenefit,
-}));
+export const useCardActions = () =>
+  useCardStore(state => ({
+    fetchCards: state.fetchCards,
+    createCard: state.createCard,
+    updateCard: state.updateCard,
+    deleteCard: state.deleteCard,
+    refreshCards: state.refreshCards,
+    clearError: state.clearError,
+    addCardBenefit: state.addCardBenefit,
+    updateCardBenefit: state.updateCardBenefit,
+    deleteCardBenefit: state.deleteCardBenefit,
+  }));

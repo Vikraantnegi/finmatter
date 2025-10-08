@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { FinMatterError } from '@finmatter/shared';
+import { createCorsResponse, handleCorsPreflight } from '@/lib/cors';
 import { z } from 'zod';
 import { DatabaseCard } from '@finmatter/types';
 
@@ -14,7 +15,9 @@ import { DatabaseCard } from '@finmatter/types';
 const CreateCardSchema = z.object({
   bankName: z.string().min(1, 'Bank name is required').max(100),
   cardName: z.string().min(1, 'Card name is required').max(100),
-  lastFourDigits: z.string().regex(/^\d{4}$/, 'Last four digits must be exactly 4 digits'),
+  lastFourDigits: z
+    .string()
+    .regex(/^\d{4}$/, 'Last four digits must be exactly 4 digits'),
   cardType: z.enum(['credit', 'debit', 'prepaid']),
   network: z.enum(['visa', 'mastercard', 'rupay', 'amex', 'discover']),
   rewardType: z.enum(['cashback', 'points', 'miles', 'none']),
@@ -35,17 +38,25 @@ const GetCardsSchema = z.object({
 });
 
 /**
+ * Handle CORS preflight requests
+ */
+export async function OPTIONS() {
+  return handleCorsPreflight();
+}
+
+/**
  * Helper function to get authenticated user ID
  */
 async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
   const authHeader = request.headers.get('Authorization');
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new FinMatterError('Unauthorized', 'AUTH_REQUIRED', 401);
   }
 
   const token = authHeader.split(' ')[1];
-  const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser(token);
+  const { data: userResponse, error: userError } =
+    await supabaseAdmin.auth.getUser(token);
 
   if (userError || !userResponse?.user) {
     throw new FinMatterError('Unauthorized', 'INVALID_TOKEN', 401);
@@ -61,13 +72,13 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
 export async function GET(request: NextRequest) {
   try {
     const userId = await getAuthenticatedUserId(request);
-    
+
     // Parse query parameters
     const url = new URL(request.url);
     const queryParams = {
-      status: url.searchParams.get('status'),
-      cardType: url.searchParams.get('cardType'),
-      bankName: url.searchParams.get('bankName'),
+      status: url.searchParams.get('status') || undefined,
+      cardType: url.searchParams.get('cardType') || undefined,
+      bankName: url.searchParams.get('bankName') || undefined,
       limit: parseInt(url.searchParams.get('limit') || '20'),
       offset: parseInt(url.searchParams.get('offset') || '0'),
     };
@@ -93,10 +104,12 @@ export async function GET(request: NextRequest) {
     // Build query
     let query = supabaseAdmin
       .from('cards')
-      .select(`
+      .select(
+        `
         *,
         card_benefits (*)
-      `)
+      `,
+      )
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -135,7 +148,7 @@ export async function GET(request: NextRequest) {
       // Continue without count if there's an error
     }
 
-    return NextResponse.json({
+    return createCorsResponse({
       success: true,
       data: {
         cards: cards || [],
@@ -149,7 +162,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     if (error instanceof FinMatterError) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -162,7 +175,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.error('Get cards error:', error);
-    return NextResponse.json(
+    return createCorsResponse(
       {
         success: false,
         error: {
@@ -182,7 +195,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const userId = await getAuthenticatedUserId(request);
-    
+
     // Parse and validate request body
     const body = await request.json();
     const validation = CreateCardSchema.safeParse(body);
@@ -216,7 +229,9 @@ export async function POST(request: NextRequest) {
       currency: cardData.currency,
       status: 'active',
       issue_date: cardData.issueDate ? new Date(cardData.issueDate) : undefined,
-      expiry_date: cardData.expiryDate ? new Date(cardData.expiryDate) : undefined,
+      expiry_date: cardData.expiryDate
+        ? new Date(cardData.expiryDate)
+        : undefined,
       credit_limit: cardData.creditLimit || undefined,
       available_credit: cardData.availableCredit || undefined,
     };
@@ -225,10 +240,12 @@ export async function POST(request: NextRequest) {
     const { data: card, error } = await supabaseAdmin
       .from('cards')
       .insert(insertData)
-      .select(`
+      .select(
+        `
         *,
         card_benefits (*)
-      `)
+      `,
+      )
       .single();
 
     if (error) {
@@ -241,7 +258,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(
+    return createCorsResponse(
       {
         success: true,
         data: {
@@ -252,7 +269,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof FinMatterError) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -265,7 +282,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Create card error:', error);
-    return NextResponse.json(
+    return createCorsResponse(
       {
         success: false,
         error: {

@@ -293,8 +293,8 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ navigation }) => {
                       avgUtilization > 70
                         ? '#EF4444'
                         : avgUtilization > 40
-                        ? '#F59E0B'
-                        : '#10B981',
+                          ? '#F59E0B'
+                          : '#10B981',
                   }}
                   className='h-full rounded-full'
                 />

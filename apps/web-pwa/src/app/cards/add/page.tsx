@@ -2,69 +2,62 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import toast from 'react-hot-toast';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
-import { cardSearchService, BankMetadata, CardMetadata } from '@finmatter/cc-engine';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { cardSearchService } from '@finmatter/cc-engine';
+import type { CardMetadata, BankMetadata } from '@finmatter/cc-engine';
+import { ArrowLeft, Search, CreditCard, Building2, Plus } from 'lucide-react';
 import { cardService } from '@/services/cardService';
-import { useCardStore } from '@/stores/cardStore';
-import { ArrowLeft, Search } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-const cardSchema = z.object({
-  name: z.string().min(1, 'Card name is required'),
-  bankName: z.string().optional(),
-  lastFourDigits: z.string().min(4).max(4).optional(),
-  limit: z.number().min(0, 'Limit must be positive'),
-  used: z.number().min(0, 'Used amount must be positive'),
-  network: z.enum(['visa', 'mastercard', 'rupay', 'amex']).optional(),
-  expiryMonth: z.number().min(1).max(12).optional(),
-  expiryYear: z.number().min(2024).optional(),
-});
-
-type CardFormData = z.infer<typeof cardSchema>;
-
-type Step = 'bank' | 'card' | 'form';
+type SelectionStep = 'bank' | 'card' | 'form';
 
 export default function AddCardPage() {
   const router = useRouter();
-  const { addCard } = useCardStore();
-  const [step, setStep] = useState<Step>('bank');
+
+  // Step management
+  const [step, setStep] = useState<SelectionStep>('bank');
   const [selectedBank, setSelectedBank] = useState<BankMetadata | null>(null);
   const [selectedCard, setSelectedCard] = useState<CardMetadata | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-  } = useForm<CardFormData>({
-    resolver: zodResolver(cardSchema),
-    defaultValues: {
-      limit: 0,
-      used: 0,
-    },
+  // Search
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Form data
+  const [formData, setFormData] = useState({
+    cardName: '',
+    lastFourDigits: '',
+    creditLimit: '',
+    availableCredit: '',
+    billingDay: '',
+    expiryDate: '',
+    bankName: '',
   });
 
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<any>({});
+
+  // Get banks
   const banks = cardSearchService.getAllBanks();
+
+  // Filter banks by search
   const filteredBanks = searchQuery
     ? banks.filter(bank =>
         bank.name.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : banks;
 
-  const cards = selectedBank
+  // Get cards for selected bank
+  const availableCards = selectedBank
     ? cardSearchService.getCardsByBank(selectedBank.id)
     : [];
+
+  // Filter cards by search
   const filteredCards = searchQuery
-    ? cards.filter(card =>
+    ? availableCards.filter(card =>
         card.cardName.toLowerCase().includes(searchQuery.toLowerCase()),
       )
-    : cards;
+    : availableCards;
 
   const handleBankSelect = (bank: BankMetadata) => {
     setSelectedBank(bank);
@@ -74,165 +67,250 @@ export default function AddCardPage() {
 
   const handleCardSelect = (card: CardMetadata) => {
     setSelectedCard(card);
-    // Pre-fill form with card metadata
-    setValue('name', card.cardName);
-    // Get bank name from bank ID
-    const bank = cardSearchService.getBankById(card.bankId);
-    if (bank) {
-      setValue('bankName', bank.name);
-    }
-    setValue('network', card.network as any);
+    setFormData(prev => ({
+      ...prev,
+      cardName: card.cardName,
+      bankName: selectedBank?.name || '',
+    }));
     setStep('form');
   };
 
   const handleManualEntry = () => {
     setSelectedCard(null);
+    setFormData(prev => ({
+      ...prev,
+      bankName: selectedBank?.name || '',
+    }));
     setStep('form');
   };
 
-  const onSubmit = async (data: CardFormData) => {
-    try {
-      setIsLoading(true);
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev: any) => ({
+        ...prev,
+        [field]: '',
+      }));
+    }
+  };
 
-      const cardData = {
-        ...data,
-        cardMetadataId: selectedCard?.id,
-        bankId: selectedBank?.id,
-        primaryColor: selectedCard?.primaryColor,
-        secondaryColor: selectedCard?.secondaryColor,
-        rewardType: selectedCard?.rewardType,
-        isCustom: !selectedCard,
+  const validateForm = () => {
+    const newErrors: any = {};
+
+    if (!formData.cardName.trim()) {
+      newErrors.cardName = 'Card name is required';
+    }
+
+    if (!formData.lastFourDigits.trim()) {
+      newErrors.lastFourDigits = 'Last 4 digits are required';
+    } else if (!/^\d{4}$/.test(formData.lastFourDigits)) {
+      newErrors.lastFourDigits = 'Must be exactly 4 digits';
+    }
+
+    if (!formData.creditLimit.trim()) {
+      newErrors.creditLimit = 'Credit limit is required';
+    } else if (
+      isNaN(Number(formData.creditLimit)) ||
+      Number(formData.creditLimit) <= 0
+    ) {
+      newErrors.creditLimit = 'Must be a valid positive number';
+    }
+
+    if (!formData.availableCredit.trim()) {
+      newErrors.availableCredit = 'Available credit is required';
+    } else if (
+      isNaN(Number(formData.availableCredit)) ||
+      Number(formData.availableCredit) < 0
+    ) {
+      newErrors.availableCredit = 'Must be a valid non-negative number';
+    }
+
+    if (
+      formData.billingDay &&
+      (isNaN(Number(formData.billingDay)) ||
+        Number(formData.billingDay) < 1 ||
+        Number(formData.billingDay) > 31)
+    ) {
+      newErrors.billingDay = 'Must be a valid day (1-31)';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      // Create card object with proper type mapping
+      const newCardData = {
+        cardName: formData.cardName,
+        lastFourDigits: formData.lastFourDigits,
+        cardType: 'credit' as const,
+        network: (selectedCard?.network || 'visa') as
+          | 'visa'
+          | 'mastercard'
+          | 'rupay'
+          | 'amex'
+          | 'discover',
+        rewardType: (selectedCard?.rewardType || 'cashback') as
+          | 'cashback'
+          | 'points'
+          | 'miles'
+          | 'none',
+        bankName: formData.bankName,
+        annualFee: selectedCard?.annualFee || 0,
+        currency: 'INR',
+        creditLimit: Number(formData.creditLimit),
+        availableCredit: Number(formData.availableCredit),
+        expiryDate: formData.expiryDate || undefined,
       };
 
-      const newCard = await cardService.createCard(cardData);
-      addCard(newCard);
+      // Call API to create card
+      const response = await cardService.createCard(newCardData);
+
       toast.success('Card added successfully!');
-      router.push('/cards');
+
+      // Redirect to card details or cards list
+      router.push(`/cards/${response.id}`);
     } catch (error) {
-      console.error('Error adding card:', error);
-      toast.error('Failed to add card');
+      console.error('Error creating card:', error);
+      setErrors({ submit: 'Failed to create card. Please try again.' });
+      toast.error('Failed to create card. Please try again.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+    }
+  };
+
+  const handleBack = () => {
+    if (step === 'card') {
+      setStep('bank');
+      setSelectedBank(null);
+      setSelectedCard(null);
+    } else if (step === 'form') {
+      setStep('card');
+      setSelectedCard(null);
+    } else {
+      router.back();
     }
   };
 
   const renderBankSelection = () => (
     <div className='space-y-6'>
-      <div>
-        <h2 className='text-2xl font-bold text-gray-900 mb-2'>
+      <div className='text-center'>
+        <Building2 className='w-12 h-12 text-primary-500 mx-auto mb-4' />
+        <h2 className='text-xl font-bold text-gray-900 mb-2'>
           Select Your Bank
         </h2>
         <p className='text-gray-600'>
-          Choose your bank to see available credit cards
+          Choose the bank that issued your credit card
         </p>
       </div>
 
-      {/* Search */}
       <div className='relative'>
-        <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5' />
+        <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4' />
         <input
           type='text'
           placeholder='Search banks...'
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className='input pl-10'
+          className='w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent'
         />
       </div>
 
-      {/* Banks Grid */}
-      <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'>
+      <div className='grid gap-3'>
         {filteredBanks.map(bank => (
           <button
             key={bank.id}
             onClick={() => handleBankSelect(bank)}
-            className='card hover:shadow-md transition-shadow p-4 text-center'
+            className='flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors text-left'
           >
-            <div className='text-3xl mb-2'>🏦</div>
-            <p className='text-sm font-medium text-gray-900'>{bank.name}</p>
+            <div className='flex items-center space-x-3'>
+              <div className='w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center'>
+                <Building2 className='w-5 h-5 text-primary-600' />
+              </div>
+              <div>
+                <div className='font-medium text-gray-900'>{bank.name}</div>
+                <div className='text-sm text-gray-500'>
+                  {cardSearchService.getCardsByBank(bank.id).length} cards
+                  available
+                </div>
+              </div>
+            </div>
+            <div className='text-gray-400'>
+              <ArrowLeft className='w-4 h-4 rotate-180' />
+            </div>
           </button>
         ))}
-      </div>
-
-      {/* Manual Entry */}
-      <div className='pt-4 border-t border-gray-200'>
-        <button
-          onClick={handleManualEntry}
-          className='text-primary-600 hover:text-primary-700 font-medium'
-        >
-          Don&apos;t see your bank? Enter manually →
-        </button>
       </div>
     </div>
   );
 
   const renderCardSelection = () => (
     <div className='space-y-6'>
-      <div className='flex items-center space-x-4'>
-        <button
-          onClick={() => {
-            setStep('bank');
-            setSelectedBank(null);
-          }}
-          className='text-gray-400 hover:text-gray-600'
-        >
-          <ArrowLeft className='h-6 w-6' />
-        </button>
-        <div>
-          <h2 className='text-2xl font-bold text-gray-900'>Select Your Card</h2>
-          <p className='text-gray-600'>
-            {selectedBank?.name} - Choose your credit card
-          </p>
-        </div>
+      <div className='text-center'>
+        <CreditCard className='w-12 h-12 text-primary-500 mx-auto mb-4' />
+        <h2 className='text-xl font-bold text-gray-900 mb-2'>
+          Select Your Card
+        </h2>
+        <p className='text-gray-600'>
+          Choose from {selectedBank?.name}&apos;s available cards
+        </p>
       </div>
 
-      {/* Search */}
       <div className='relative'>
-        <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5' />
+        <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4' />
         <input
           type='text'
           placeholder='Search cards...'
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className='input pl-10'
+          className='w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent'
         />
       </div>
 
-      {/* Cards Grid */}
-      <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+      <div className='grid gap-3'>
         {filteredCards.map(card => (
           <button
             key={card.id}
             onClick={() => handleCardSelect(card)}
-            className='card hover:shadow-md transition-shadow p-4 text-left'
-            style={{
-              background: `linear-gradient(135deg, ${card.primaryColor} 0%, ${card.secondaryColor} 100%)`,
-            }}
+            className='flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors text-left'
           >
-            <div className='text-white'>
-              <p className='text-sm opacity-90 mb-1'>
-                {cardSearchService.getBankById(card.bankId)?.name || 'Bank'}
-              </p>
-              <h3 className='text-lg font-bold mb-2'>{card.cardName}</h3>
-              <div className='flex items-center justify-between'>
-                <span className='text-xs opacity-80'>
-                  {card.network.toUpperCase()}
-                </span>
-                <span className='text-xs opacity-80'>
-                  ₹{card.annualFee === 0 ? 'Free' : card.annualFee}
-                </span>
+            <div className='flex items-center space-x-3'>
+              <div
+                className='w-10 h-10 rounded-lg flex items-center justify-center text-white'
+                style={{
+                  background: `linear-gradient(135deg, ${card.primaryColor || '#3b82f6'}, ${card.secondaryColor || '#1d4ed8'})`,
+                }}
+              >
+                <CreditCard className='w-5 h-5' />
               </div>
+              <div>
+                <div className='font-medium text-gray-900'>{card.cardName}</div>
+                <div className='text-sm text-gray-500 capitalize'>
+                  {card.rewardType} • {card.network}
+                </div>
+              </div>
+            </div>
+            <div className='text-gray-400'>
+              <ArrowLeft className='w-4 h-4 rotate-180' />
             </div>
           </button>
         ))}
-      </div>
 
-      {/* Manual Entry */}
-      <div className='pt-4 border-t border-gray-200'>
         <button
           onClick={handleManualEntry}
-          className='text-primary-600 hover:text-primary-700 font-medium'
+          className='flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-colors text-gray-600'
         >
-          Don&apos;t see your card? Enter manually →
+          <div className='flex items-center space-x-2'>
+            <Plus className='w-5 h-5' />
+            <span className='font-medium'>Add Card Manually</span>
+          </div>
         </button>
       </div>
     </div>
@@ -240,177 +318,190 @@ export default function AddCardPage() {
 
   const renderForm = () => (
     <div className='space-y-6'>
-      <div className='flex items-center space-x-4'>
-        {selectedBank && (
-          <button
-            onClick={() => {
-              setStep('card');
-              setSelectedCard(null);
-            }}
-            className='text-gray-400 hover:text-gray-600'
-          >
-            <ArrowLeft className='h-6 w-6' />
-          </button>
-        )}
-        <div>
-          <h2 className='text-2xl font-bold text-gray-900'>Card Details</h2>
-          <p className='text-gray-600'>
-            {selectedCard
-              ? `${selectedCard.cardName} - Enter your card details`
-              : 'Enter your card details'}
-          </p>
-        </div>
+      <div className='text-center'>
+        <CreditCard className='w-12 h-12 text-primary-500 mx-auto mb-4' />
+        <h2 className='text-xl font-bold text-gray-900 mb-2'>Card Details</h2>
+        <p className='text-gray-600'>
+          {selectedCard
+            ? `Fill in details for ${selectedCard.cardName}`
+            : 'Enter your card information'}
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-          {/* Card Name */}
+      <div className='space-y-4'>
+        <div>
+          <label className='block text-sm font-medium text-gray-700 mb-1'>
+            Card Name *
+          </label>
+          <input
+            type='text'
+            value={formData.cardName}
+            onChange={e => handleInputChange('cardName', e.target.value)}
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+              errors.cardName ? 'border-red-300' : 'border-gray-300'
+            }`}
+            placeholder='e.g., HDFC Millennia Credit Card'
+          />
+          {errors.cardName && (
+            <p className='text-red-500 text-sm mt-1'>{errors.cardName}</p>
+          )}
+        </div>
+
+        <div>
+          <label className='block text-sm font-medium text-gray-700 mb-1'>
+            Last 4 Digits *
+          </label>
+          <input
+            type='text'
+            value={formData.lastFourDigits}
+            onChange={e =>
+              handleInputChange(
+                'lastFourDigits',
+                e.target.value.replace(/\D/g, '').slice(0, 4),
+              )
+            }
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+              errors.lastFourDigits ? 'border-red-300' : 'border-gray-300'
+            }`}
+            placeholder='1234'
+          />
+          {errors.lastFourDigits && (
+            <p className='text-red-500 text-sm mt-1'>{errors.lastFourDigits}</p>
+          )}
+        </div>
+
+        <div className='grid grid-cols-2 gap-4'>
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
-              Card Name *
+            <label className='block text-sm font-medium text-gray-700 mb-1'>
+              Credit Limit *
             </label>
             <input
-              {...register('name')}
-              className='input'
-              placeholder='e.g., HDFC Regalia'
-            />
-            {errors.name && (
-              <p className='text-sm text-error-600 mt-1'>
-                {errors.name.message}
-              </p>
-            )}
-          </div>
-
-          {/* Bank Name */}
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
-              Bank Name
-            </label>
-            <input
-              {...register('bankName')}
-              className='input'
-              placeholder='e.g., HDFC Bank'
-            />
-          </div>
-
-          {/* Last 4 Digits */}
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
-              Last 4 Digits
-            </label>
-            <input
-              {...register('lastFourDigits')}
-              className='input'
-              placeholder='1234'
-              maxLength={4}
-            />
-          </div>
-
-          {/* Network */}
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
-              Network
-            </label>
-            <select {...register('network')} className='input'>
-              <option value=''>Select network</option>
-              <option value='visa'>Visa</option>
-              <option value='mastercard'>Mastercard</option>
-              <option value='rupay'>RuPay</option>
-              <option value='amex'>American Express</option>
-            </select>
-          </div>
-
-          {/* Credit Limit */}
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
-              Credit Limit (₹) *
-            </label>
-            <input
-              {...register('limit', { valueAsNumber: true })}
-              type='number'
-              className='input'
+              type='text'
+              value={formData.creditLimit}
+              onChange={e =>
+                handleInputChange(
+                  'creditLimit',
+                  e.target.value.replace(/\D/g, ''),
+                )
+              }
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                errors.creditLimit ? 'border-red-300' : 'border-gray-300'
+              }`}
               placeholder='100000'
             />
-            {errors.limit && (
-              <p className='text-sm text-error-600 mt-1'>
-                {errors.limit.message}
-              </p>
+            {errors.creditLimit && (
+              <p className='text-red-500 text-sm mt-1'>{errors.creditLimit}</p>
             )}
           </div>
 
-          {/* Used Amount */}
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
-              Current Balance (₹) *
+            <label className='block text-sm font-medium text-gray-700 mb-1'>
+              Available Credit *
             </label>
             <input
-              {...register('used', { valueAsNumber: true })}
-              type='number'
-              className='input'
-              placeholder='25000'
+              type='text'
+              value={formData.availableCredit}
+              onChange={e =>
+                handleInputChange(
+                  'availableCredit',
+                  e.target.value.replace(/\D/g, ''),
+                )
+              }
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                errors.availableCredit ? 'border-red-300' : 'border-gray-300'
+              }`}
+              placeholder='75000'
             />
-            {errors.used && (
-              <p className='text-sm text-error-600 mt-1'>
-                {errors.used.message}
+            {errors.availableCredit && (
+              <p className='text-red-500 text-sm mt-1'>
+                {errors.availableCredit}
               </p>
             )}
           </div>
+        </div>
 
-          {/* Expiry Month */}
+        <div className='grid grid-cols-2 gap-4'>
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
-              Expiry Month
+            <label className='block text-sm font-medium text-gray-700 mb-1'>
+              Billing Day
             </label>
             <input
-              {...register('expiryMonth', { valueAsNumber: true })}
-              type='number'
-              className='input'
-              placeholder='12'
-              min='1'
-              max='12'
+              type='text'
+              value={formData.billingDay}
+              onChange={e =>
+                handleInputChange(
+                  'billingDay',
+                  e.target.value.replace(/\D/g, '').slice(0, 2),
+                )
+              }
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                errors.billingDay ? 'border-red-300' : 'border-gray-300'
+              }`}
+              placeholder='15'
             />
+            {errors.billingDay && (
+              <p className='text-red-500 text-sm mt-1'>{errors.billingDay}</p>
+            )}
           </div>
 
-          {/* Expiry Year */}
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
-              Expiry Year
+            <label className='block text-sm font-medium text-gray-700 mb-1'>
+              Expiry Date
             </label>
             <input
-              {...register('expiryYear', { valueAsNumber: true })}
-              type='number'
-              className='input'
-              placeholder='2028'
-              min='2024'
+              type='date'
+              value={formData.expiryDate}
+              onChange={e => handleInputChange('expiryDate', e.target.value)}
+              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent'
             />
           </div>
         </div>
 
-        {/* Actions */}
-        <div className='flex space-x-4'>
-          <Button
-            type='button'
-            variant='secondary'
-            onClick={() => router.push('/cards')}
-            className='flex-1'
-          >
-            Cancel
-          </Button>
-          <Button type='submit' loading={isLoading} className='flex-1'>
-            Add Card
-          </Button>
-        </div>
-      </form>
+        {errors.submit && (
+          <div className='p-3 bg-red-50 border border-red-200 rounded-lg'>
+            <p className='text-red-600 text-sm'>{errors.submit}</p>
+          </div>
+        )}
+      </div>
+
+      <div className='flex space-x-3'>
+        <Button variant='outline' onClick={handleBack} className='flex-1'>
+          Back
+        </Button>
+        <Button onClick={handleSubmit} disabled={loading} className='flex-1'>
+          {loading ? <LoadingSpinner size='sm' /> : 'Add Card'}
+        </Button>
+      </div>
     </div>
   );
 
   return (
-    <DashboardLayout>
-      <div className='max-w-4xl mx-auto'>
+    <div className='min-h-screen bg-gray-50'>
+      {/* Header */}
+      <div className='bg-white border-b border-gray-200'>
+        <div className='max-w-2xl mx-auto px-4 sm:px-6 lg:px-8'>
+          <div className='flex items-center py-4'>
+            <button
+              onClick={handleBack}
+              className='mr-4 p-2 hover:bg-gray-100 rounded-lg transition-colors'
+            >
+              <ArrowLeft className='w-5 h-5 text-gray-600' />
+            </button>
+            <h1 className='text-xl font-bold text-gray-900'>
+              {step === 'bank' && 'Select Bank'}
+              {step === 'card' && 'Select Card'}
+              {step === 'form' && 'Add Card'}
+            </h1>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className='max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         {step === 'bank' && renderBankSelection()}
         {step === 'card' && renderCardSelection()}
         {step === 'form' && renderForm()}
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

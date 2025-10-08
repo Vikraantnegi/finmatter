@@ -46,7 +46,7 @@ export const BANK_DATABASE: BankMetadata[] = [
     logoUrl: 'https://cdn.finmatter.app/banks/hdfc.png',
     primaryColor: '#004C8F',
     supportEmail: 'customer.service@hdfcbank.com',
-    supportPhone: '1800-266-4332'
+    supportPhone: '1800-266-4332',
   },
   {
     id: 'icici',
@@ -54,7 +54,7 @@ export const BANK_DATABASE: BankMetadata[] = [
     logoUrl: 'https://cdn.finmatter.app/banks/icici.png',
     primaryColor: '#F47920',
     supportEmail: 'customer.care@icicibank.com',
-    supportPhone: '1860-120-7777'
+    supportPhone: '1860-120-7777',
   },
   {
     id: 'sbi',
@@ -62,7 +62,7 @@ export const BANK_DATABASE: BankMetadata[] = [
     logoUrl: 'https://cdn.finmatter.app/banks/sbi.png',
     primaryColor: '#0D3C7C',
     supportEmail: 'customer.care@sbicard.com',
-    supportPhone: '1860-180-1290'
+    supportPhone: '1860-180-1290',
   },
   {
     id: 'axis',
@@ -70,7 +70,7 @@ export const BANK_DATABASE: BankMetadata[] = [
     logoUrl: 'https://cdn.finmatter.app/banks/axis.png',
     primaryColor: '#800000',
     supportEmail: 'customer.care@axisbank.com',
-    supportPhone: '1860-419-5555'
+    supportPhone: '1860-419-5555',
   },
   {
     id: 'amex',
@@ -78,8 +78,8 @@ export const BANK_DATABASE: BankMetadata[] = [
     logoUrl: 'https://cdn.finmatter.app/banks/amex.png',
     primaryColor: '#006FCF',
     supportEmail: 'indiaservice@aexp.com',
-    supportPhone: '1800-234-2639'
-  }
+    supportPhone: '1800-234-2639',
+  },
 ];
 
 export const CARD_DATABASE: CardMetadata[] = [
@@ -102,31 +102,31 @@ export const CARD_DATABASE: CardMetadata[] = [
         rewardUnit: 'percent',
         cap: 1000,
         capPeriod: 'monthly',
-        conditions: ['Online purchases only', 'Minimum ₹1000 per transaction']
+        conditions: ['Online purchases only', 'Minimum ₹1000 per transaction'],
       },
       {
         category: 'dining',
         rewardRate: 5,
         rewardUnit: 'percent',
         cap: 1000,
-        capPeriod: 'monthly'
+        capPeriod: 'monthly',
       },
       {
         category: 'default',
         rewardRate: 1,
-        rewardUnit: 'percent'
-      }
+        rewardUnit: 'percent',
+      },
     ],
     benefits: [
       '5% cashback on shopping and dining (up to ₹1000/month)',
       '1% cashback on all other spends',
       '4 complimentary airport lounge visits per year',
       '1% fuel surcharge waiver',
-      'Annual fee waived on ₹1L annual spend'
+      'Annual fee waived on ₹1L annual spend',
     ],
     minIncome: 25000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'hdfc-regalia',
@@ -143,29 +143,29 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'travel',
         rewardRate: 4,
-        rewardUnit: 'points_per_100'
+        rewardUnit: 'points_per_100',
       },
       {
         category: 'dining',
         rewardRate: 4,
-        rewardUnit: 'points_per_100'
+        rewardUnit: 'points_per_100',
       },
       {
         category: 'default',
         rewardRate: 4,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '4 reward points per ₹150 spent',
       'Unlimited domestic airport lounge access',
       '6 international lounge visits per year',
       'Air accident cover of ₹1 crore',
-      'Annual fee waived on ₹3L annual spend'
+      'Annual fee waived on ₹3L annual spend',
     ],
     minIncome: 100000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'hdfc-moneyback',
@@ -183,23 +183,23 @@ export const CARD_DATABASE: CardMetadata[] = [
         category: 'online',
         rewardRate: 2,
         rewardUnit: 'points_per_100',
-        conditions: ['Online transactions only']
+        conditions: ['Online transactions only'],
       },
       {
         category: 'default',
         rewardRate: 1,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '2 reward points per ₹150 on online spends',
       '1 reward point per ₹150 on offline spends',
       '1% fuel surcharge waiver',
-      'Annual fee waived on ₹50k annual spend'
+      'Annual fee waived on ₹50k annual spend',
     ],
     minIncome: 15000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'hdfc-diners-black',
@@ -216,19 +216,19 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'default',
         rewardRate: 3.3,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '5 reward points per ₹150 spent',
       'Unlimited domestic and international lounge access',
       'Golf privileges - 6 rounds per year',
       'Complimentary Club Marriott membership',
-      'Annual fee waived on ₹5L annual spend'
+      'Annual fee waived on ₹5L annual spend',
     ],
     minIncome: 200000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'hdfc-infinia',
@@ -245,19 +245,19 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'default',
         rewardRate: 3.3,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '5 reward points per ₹150 spent',
       'Unlimited domestic and international lounge access',
       'Complimentary ITC Hotel vouchers',
       'Priority Pass membership',
-      'Concierge services'
+      'Concierge services',
     ],
     minIncome: 250000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'hdfc-tata-neu-plus',
@@ -275,29 +275,31 @@ export const CARD_DATABASE: CardMetadata[] = [
         category: 'tata',
         rewardRate: 5,
         rewardUnit: 'percent',
-        conditions: ['Tata brands: BigBasket, 1mg, Croma, Westside, Titan, etc.']
+        conditions: [
+          'Tata brands: BigBasket, 1mg, Croma, Westside, Titan, etc.',
+        ],
       },
       {
         category: 'upi',
         rewardRate: 1,
         rewardUnit: 'percent',
-        conditions: ['UPI transactions only']
+        conditions: ['UPI transactions only'],
       },
       {
         category: 'default',
         rewardRate: 0.5,
-        rewardUnit: 'percent'
-      }
+        rewardUnit: 'percent',
+      },
     ],
     benefits: [
       '5% NeuCoins on all Tata brands (BigBasket, 1mg, Croma, Westside, Taj, Air India, etc.)',
       '1% NeuCoins on UPI spends',
       '0.5% NeuCoins on other spends',
       'Lifetime free - no annual fee',
-      'UPI enabled credit card'
+      'UPI enabled credit card',
     ],
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
 
   // ===== ICICI CARDS (5) =====
@@ -317,29 +319,29 @@ export const CARD_DATABASE: CardMetadata[] = [
         category: 'amazon',
         rewardRate: 5,
         rewardUnit: 'percent',
-        conditions: ['Amazon Prime members only']
+        conditions: ['Amazon Prime members only'],
       },
       {
         category: 'amazon',
         rewardRate: 3,
         rewardUnit: 'percent',
-        conditions: ['Non-Prime members']
+        conditions: ['Non-Prime members'],
       },
       {
         category: 'default',
         rewardRate: 1,
-        rewardUnit: 'percent'
-      }
+        rewardUnit: 'percent',
+      },
     ],
     benefits: [
       '5% cashback on Amazon.in (Prime members)',
       '3% cashback on Amazon.in (non-Prime)',
       '2% cashback on dining and Uber',
       '1% cashback everywhere else',
-      'Lifetime free - no annual fee'
+      'Lifetime free - no annual fee',
     ],
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'icici-platinum',
@@ -356,17 +358,17 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'default',
         rewardRate: 2,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '2 reward points per ₹100 spent',
       '1% fuel surcharge waiver',
       'Lost card liability cover',
-      'Lifetime free card'
+      'Lifetime free card',
     ],
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'icici-sapphiro',
@@ -383,24 +385,24 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'travel',
         rewardRate: 4,
-        rewardUnit: 'points_per_100'
+        rewardUnit: 'points_per_100',
       },
       {
         category: 'default',
         rewardRate: 2,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '4 reward points per ₹100 on travel',
       '2 reward points per ₹100 on other spends',
       'Unlimited domestic lounge access',
       '12 international lounge visits per year',
-      'Annual fee waived on ₹5L annual spend'
+      'Annual fee waived on ₹5L annual spend',
     ],
     minIncome: 80000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'icici-coral',
@@ -417,24 +419,24 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'dining',
         rewardRate: 2,
-        rewardUnit: 'points_per_100'
+        rewardUnit: 'points_per_100',
       },
       {
         category: 'default',
         rewardRate: 1,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '2 reward points per ₹100 on dining',
       '1 reward point per ₹100 on other spends',
       '2 complimentary airport lounge visits per year',
       '1% fuel surcharge waiver',
-      'Annual fee waived on ₹1L annual spend'
+      'Annual fee waived on ₹1L annual spend',
     ],
     minIncome: 25000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'icici-manchester-united',
@@ -451,18 +453,18 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'default',
         rewardRate: 2,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '2 reward points per ₹100 spent',
       'Exclusive Manchester United merchandise',
       '1% fuel surcharge waiver',
-      'Annual fee waived on ₹1L annual spend'
+      'Annual fee waived on ₹1L annual spend',
     ],
     minIncome: 25000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
 
   // ===== SBI CARDS (4) =====
@@ -481,34 +483,34 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'dining',
         rewardRate: 10,
-        rewardUnit: 'points_per_100'
+        rewardUnit: 'points_per_100',
       },
       {
         category: 'movies',
         rewardRate: 10,
-        rewardUnit: 'points_per_100'
+        rewardUnit: 'points_per_100',
       },
       {
         category: 'shopping',
         rewardRate: 5,
         rewardUnit: 'points_per_100',
-        conditions: ['Online shopping only']
+        conditions: ['Online shopping only'],
       },
       {
         category: 'default',
         rewardRate: 1,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '10X reward points on dining and movies',
       '5X reward points on online shopping',
       '1% fuel surcharge waiver',
-      'Annual fee waived on ₹1L annual spend'
+      'Annual fee waived on ₹1L annual spend',
     ],
     minIncome: 20000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'sbi-simplysave',
@@ -525,29 +527,29 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'dining',
         rewardRate: 10,
-        rewardUnit: 'percent'
+        rewardUnit: 'percent',
       },
       {
         category: 'groceries',
         rewardRate: 5,
-        rewardUnit: 'percent'
+        rewardUnit: 'percent',
       },
       {
         category: 'default',
         rewardRate: 1,
-        rewardUnit: 'percent'
-      }
+        rewardUnit: 'percent',
+      },
     ],
     benefits: [
       '10% cashback on dining',
       '5% cashback on grocery shopping',
       '1% cashback on other spends',
       '1% fuel surcharge waiver',
-      'Annual fee waived on ₹1L annual spend'
+      'Annual fee waived on ₹1L annual spend',
     ],
     minIncome: 20000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'sbi-prime',
@@ -564,19 +566,19 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'default',
         rewardRate: 10,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '10X reward points on all spends',
       'Unlimited domestic airport lounge access',
       '2 international lounge visits per year',
       'Complimentary golf lessons',
-      'Annual fee waived on ₹2L annual spend'
+      'Annual fee waived on ₹2L annual spend',
     ],
     minIncome: 70000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'sbi-aurum',
@@ -593,8 +595,8 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'default',
         rewardRate: 15,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '15X reward points on all spends',
@@ -602,11 +604,11 @@ export const CARD_DATABASE: CardMetadata[] = [
       '6 international lounge visits per year',
       'Golf privileges',
       'Movie ticket discounts',
-      'Annual fee waived on ₹3L annual spend'
+      'Annual fee waived on ₹3L annual spend',
     ],
     minIncome: 100000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
 
   // ===== AXIS CARDS (3) =====
@@ -625,13 +627,13 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'travel',
         rewardRate: 25,
-        rewardUnit: 'points_per_100'
+        rewardUnit: 'points_per_100',
       },
       {
         category: 'default',
         rewardRate: 12,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '25 EDGE reward points per ₹200 on travel',
@@ -639,11 +641,11 @@ export const CARD_DATABASE: CardMetadata[] = [
       'Unlimited domestic and international lounge access',
       'Golf privileges',
       'Buy One Get One movie tickets',
-      'Annual fee waived on ₹15L annual spend'
+      'Annual fee waived on ₹15L annual spend',
     ],
     minIncome: 180000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'axis-vistara',
@@ -660,13 +662,13 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'travel',
         rewardRate: 10,
-        rewardUnit: 'miles_per_100'
+        rewardUnit: 'miles_per_100',
       },
       {
         category: 'default',
         rewardRate: 4,
-        rewardUnit: 'miles_per_100'
-      }
+        rewardUnit: 'miles_per_100',
+      },
     ],
     benefits: [
       '10 CV Points per ₹100 on travel bookings',
@@ -674,11 +676,11 @@ export const CARD_DATABASE: CardMetadata[] = [
       '2 complimentary Vistara tickets per year',
       'Unlimited airport lounge access',
       'Priority check-in and boarding',
-      'Annual fee waived on ₹5L annual spend'
+      'Annual fee waived on ₹5L annual spend',
     ],
     minIncome: 180000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'axis-flipkart',
@@ -696,29 +698,29 @@ export const CARD_DATABASE: CardMetadata[] = [
         category: 'flipkart',
         rewardRate: 5,
         rewardUnit: 'percent',
-        conditions: ['Flipkart, Myntra, 2GUD purchases']
+        conditions: ['Flipkart, Myntra, 2GUD purchases'],
       },
       {
         category: 'dining',
         rewardRate: 4,
-        rewardUnit: 'percent'
+        rewardUnit: 'percent',
       },
       {
         category: 'default',
         rewardRate: 1.5,
-        rewardUnit: 'percent'
-      }
+        rewardUnit: 'percent',
+      },
     ],
     benefits: [
       '5% cashback on Flipkart, Myntra, 2GUD',
       '4% cashback on dining and Swiggy/Zomato',
       '1.5% cashback on other spends',
       'Unlimited 1% cashback on bill payments',
-      'Annual fee waived on ₹2L annual spend'
+      'Annual fee waived on ₹2L annual spend',
     ],
     minIncome: 20000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
 
   // ===== AMERICAN EXPRESS (3) =====
@@ -737,29 +739,29 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'travel',
         rewardRate: 4,
-        rewardUnit: 'points_per_100'
+        rewardUnit: 'points_per_100',
       },
       {
         category: 'dining',
         rewardRate: 4,
-        rewardUnit: 'points_per_100'
+        rewardUnit: 'points_per_100',
       },
       {
         category: 'default',
         rewardRate: 1,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '4 reward points per ₹50 on travel and dining',
       '1 reward point per ₹50 on other spends',
       '8 complimentary airport lounge visits per year',
       'Taj Epicure membership',
-      'Annual Taj hotel voucher worth ₹5000'
+      'Annual Taj hotel voucher worth ₹5000',
     ],
     minIncome: 60000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'amex-platinum-travel',
@@ -776,24 +778,24 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'travel',
         rewardRate: 10,
-        rewardUnit: 'points_per_100'
+        rewardUnit: 'points_per_100',
       },
       {
         category: 'default',
         rewardRate: 1,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '10 reward points per ₹50 on travel bookings',
       '1 reward point per ₹50 on other spends',
       'Complimentary Priority Pass membership',
       'Unlimited lounge access',
-      'Travel insurance up to ₹50 lakhs'
+      'Travel insurance up to ₹50 lakhs',
     ],
     minIncome: 60000,
     isActive: true,
-    lastUpdated: '2025-01-01'
+    lastUpdated: '2025-01-01',
   },
   {
     id: 'amex-mrcc',
@@ -810,20 +812,20 @@ export const CARD_DATABASE: CardMetadata[] = [
       {
         category: 'default',
         rewardRate: 1,
-        rewardUnit: 'points_per_100'
-      }
+        rewardUnit: 'points_per_100',
+      },
     ],
     benefits: [
       '1 reward point per ₹50 on all spends',
       '1000 bonus points on spending ₹6000 in a month (4 times per year)',
       'Reward points never expire',
       'Convert points to frequent flyer miles',
-      'Annual fee waived on ₹1.5L annual spend'
+      'Annual fee waived on ₹1.5L annual spend',
     ],
     minIncome: 30000,
     isActive: true,
-    lastUpdated: '2025-01-01'
-  }
+    lastUpdated: '2025-01-01',
+  },
 ];
 
 // Helper functions
@@ -841,9 +843,10 @@ export function getBankById(bankId: string): BankMetadata | undefined {
 
 export function searchCards(query: string): CardMetadata[] {
   const lowerQuery = query.toLowerCase();
-  return CARD_DATABASE.filter(card =>
-    card.cardName.toLowerCase().includes(lowerQuery) ||
-    card.bankId.toLowerCase().includes(lowerQuery)
+  return CARD_DATABASE.filter(
+    card =>
+      card.cardName.toLowerCase().includes(lowerQuery) ||
+      card.bankId.toLowerCase().includes(lowerQuery),
   ).filter(card => card.isActive);
 }
 

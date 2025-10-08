@@ -24,13 +24,14 @@ const UpdateBenefitSchema = z.object({
  */
 async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
   const authHeader = request.headers.get('Authorization');
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new FinMatterError('Unauthorized', 'AUTH_REQUIRED', 401);
   }
 
   const token = authHeader.split(' ')[1];
-  const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser(token);
+  const { data: userResponse, error: userError } =
+    await supabaseAdmin.auth.getUser(token);
 
   if (userError || !userResponse?.user) {
     throw new FinMatterError('Unauthorized', 'INVALID_TOKEN', 401);
@@ -45,7 +46,7 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
 async function verifyBenefitOwnership(
   cardId: string,
   benefitId: string,
-  userId: string
+  userId: string,
 ): Promise<DatabaseCardBenefit> {
   // First verify the card belongs to the user
   const { data: card, error: cardError } = await supabaseAdmin
@@ -80,7 +81,7 @@ async function verifyBenefitOwnership(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; benefitId: string } }
+  { params }: { params: { id: string; benefitId: string } },
 ) {
   try {
     const userId = await getAuthenticatedUserId(request);
@@ -125,11 +126,16 @@ export async function PUT(
     const updateData: Partial<DatabaseCardBenefit> = {};
     const validatedData = validation.data;
 
-    if (validatedData.category !== undefined) updateData.category = validatedData.category;
-    if (validatedData.rewardRate !== undefined) updateData.reward_rate = validatedData.rewardRate;
-    if (validatedData.rewardCap !== undefined) updateData.reward_cap = validatedData.rewardCap;
-    if (validatedData.conditions !== undefined) updateData.conditions = validatedData.conditions;
-    if (validatedData.isActive !== undefined) updateData.is_active = validatedData.isActive;
+    if (validatedData.category !== undefined)
+      updateData.category = validatedData.category;
+    if (validatedData.rewardRate !== undefined)
+      updateData.reward_rate = validatedData.rewardRate;
+    if (validatedData.rewardCap !== undefined)
+      updateData.reward_cap = validatedData.rewardCap;
+    if (validatedData.conditions !== undefined)
+      updateData.conditions = validatedData.conditions;
+    if (validatedData.isActive !== undefined)
+      updateData.is_active = validatedData.isActive;
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
@@ -197,7 +203,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; benefitId: string } }
+  { params }: { params: { id: string; benefitId: string } },
 ) {
   try {
     const userId = await getAuthenticatedUserId(request);

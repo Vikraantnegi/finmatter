@@ -15,8 +15,6 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
         const inputValue = e.target.value;
         const cleanValue = inputValue.replace(/\s/g, '');
 
-        console.log('PhoneInput handleChange - cleanValue:', cleanValue);
-
         const syntheticEvent = {
           ...e,
           target: {

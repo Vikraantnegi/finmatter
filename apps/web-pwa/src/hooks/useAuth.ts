@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { authService } from '@/services/authService';
 import toast from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
 
 export function useAuth() {
+  const router = useRouter();
   const {
     user,
     isLoading,
@@ -17,37 +18,22 @@ export function useAuth() {
     setOnboardingCompleted,
     setSession,
     clearAuth,
+    initializeAuth,
   } = useAuthStore();
 
-  const router = useRouter();
-
-  // Initialize auth state on mount
+  // Initialize auth state on mount using the auth store's initializeAuth
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        setLoading(true);
-        // Check if user is logged in via Supabase
-        const {
-          data: { user },
-        } = await authService.getCurrentUser();
+    console.log('useAuth: Initializing auth on mount');
 
-        if (user) {
-          setUser(user);
-          // Check onboarding status
-          const isOnboardingCompleted =
-            user.user_metadata?.onboarding_completed ?? false;
-          setOnboardingCompleted(isOnboardingCompleted);
-        }
-      } catch (error) {
-        console.error('Auth initialization failed:', error);
-        clearAuth();
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Check if already initialized to prevent loops
+    const storeState = useAuthStore.getState();
+    if (storeState.isLoading === false) {
+      console.log('useAuth: Auth already initialized, skipping');
+      return;
+    }
 
-    initAuth();
-  }, [setUser, setLoading, setOnboardingCompleted, clearAuth]);
+    initializeAuth();
+  }, []); // Empty dependency array to run only once
 
   const sendOTP = useCallback(
     async (phoneNumber: string) => {
@@ -59,7 +45,11 @@ export function useAuth() {
           toast.success('OTP sent successfully!');
           return { success: true };
         } else {
-          toast.error(typeof response.error === 'string' ? response.error : 'Failed to send OTP');
+          toast.error(
+            typeof response.error === 'string'
+              ? response.error
+              : 'Failed to send OTP',
+          );
           return { success: false, error: response.error };
         }
       } catch (error) {
@@ -80,29 +70,40 @@ export function useAuth() {
         const response = await authService.verifyOTP(phoneNumber, otp);
 
         if (response.success && response.data?.user && response.data?.session) {
+          // Type assertion: API returns additional fields beyond the base type
+          const apiUser = response.data.user as typeof response.data.user & {
+            onboardingCompleted?: boolean;
+          };
+
           const user = {
             ...response.data.user,
             updatedAt: new Date().toISOString(),
           };
-          
+
           // Save session to store
-          setSession(response.data.session.token, response.data.session.expiresAt);
-          
-          setUser(user as any);
-          const onboardingCompleted = (response.data.user as any).onboardingCompleted || false;
+          setSession(
+            response.data.session.token,
+            response.data.session.expiresAt,
+          );
+
+          setUser(user);
+          const onboardingCompleted = apiUser.onboardingCompleted || false;
           setOnboardingCompleted(onboardingCompleted);
           toast.success('Welcome to FinMatter!');
-          
-          // Redirect based on onboarding status
-          if (onboardingCompleted) {
-            router.push('/dashboard');
-          } else {
-            router.push('/onboarding');
-          }
-          
+
+          // Navigation happens after all state updates complete
+          // This is the proper async pattern - navigate after the async flow resolves
+          const targetRoute = onboardingCompleted
+            ? '/dashboard'
+            : '/onboarding';
+          router.push(targetRoute);
+          router.refresh(); // Ensure clean render of the new route
+
           return { success: true, user };
         } else {
-          toast.error(typeof response.error === 'string' ? response.error : 'Invalid OTP');
+          toast.error(
+            typeof response.error === 'string' ? response.error : 'Invalid OTP',
+          );
           return { success: false, error: response.error };
         }
       } catch (error) {
@@ -122,7 +123,10 @@ export function useAuth() {
       await authService.signOut();
       clearAuth();
       toast.success('Signed out successfully!');
+
+      // Navigation after state is cleared
       router.push('/auth/login');
+      router.refresh();
     } catch (error) {
       console.error('Sign out error:', error);
       toast.error('Failed to sign out. Please try again.');
@@ -139,23 +143,55 @@ export function useAuth() {
     }) => {
       try {
         setLoading(true);
+        console.log('🔄 Starting onboarding completion...', userData);
+
         const response = await authService.completeOnboarding(userData);
+        console.log('📦 Onboarding response:', response);
 
         if (response.success && response.data?.user) {
+          console.log('✅ Onboarding completed successfully');
           setUser(response.data.user);
           setOnboardingCompleted(true);
           toast.success('Onboarding completed!');
-          router.push('/dashboard');
+
+          // Use replace to avoid back button issues and ensure clean navigation
+          router.replace('/dashboard');
+
           return { success: true };
         } else {
-          toast.error(
-            response.error?.message || 'Failed to complete onboarding',
-          );
+          console.error('❌ Onboarding failed:', response.error);
+          const errorMessage =
+            response.error?.message || 'Failed to complete onboarding';
+          toast.error(errorMessage);
           return { success: false, error: response.error };
         }
       } catch (error) {
-        console.error('Complete onboarding error:', error);
-        toast.error('Failed to complete onboarding. Please try again.');
+        console.error('❌ Complete onboarding error:', error);
+
+        // Handle different error types
+        let errorMessage = 'Failed to complete onboarding. Please try again.';
+
+        if (error instanceof Error) {
+          if (
+            error.message.includes('401') ||
+            error.message.includes('Unauthorized')
+          ) {
+            errorMessage = 'Session expired. Please login again.';
+            // Redirect to login
+            router.push('/auth/login');
+          } else if (
+            error.message.includes('400') ||
+            error.message.includes('validation')
+          ) {
+            errorMessage = 'Invalid data. Please check your information.';
+          } else if (error.message.includes('500')) {
+            errorMessage = 'Server error. Please try again later.';
+          } else {
+            errorMessage = error.message;
+          }
+        }
+
+        toast.error(errorMessage);
         return { success: false, error };
       } finally {
         setLoading(false);

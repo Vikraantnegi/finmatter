@@ -126,15 +126,6 @@ export default function AddFirstCardStep({ onSkip }: AddFirstCardStepProps) {
             You can always add cards later from the main dashboard
           </p>
         </div>
-
-        {/* Progress Indicator */}
-        <div className='flex justify-center space-x-2'>
-          <div className='w-3 h-3 bg-gray-200 rounded-full'></div>
-          <div className='w-3 h-3 bg-gray-200 rounded-full'></div>
-          <div className='w-3 h-3 bg-gray-200 rounded-full'></div>
-          <div className='w-3 h-3 bg-gray-200 rounded-full'></div>
-          <div className='w-3 h-3 bg-primary-500 rounded-full'></div>
-        </div>
       </div>
     </div>
   );

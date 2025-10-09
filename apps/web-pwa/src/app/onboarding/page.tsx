@@ -12,9 +12,17 @@ import TutorialStep from '@/components/onboarding/TutorialStep';
 import AddFirstCardStep from '@/components/onboarding/AddFirstCardStep';
 
 function OnboardingContent() {
-  const { currentStep, isLoading, nextStep } = useOnboarding();
+  const { currentStep, isLoading, nextStep, updateFormData } = useOnboarding();
+
+  console.log(
+    'OnboardingContent: currentStep =',
+    currentStep,
+    'isLoading =',
+    isLoading,
+  );
 
   if (isLoading) {
+    console.log('OnboardingContent: Showing loading spinner');
     return (
       <div className='min-h-screen flex items-center justify-center gradient-bg'>
         <LoadingSpinner size='lg' />
@@ -26,12 +34,18 @@ function OnboardingContent() {
     switch (currentStep) {
       case 'welcome':
         return <WelcomeStep onNext={nextStep} />;
-      case 'name':
-        return <NameStep onNext={nextStep} onSkip={nextStep} />;
-      case 'permissions':
-        return <PermissionsStep onNext={nextStep} onSkip={nextStep} />;
       case 'tutorial':
         return <TutorialStep onNext={nextStep} onSkip={nextStep} />;
+      case 'name':
+        return <NameStep onNext={nextStep} onUpdateFormData={updateFormData} />;
+      case 'permissions':
+        return (
+          <PermissionsStep
+            onNext={nextStep}
+            onSkip={nextStep}
+            onUpdateFormData={updateFormData}
+          />
+        );
       case 'addCard':
         return <AddFirstCardStep onComplete={nextStep} onSkip={nextStep} />;
       default:
@@ -47,6 +61,7 @@ function OnboardingContent() {
 }
 
 export default function OnboardingPage() {
+  console.log('OnboardingPage: Component rendering');
   return (
     <AuthGuard requireAuth={true} requireOnboarding={false}>
       <OnboardingContent />

@@ -8,20 +8,20 @@ import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/authStore';
 
 const nameSchema = z.object({
-  name: z
+  firstName: z
     .string()
-    .min(2, 'Name must be at least 2 characters')
-    .max(50, 'Name must be less than 50 characters'),
+    .min(2, 'First name must be at least 2 characters')
+    .max(50, 'First name must be less than 50 characters'),
 });
 
 type NameFormData = z.infer<typeof nameSchema>;
 
 interface NameStepProps {
   onNext: () => void;
-  onSkip: () => void;
+  onUpdateFormData: (updates: { firstName: string }) => void;
 }
 
-export default function NameStep({ onNext, onSkip }: NameStepProps) {
+export default function NameStep({ onNext, onUpdateFormData }: NameStepProps) {
   const { setUserName } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -37,7 +37,9 @@ export default function NameStep({ onNext, onSkip }: NameStepProps) {
   const onSubmit = async (data: NameFormData) => {
     try {
       setIsLoading(true);
-      setUserName(data.name.trim());
+      // Update both the auth store and the onboarding form data
+      setUserName(data.firstName.trim());
+      onUpdateFormData({ firstName: data.firstName.trim() });
       onNext();
     } catch (error) {
       console.error('Error saving name:', error);
@@ -57,7 +59,7 @@ export default function NameStep({ onNext, onSkip }: NameStepProps) {
             </div>
           </div>
           <h1 className='text-2xl font-bold text-gray-900'>
-            What should we call you?
+            What&apos;s your first name?
           </h1>
           <p className='text-gray-600'>
             We&apos;d love to personalize your experience
@@ -68,21 +70,23 @@ export default function NameStep({ onNext, onSkip }: NameStepProps) {
         <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
           <div>
             <label
-              htmlFor='name'
+              htmlFor='firstName'
               className='block text-sm font-medium text-gray-700 mb-2'
             >
-              Your Name
+              First Name
             </label>
             <input
-              {...register('name')}
+              {...register('firstName')}
               type='text'
-              id='name'
-              placeholder='Enter your name'
+              id='firstName'
+              placeholder='Enter your first name'
               className='input w-full'
               autoFocus
             />
-            {errors.name && (
-              <p className='mt-1 text-sm text-red-600'>{errors.name.message}</p>
+            {errors.firstName && (
+              <p className='mt-1 text-sm text-red-600'>
+                {errors.firstName.message}
+              </p>
             )}
           </div>
 
@@ -96,27 +100,8 @@ export default function NameStep({ onNext, onSkip }: NameStepProps) {
             >
               {isLoading ? 'Saving...' : 'Continue'}
             </Button>
-
-            <Button
-              type='button'
-              variant='outline'
-              onClick={onSkip}
-              size='lg'
-              className='w-full'
-            >
-              Skip for now
-            </Button>
           </div>
         </form>
-
-        {/* Progress Indicator */}
-        <div className='flex justify-center space-x-2'>
-          <div className='w-3 h-3 bg-gray-200 rounded-full'></div>
-          <div className='w-3 h-3 bg-primary-500 rounded-full'></div>
-          <div className='w-3 h-3 bg-gray-200 rounded-full'></div>
-          <div className='w-3 h-3 bg-gray-200 rounded-full'></div>
-          <div className='w-3 h-3 bg-gray-200 rounded-full'></div>
-        </div>
       </div>
     </div>
   );

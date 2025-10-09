@@ -27,16 +27,24 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!isLoading) {
+      console.log('HomePage: Auth check complete', {
+        isAuthenticated,
+        onboardingCompleted,
+      });
       if (!isAuthenticated) {
+        console.log('HomePage: Redirecting to login');
         router.push('/auth/login');
       } else if (!onboardingCompleted) {
+        console.log('HomePage: Redirecting to onboarding');
         router.push('/onboarding');
       } else {
+        console.log('HomePage: Redirecting to dashboard');
         router.push('/dashboard');
       }
     }
   }, [isLoading, isAuthenticated, onboardingCompleted, router]);
 
+  // Always show full-screen loader during auth check
   return (
     <div className='min-h-screen flex items-center justify-center gradient-bg'>
       <div className='text-center flex flex-col items-center justify-center'>

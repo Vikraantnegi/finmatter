@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+// import { useEffect } from 'react'; // Removed since we're not using useEffect anymore
 import { useRouter } from 'next/navigation';
 import { useAuth, useCards } from '@/hooks';
-import { AuthGuard } from '@/components/auth/AuthGuard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
 import { CardVisual } from '@/components/cards/CardVisual';
@@ -21,8 +20,8 @@ function DashboardContent() {
   const {
     cards,
     isLoading: loading,
-    error: cardsError,
-    loadCards,
+    // error: cardsError, // Removed since we're not using it anymore
+    // loadCards, // Removed since we're not using it anymore
     totalCards,
     totalCreditLimit,
     totalUtilizedAmount,
@@ -30,12 +29,13 @@ function DashboardContent() {
     highUtilizationCards,
   } = useCards();
 
-  useEffect(() => {
-    // Only load cards once, and don't retry if there's an error or empty result
-    if (!loading && cards.length === 0 && !cardsError) {
-      loadCards();
-    }
-  }, [loadCards, loading, cards.length, cardsError]);
+  // Remove this useEffect - cards are already loaded by useCards hook
+  // useEffect(() => {
+  //   // Only load cards once, and don't retry if there's an error or empty result
+  //   if (!loading && cards.length === 0 && !cardsError) {
+  //     loadCards();
+  //   }
+  // }, [loadCards, loading, cards.length, cardsError]);
 
   // Calculate derived stats
   const totalAvailable = totalCreditLimit - totalUtilizedAmount;
@@ -248,9 +248,5 @@ function DashboardContent() {
 }
 
 export default function DashboardPage() {
-  return (
-    <AuthGuard requireAuth={true} requireOnboarding={true}>
-      <DashboardContent />
-    </AuthGuard>
-  );
+  return <DashboardContent />;
 }

@@ -23,7 +23,7 @@ export function useOnboarding() {
   const { completeOnboarding } = useAuth();
 
   const steps: OnboardingStep[] = useMemo(
-    () => ['welcome', 'name', 'permissions', 'tutorial', 'addCard'],
+    () => ['welcome', 'tutorial', 'name', 'permissions', 'addCard'],
     [],
   );
   const currentStepIndex = steps.indexOf(currentStep);

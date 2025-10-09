@@ -3,12 +3,11 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Pagination } from 'swiper/modules';
+import { Navigation } from 'swiper/modules';
 
 // Import Swiper styles
 import 'swiper/css';
 import 'swiper/css/navigation';
-import 'swiper/css/pagination';
 
 interface TutorialStepProps {
   onNext: () => void;
@@ -43,25 +42,13 @@ export default function TutorialStep({ onNext, onSkip }: TutorialStepProps) {
         'Save money on fees',
       ],
     },
-    // TODO: Uncomment when features are ready
-    // {
-    //   icon: '📊',
-    //   title: 'Upload Statements',
-    //   description:
-    //     'Upload your bank statements to automatically track transactions and categorize spending.',
-    //   features: [
-    //     'PDF statement parsing',
-    //     'Automatic categorization',
-    //     'Spending insights',
-    //   ],
-    // },
-    // {
-    //   icon: '📈',
-    //   title: 'Track Your Progress',
-    //   description:
-    //     'Monitor your spending patterns, rewards earned, and optimize your credit card usage.',
-    //   features: ['Spending analytics', 'Reward tracking', 'Goal setting'],
-    // },
+    {
+      icon: '📊',
+      title: 'Track Your Progress',
+      description:
+        'Monitor your spending patterns, rewards earned, and optimize your credit card usage.',
+      features: ['Spending analytics', 'Reward tracking', 'Goal setting'],
+    },
   ];
 
   const nextSlide = () => {
@@ -104,15 +91,10 @@ export default function TutorialStep({ onNext, onSkip }: TutorialStepProps) {
           <Swiper
             onSwiper={setSwiperRef}
             onSlideChange={handleSlideChange}
-            modules={[Navigation, Pagination]}
-            pagination={{
-              clickable: true,
-              bulletClass: 'swiper-pagination-bullet',
-              bulletActiveClass: 'swiper-pagination-bullet-active',
-            }}
+            modules={[Navigation]}
             spaceBetween={30}
             slidesPerView={1}
-            className='tutorial-swiper h-80'
+            className='tutorial-swiper min-h-96'
           >
             {slides.map((slide, index) => (
               <SwiperSlide key={index}>
@@ -170,25 +152,24 @@ export default function TutorialStep({ onNext, onSkip }: TutorialStepProps) {
             Skip Tutorial
           </button>
         </div>
+
+        {/* Progress Indicator - Shows value prop slides */}
+        <div className='flex justify-center space-x-2'>
+          {slides.map((_, index) => (
+            <div
+              key={index}
+              className={`w-3 h-3 rounded-full ${
+                index === currentSlide ? 'bg-primary-500' : 'bg-gray-200'
+              }`}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Custom Swiper Styles */}
       <style jsx global>{`
-        .tutorial-swiper .swiper-pagination {
-          position: relative;
-          margin-top: 1rem;
-        }
-
-        .tutorial-swiper .swiper-pagination-bullet {
-          width: 8px;
-          height: 8px;
-          background: #d1d5db;
-          opacity: 1;
-          margin: 0 4px;
-        }
-
-        .tutorial-swiper .swiper-pagination-bullet-active {
-          background: #3b82f6;
+        .tutorial-swiper .swiper-wrapper {
+          height: auto;
         }
       `}</style>
     </div>

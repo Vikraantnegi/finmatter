@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,20 +32,34 @@ export default function LoginPage() {
 
   const phoneValue = watch('phone');
 
+  // Debug logging
+  useEffect(() => {
+    console.log('LoginPage: Component mounted/updated');
+  }, []);
+
   const onSubmit = async (data: PhoneFormData) => {
     try {
       setIsLoading(true);
+      console.log('LoginPage: Starting OTP send process');
 
       const phoneWithCountryCode = data.phone.startsWith('+91')
         ? data.phone
         : `+91${data.phone}`;
+
+      // Await the async operation to complete
       const response = await authService.sendOTP(phoneWithCountryCode);
 
       if (response.success) {
         toast.success('OTP sent successfully!');
         // Store phone number securely in session storage
         sessionStorage.setItem('pendingPhoneNumber', phoneWithCountryCode);
-        router.push('/auth/verify-otp');
+        console.log('LoginPage: OTP sent, navigating to verify-otp');
+
+        // Use replace instead of push to avoid back button issues
+        // Also add a small delay to ensure toast shows
+        setTimeout(() => {
+          router.replace('/auth/verify-otp');
+        }, 100);
       } else {
         toast.error(response.error || 'Failed to send OTP');
       }

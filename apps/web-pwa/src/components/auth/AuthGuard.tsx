@@ -2,7 +2,8 @@
 
 import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
+// import { useAuthStore } from '@/stores/authStore';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface AuthGuardProps {
@@ -18,21 +19,27 @@ export function AuthGuard({
 }: AuthGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const {
-    user,
-    isLoading,
-    isAuthenticated,
-    onboardingCompleted,
-    initializeAuth,
-  } = useAuthStore();
+  const { user, isLoading, isAuthenticated, onboardingCompleted } = useAuth();
 
   useEffect(() => {
     const checkAuth = async () => {
-      if (isLoading) return;
+      console.log('AuthGuard: checkAuth called', {
+        isLoading,
+        isAuthenticated,
+        onboardingCompleted,
+        pathname,
+      });
+
+      if (isLoading) {
+        console.log('AuthGuard: Still loading, skipping check');
+        return;
+      }
 
       // Initialize auth if not done yet
       if (user === null && !isLoading) {
-        await initializeAuth();
+        console.log(
+          'AuthGuard: No user found, but useAuth should handle initialization',
+        );
         return;
       }
 
@@ -40,6 +47,7 @@ export function AuthGuard({
       if (requireAuth && !isAuthenticated) {
         // Redirect to login if not authenticated
         if (pathname !== '/auth/login' && pathname !== '/auth/verify-otp') {
+          console.log('AuthGuard: Redirecting to login');
           router.push('/auth/login');
         }
         return;
@@ -87,21 +95,26 @@ export function AuthGuard({
     router,
     requireAuth,
     requireOnboarding,
-    initializeAuth,
     user,
   ]);
 
-  // Show loading spinner while checking auth
-  if (isLoading) {
-    return (
-      <div className='min-h-screen flex items-center justify-center gradient-bg'>
-        <LoadingSpinner size='lg' />
-      </div>
+  // Show loading spinner while checking auth OR when redirecting
+  if (isLoading || (requireAuth && !isAuthenticated)) {
+    console.log(
+      'AuthGuard: Showing loading spinner - isLoading:',
+      isLoading,
+      'requireAuth:',
+      requireAuth,
+      'isAuthenticated:',
+      isAuthenticated,
     );
-  }
 
-  // Show loading spinner if auth requirements not met
-  if (requireAuth && !isAuthenticated) {
+    // Trigger redirect immediately when not loading and not authenticated
+    if (!isLoading && requireAuth && !isAuthenticated) {
+      console.log('AuthGuard: Triggering immediate redirect to login');
+      router.push('/auth/login');
+    }
+
     return (
       <div className='min-h-screen flex items-center justify-center gradient-bg'>
         <LoadingSpinner size='lg' />

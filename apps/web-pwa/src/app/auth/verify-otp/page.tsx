@@ -9,8 +9,8 @@ import { toast } from 'react-hot-toast';
 import OtpInput from 'react-otp-input';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useAuthStore } from '@/stores/authStore';
-import { authService } from '@/services/authService';
+import { useAuth } from '@/hooks/useAuth';
+// import { AuthGuard } from '@/components/auth/AuthGuard';
 
 const otpSchema = z.object({
   otp: z.string().min(6, 'Please enter the complete 6-digit OTP'),
@@ -20,7 +20,7 @@ type OtpFormData = z.infer<typeof otpSchema>;
 
 function VerifyOtpContent() {
   const router = useRouter();
-  const { setUser } = useAuthStore();
+  const { verifyOTP, sendOTP } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [otp, setOtp] = useState('');
   const [phone, setPhone] = useState('');
@@ -33,12 +33,18 @@ function VerifyOtpContent() {
   });
 
   useEffect(() => {
+    console.log('VerifyOtpContent: Component mounted/updated');
     // Get phone number from session storage instead of URL
     const pendingPhoneNumber = sessionStorage.getItem('pendingPhoneNumber');
+    console.log(
+      'VerifyOtpContent: pendingPhoneNumber from session:',
+      pendingPhoneNumber,
+    );
     if (pendingPhoneNumber) {
       setPhone(pendingPhoneNumber);
     } else {
       // If no phone number in session, redirect to login
+      console.log('VerifyOtpContent: No phone number, redirecting to login');
       router.push('/auth/login');
     }
   }, [router]);
@@ -47,39 +53,16 @@ function VerifyOtpContent() {
     try {
       setIsLoading(true);
 
-      const response = await authService.verifyOTP(phone, data.otp);
+      const result = await verifyOTP(phone, data.otp);
 
-      if (response.success && response.data?.user) {
-        toast.success('Login successful!');
-        // Convert API user to our User type
-        const user = {
-          id: response.data.user.id,
-          phoneNumber: response.data.user.phoneNumber,
-          createdAt: response.data.user.createdAt,
-          updatedAt: response.data.user.createdAt,
-          biometricEnabled: false,
-          isVerified: true,
-          profileData: {
-            firstName: '',
-            lastName: '',
-          },
-        };
-
-        // Store auth token
-        if (response.data.session?.token) {
-          localStorage.setItem('auth-token', response.data.session.token);
-        }
-
-        setUser(user);
+      if (result.success) {
         // Clear the pending phone number from session storage
         sessionStorage.removeItem('pendingPhoneNumber');
-        // Redirect to onboarding for new users
-        router.push('/onboarding');
+        // The useAuth hook handles routing automatically based on onboarding status
       } else {
         toast.error('Invalid OTP');
       }
     } catch (error) {
-      // Error message is already user-friendly from authService
       toast.error(
         error instanceof Error ? error.message : 'Failed to verify OTP',
       );
@@ -101,16 +84,13 @@ function VerifyOtpContent() {
       const phoneWithCountryCode = phone.startsWith('+91')
         ? phone
         : `+91${phone}`;
-      const response = await authService.sendOTP(phoneWithCountryCode);
+      const result = await sendOTP(phoneWithCountryCode);
 
-      if (response.success) {
-        toast.success('OTP resent successfully!');
+      if (result.success) {
         setOtp('');
-      } else {
-        toast.error(response.error || 'Failed to resend OTP');
       }
+      // Toast messages are handled by the useAuth hook
     } catch (error) {
-      // Error message is already user-friendly from authService
       toast.error(
         error instanceof Error ? error.message : 'Failed to resend OTP',
       );
@@ -217,6 +197,7 @@ function VerifyOtpContent() {
 }
 
 export default function VerifyOtpPage() {
+  console.log('VerifyOtpPage: Component rendering');
   return (
     <Suspense fallback={<LoadingSpinner size='lg' />}>
       <VerifyOtpContent />

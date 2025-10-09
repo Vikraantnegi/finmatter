@@ -5,6 +5,7 @@ import { persist } from 'zustand/middleware';
 import { User } from '@finmatter/types';
 import { supabase } from '@/lib/supabase';
 import { expiringStorage } from '@/lib/expiringStorage';
+import { apiClient } from '@/lib/apiClient';
 
 interface AuthState {
   user: User | null;
@@ -76,7 +77,9 @@ export const useAuthStore = create<AuthState>()(
       refreshSession: () => {
         const { sessionToken } = get();
         if (sessionToken) {
-          const newExpiresAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
+          const newExpiresAt = new Date(
+            Date.now() + 10 * 24 * 60 * 60 * 1000,
+          ).toISOString();
           set({ sessionExpiresAt: newExpiresAt });
           // Also extend in storage
           expiringStorage.extendExpiry('auth-storage');
@@ -116,38 +119,88 @@ export const useAuthStore = create<AuthState>()(
 
       initializeAuth: async () => {
         try {
+          console.log('AuthStore: Starting auth initialization');
           set({ isLoading: true });
 
           // Check if we have a valid session from persisted state
           const { sessionToken, sessionExpiresAt, user } = get();
-          
+          console.log('AuthStore: Checking persisted state', {
+            sessionToken: !!sessionToken,
+            sessionExpiresAt,
+            user: !!user,
+          });
+
           if (sessionToken && sessionExpiresAt && user) {
             const now = new Date();
             const expiresAt = new Date(sessionExpiresAt);
-            
+
             if (now < expiresAt) {
               // Session is still valid, refresh it
+              console.log('AuthStore: Session is valid, refreshing');
               get().refreshSession();
               set({ isLoading: false });
               return;
             } else {
               // Session expired, clear it
+              console.log('AuthStore: Session expired, clearing');
               get().clearSession();
             }
           }
 
-          // No valid session, check Supabase session
+          // Check if Supabase is properly configured
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+          const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+          console.log('AuthStore: Supabase config check', {
+            hasUrl: !!supabaseUrl,
+            hasKey: !!supabaseKey,
+            urlLength: supabaseUrl?.length || 0,
+          });
+
+          if (!supabaseUrl || !supabaseKey || supabaseUrl.length < 10) {
+            console.warn(
+              'AuthStore: Supabase not properly configured, skipping session check',
+            );
+            set({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+            });
+            return;
+          }
+
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error('Auth initialization timeout')),
+              3000,
+            ),
+          );
+
+          console.log('AuthStore: Attempting to get Supabase session...');
+          const sessionPromise = supabase.auth.getSession();
+
           const {
             data: { session },
-          } = await supabase.auth.getSession();
+          } = (await Promise.race([sessionPromise, timeoutPromise])) as any;
+          console.log('AuthStore: Supabase session result:', {
+            hasSession: !!session,
+            hasUser: !!session?.user,
+          });
 
           if (session?.user) {
-            // Fetch user profile
-            const { data: profile } = await supabase
+            console.log('AuthStore: Found Supabase session, fetching profile');
+            // Fetch user profile with timeout
+            const profilePromise = supabase
               .from('users')
               .select('*')
               .eq('id', session.user.id)
               .single();
+
+            const { data: profile } = (await Promise.race([
+              profilePromise,
+              timeoutPromise,
+            ])) as any;
 
             const user: User = {
               id: session.user.id,
@@ -169,6 +222,8 @@ export const useAuthStore = create<AuthState>()(
               onboardingCompleted: profile?.onboarding_completed || false,
             });
           } else {
+            console.log('AuthStore: No Supabase session found');
+            console.log('AuthStore: Setting isLoading to false');
             set({
               user: null,
               isAuthenticated: false,
@@ -177,6 +232,7 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (error) {
           console.error('Error initializing auth:', error);
+          console.log('AuthStore: Setting isLoading to false after error');
           set({
             user: null,
             isAuthenticated: false,
@@ -208,38 +264,17 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('User not authenticated');
           }
 
-          // Call API to complete onboarding
-          const token = localStorage.getItem('auth-token');
-          if (!token) {
-            throw new Error('No auth token found');
-          }
+          // Call API to complete onboarding using apiClient
+          const response = await apiClient.put('/api/users/onboarding', {
+            firstName: userName || 'User',
+            notificationsEnabled: notificationsEnabled || false,
+          });
 
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'}/api/users/onboarding`,
-            {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                firstName: userName || 'User',
-                notificationsEnabled: notificationsEnabled || false,
-              }),
-            },
-          );
-
-          if (!response.ok) {
-            throw new Error('Failed to complete onboarding');
-          }
-
-          const data = await response.json();
-
-          if (data.success) {
+          if (response.success) {
             set({ onboardingCompleted: true });
           } else {
             throw new Error(
-              data.error?.message || 'Failed to complete onboarding',
+              response.error?.message || 'Failed to complete onboarding',
             );
           }
         } catch (error) {

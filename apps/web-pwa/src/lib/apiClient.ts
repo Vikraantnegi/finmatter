@@ -27,9 +27,18 @@ class ApiClient {
         const token = this.getAuthToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
+          console.log(
+            '✅ Added Authorization header:',
+            `Bearer ${token.substring(0, 20)}...`,
+          );
+        } else {
+          console.log('❌ No token available, skipping Authorization header');
         }
 
-        // console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+        console.log(
+          `🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`,
+        );
+        console.log('📋 Request headers:', config.headers);
         return config;
       },
       error => {
@@ -50,13 +59,21 @@ class ApiClient {
           error.response?.data || error.message,
         );
 
-        // Handle common errors
+        // Handle common errors with better messages
         if (error.response?.status === 401) {
-          toast.error('Session expired. Please login again.');
+          const errorMessage =
+            error.response?.data?.error?.message ||
+            'Session expired. Please login again.';
+          toast.error(errorMessage);
           // Redirect to login
-          window.location.href = '/auth/login';
+          setTimeout(() => {
+            window.location.href = '/auth/login';
+          }, 1000);
         } else if (error.response?.status === 403) {
-          toast.error('Access denied. Insufficient permissions.');
+          const errorMessage =
+            error.response?.data?.error?.message ||
+            'Access denied. Insufficient permissions.';
+          toast.error(errorMessage);
         } else if (error.response?.status === 422) {
           // Validation errors - show specific message from server
           const errorMessage =
@@ -70,7 +87,10 @@ class ApiClient {
             'Too many requests. Please wait a moment.';
           toast.error(errorMessage);
         } else if (error.response?.status >= 500) {
-          toast.error('Server error. Please try again later.');
+          const errorMessage =
+            error.response?.data?.error?.message ||
+            'Server error. Please try again later.';
+          toast.error(errorMessage);
         } else if (
           error.code === 'NETWORK_ERROR' ||
           error.message === 'Network Error'
@@ -79,6 +99,9 @@ class ApiClient {
         } else if (error.response?.data?.error?.message) {
           // Show specific error message from server
           toast.error(error.response.data.error.message);
+        } else {
+          // Fallback error message
+          toast.error('Something went wrong. Please try again.');
         }
 
         return Promise.reject(error);
@@ -92,13 +115,24 @@ class ApiClient {
     // Get token from auth store
     try {
       const authData = localStorage.getItem('auth-storage');
+      console.log('🔍 Auth storage data:', authData);
       if (authData) {
         const parsed = JSON.parse(authData);
-        return parsed.state?.sessionToken || null;
+        // The token is nested at parsed.state.state.sessionToken (double state nesting)
+        const token =
+          parsed.state?.state?.sessionToken ||
+          parsed.state?.sessionToken ||
+          null;
+        console.log(
+          '🔑 Extracted token:',
+          token ? `${token.substring(0, 20)}...` : 'null',
+        );
+        return token;
       }
     } catch (error) {
       console.error('Error getting auth token:', error);
     }
+    console.log('❌ No auth token found');
     return null;
   }
 

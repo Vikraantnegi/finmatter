@@ -7,11 +7,13 @@ import { useAuthStore } from '@/stores/authStore';
 interface PermissionsStepProps {
   onNext: () => void;
   onSkip: () => void;
+  onUpdateFormData: (updates: { notificationsEnabled: boolean }) => void;
 }
 
 export default function PermissionsStep({
   onNext,
   onSkip,
+  onUpdateFormData,
 }: PermissionsStepProps) {
   const { setNotificationPermission } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +28,9 @@ export default function PermissionsStep({
       if ('Notification' in window) {
         const permission = await Notification.requestPermission();
         setNotificationStatus(permission === 'default' ? 'denied' : permission);
-        setNotificationPermission(permission === 'granted');
+        const isGranted = permission === 'granted';
+        setNotificationPermission(isGranted);
+        onUpdateFormData({ notificationsEnabled: isGranted });
 
         if (permission === 'granted') {
           // Show a test notification
@@ -38,11 +42,13 @@ export default function PermissionsStep({
       } else {
         setNotificationStatus('unavailable');
         setNotificationPermission(false);
+        onUpdateFormData({ notificationsEnabled: false });
       }
     } catch (error) {
       console.error('Error requesting notification permission:', error);
       setNotificationStatus('denied');
       setNotificationPermission(false);
+      onUpdateFormData({ notificationsEnabled: false });
     } finally {
       setIsLoading(false);
     }
@@ -162,15 +168,6 @@ export default function PermissionsStep({
           >
             Skip for now
           </Button>
-        </div>
-
-        {/* Progress Indicator */}
-        <div className='flex justify-center space-x-2'>
-          <div className='w-3 h-3 bg-gray-200 rounded-full'></div>
-          <div className='w-3 h-3 bg-gray-200 rounded-full'></div>
-          <div className='w-3 h-3 bg-primary-500 rounded-full'></div>
-          <div className='w-3 h-3 bg-gray-200 rounded-full'></div>
-          <div className='w-3 h-3 bg-gray-200 rounded-full'></div>
         </div>
       </div>
     </div>

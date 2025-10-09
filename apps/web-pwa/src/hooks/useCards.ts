@@ -21,11 +21,6 @@ export function useCards() {
   } = useCardStore();
 
   const loadCards = useCallback(async () => {
-    // Don't load if already loading or if we have cards/error
-    if (isLoading || cards.length > 0 || error) {
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
@@ -38,12 +33,15 @@ export function useCards() {
     } finally {
       setLoading(false);
     }
-  }, [setCards, setLoading, setError, isLoading, cards.length, error]);
+  }, [setCards, setLoading, setError]);
 
-  // Load cards on mount
+  // Load cards on mount only once
   useEffect(() => {
-    loadCards();
-  }, [loadCards]);
+    // Only load if we don't have cards and no error
+    if (cards.length === 0 && !error && !isLoading) {
+      loadCards();
+    }
+  }, []); // Empty dependency array - only run once on mount
 
   const createCard = useCallback(
     async (cardData: any) => {
@@ -177,6 +175,12 @@ export function useCards() {
     return utilization > 80;
   });
 
+  // Manual refresh function for when user wants to reload
+  const refreshCards = useCallback(async () => {
+    setError(null);
+    await loadCards();
+  }, [loadCards]);
+
   return {
     // State
     cards,
@@ -184,7 +188,7 @@ export function useCards() {
     error,
 
     // Actions
-    loadCards,
+    loadCards: refreshCards, // Expose refresh function instead of internal loadCards
     createCard,
     editCard,
     deleteCard,

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 import {
   Home,
   CreditCard,
@@ -13,11 +14,7 @@ import {
   X,
 } from 'lucide-react';
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, signOut } = useAuthStore();
@@ -132,5 +129,17 @@ export default function DashboardLayout({
         <main>{children}</main>
       </div>
     </div>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <AuthGuard requireAuth={true} requireOnboarding={true}>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </AuthGuard>
   );
 }

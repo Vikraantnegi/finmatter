@@ -4,6 +4,7 @@ import { useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { authService } from '@/services/authService';
+import { apiClient } from '@/lib/apiClient';
 import toast from 'react-hot-toast';
 
 export function useAuth() {
@@ -86,14 +87,33 @@ export function useAuth() {
             response.data.session.expiresAt,
           );
 
-          setUser(user);
-          const onboardingCompleted = apiUser.onboardingCompleted || false;
-          setOnboardingCompleted(onboardingCompleted);
+          // Set auth token for subsequent API calls
+          apiClient.setAuthToken(response.data.session.token);
+
+          // Fetch complete user profile data from our API
+          try {
+            console.log('🔄 Fetching complete user profile after login...');
+            const profileResponse = await authService.getCurrentUser(user.id);
+            if (profileResponse.success && profileResponse.data?.user) {
+              console.log('✅ Complete user profile fetched:', profileResponse.data.user);
+              setUser(profileResponse.data.user);
+              setOnboardingCompleted(profileResponse.data.user.onboardingCompleted || false);
+            } else {
+              console.warn('⚠️ Failed to fetch complete profile, using basic user data');
+              setUser(user);
+              setOnboardingCompleted(apiUser.onboardingCompleted || false);
+            }
+          } catch (error) {
+            console.warn('⚠️ Error fetching complete profile, using basic user data:', error);
+            setUser(user);
+            setOnboardingCompleted(apiUser.onboardingCompleted || false);
+          }
+
           toast.success('Welcome to FinMatter!');
 
           // Navigation happens after all state updates complete
           // This is the proper async pattern - navigate after the async flow resolves
-          const targetRoute = onboardingCompleted
+          const targetRoute = apiUser.onboardingCompleted
             ? '/dashboard'
             : '/onboarding';
           router.push(targetRoute);

@@ -62,10 +62,21 @@ export class AuthService {
     }
   }
 
-  async getCurrentUser(): Promise<any> {
-    // This would typically call Supabase directly
-    // For now, return a placeholder
-    return { data: { user: null } };
+  async getCurrentUser(userId: string): Promise<any> {
+    try {
+      const response = await retryWithBackoff(async () => {
+        return await apiClient.get(`/api/users/${userId}`);
+      });
+      return response;
+    } catch (error) {
+      logError(error, {
+        endpoint: `/api/users/${userId}`,
+        additionalData: { operation: 'getCurrentUser' },
+      });
+
+      const errorInfo = handleApiError(error);
+      throw new Error(errorInfo.message);
+    }
   }
 
   async completeOnboarding(userData: {

@@ -7,6 +7,14 @@ import { supabase } from '@/lib/supabase';
 import { expiringStorage } from '@/lib/expiringStorage';
 import { apiClient } from '@/lib/apiClient';
 
+// Extended user type for API responses that include onboarding status
+interface UserWithOnboarding extends User {
+  onboardingCompleted?: boolean;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+}
+
 interface AuthState {
   user: User | null;
   isLoading: boolean;
@@ -135,11 +143,32 @@ export const useAuthStore = create<AuthState>()(
             const expiresAt = new Date(sessionExpiresAt);
 
             if (now < expiresAt) {
-              // Session is still valid, refresh it
-              console.log('AuthStore: Session is valid, refreshing');
+              // Session is still valid, refresh it and fetch fresh user data
+              console.log('AuthStore: Session is valid, refreshing and fetching user data');
               get().refreshSession();
-              set({ isLoading: false });
-              return;
+              
+              // Fetch fresh user profile data from our API
+              try {
+                const response = await apiClient.get(`/api/users/${user.id}`) as { 
+                  success: boolean; 
+                  data?: { user: UserWithOnboarding }; 
+                  error?: any 
+                };
+                if (response.success && response.data?.user) {
+                  console.log('AuthStore: Fresh user data fetched:', response.data.user);
+                  set({
+                    user: response.data.user,
+                    isAuthenticated: true,
+                    isLoading: false,
+                    onboardingCompleted: response.data.user.onboardingCompleted || false,
+                  });
+                  return;
+                }
+              } catch (error) {
+                console.warn('AuthStore: Failed to fetch fresh user data, using cached data:', error);
+                set({ isLoading: false });
+                return;
+              }
             } else {
               // Session expired, clear it
               console.log('AuthStore: Session expired, clearing');
@@ -189,38 +218,69 @@ export const useAuthStore = create<AuthState>()(
           });
 
           if (session?.user) {
-            console.log('AuthStore: Found Supabase session, fetching profile');
-            // Fetch user profile with timeout
-            const profilePromise = supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
+            console.log('AuthStore: Found Supabase session, fetching profile from API');
+            
+            // Set the auth token for API calls
+            apiClient.setAuthToken(session.access_token);
+            
+            try {
+              // Fetch user profile from our API endpoint
+              const response = await apiClient.get(`/api/users/${session.user.id}`) as { 
+                success: boolean; 
+                data?: { user: UserWithOnboarding }; 
+                error?: any 
+              };
+              if (response.success && response.data?.user) {
+                console.log('AuthStore: User profile fetched from API:', response.data.user);
+                
+                set({
+                  user: response.data.user,
+                  isAuthenticated: true,
+                  isLoading: false,
+                  onboardingCompleted: response.data.user.onboardingCompleted || false,
+                  sessionToken: session.access_token,
+                  sessionExpiresAt: new Date(session.expires_at! * 1000).toISOString(),
+                });
+                return;
+              }
+            } catch (error) {
+              console.warn('AuthStore: Failed to fetch user profile from API, falling back to Supabase:', error);
+              
+              // Fallback to direct Supabase query
+              const profilePromise = supabase
+                .from('users')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
 
-            const { data: profile } = (await Promise.race([
-              profilePromise,
-              timeoutPromise,
-            ])) as any;
+              const { data: profile } = (await Promise.race([
+                profilePromise,
+                timeoutPromise,
+              ])) as any;
 
-            const user: User = {
-              id: session.user.id,
-              phoneNumber: session.user.phone || '',
-              createdAt: session.user.created_at,
-              updatedAt: session.user.updated_at || new Date().toISOString(),
-              biometricEnabled: false,
-              isVerified: true,
-              profileData: {
-                firstName: profile?.first_name || '',
-                lastName: profile?.last_name || '',
-              },
-            };
+              const user: User = {
+                id: session.user.id,
+                phoneNumber: session.user.phone || '',
+                createdAt: session.user.created_at,
+                updatedAt: session.user.updated_at || new Date().toISOString(),
+                biometricEnabled: false,
+                isVerified: true,
+                profileData: {
+                  firstName: profile?.profile_data?.firstName || profile?.name?.split(' ')[0] || '',
+                  lastName: profile?.profile_data?.lastName || profile?.name?.split(' ').slice(1).join(' ') || '',
+                },
+              };
 
-            set({
-              user,
-              isAuthenticated: true,
-              isLoading: false,
-              onboardingCompleted: profile?.onboarding_completed || false,
-            });
+              set({
+                user,
+                isAuthenticated: true,
+                isLoading: false,
+                onboardingCompleted: profile?.onboarding_completed || false,
+                sessionToken: session.access_token,
+                sessionExpiresAt: new Date(session.expires_at! * 1000).toISOString(),
+              });
+              return;
+            }
           } else {
             console.log('AuthStore: No Supabase session found');
             console.log('AuthStore: Setting isLoading to false');
@@ -268,10 +328,25 @@ export const useAuthStore = create<AuthState>()(
           const response = await apiClient.put('/api/users/onboarding', {
             firstName: userName || 'User',
             notificationsEnabled: notificationsEnabled || false,
-          });
+          }) as { success: boolean; error?: { message?: string }; data?: { user: any } };
 
           if (response.success) {
-            set({ onboardingCompleted: true });
+            // Update the user data with the response from the API
+            if (response.data?.user) {
+              const updatedUser: User = {
+                ...user,
+                profileData: {
+                  firstName: response.data.user.firstName || userName || '',
+                  lastName: response.data.user.lastName || '',
+                },
+              };
+              set({ 
+                onboardingCompleted: true,
+                user: updatedUser 
+              });
+            } else {
+              set({ onboardingCompleted: true });
+            }
           } else {
             throw new Error(
               response.error?.message || 'Failed to complete onboarding',

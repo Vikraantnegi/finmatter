@@ -112,17 +112,12 @@ class ApiClient {
   private getAuthToken(): string | null {
     if (typeof window === 'undefined') return null;
 
-    // Get token from auth store
+    // Get token from auth manager
     try {
-      const authData = localStorage.getItem('auth-storage');
-      console.log('🔍 Auth storage data:', authData);
+      const authData = localStorage.getItem('finmatter-auth');
       if (authData) {
         const parsed = JSON.parse(authData);
-        // The token is nested at parsed.state.state.sessionToken (double state nesting)
-        const token =
-          parsed.state?.state?.sessionToken ||
-          parsed.state?.sessionToken ||
-          null;
+        const token = parsed.session?.token || null;
         console.log(
           '🔑 Extracted token:',
           token ? `${token.substring(0, 20)}...` : 'null',
@@ -136,14 +131,16 @@ class ApiClient {
     return null;
   }
 
-  public setAuthToken(_token: string) {
+  public setAuthToken(token: string) {
     // This method is kept for backward compatibility
-    // Session management is now handled by Zustand store
+    // Session management is now handled by AuthManager
+    console.log('🔑 Auth token set:', token ? `${token.substring(0, 20)}...` : 'null');
   }
 
   public clearAuthToken() {
     // Clear auth storage
-    localStorage.removeItem('auth-storage');
+    localStorage.removeItem('finmatter-auth');
+    console.log('🗑️ Auth token cleared');
   }
 
   // Generic HTTP methods

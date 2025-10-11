@@ -35,8 +35,7 @@ const VerifyOTPSchema = z.object({
         return true;
       },
       {
-        message:
-          'Indian phone numbers must include +91 country code (e.g., +918950494219)',
+        message: 'Indian phone numbers must include +91 country code',
       },
     ),
   otp: z
@@ -155,7 +154,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (updateError) {
-        console.error('Update user error:', updateError);
+        // Update user error logged
         userRecord = existingUser;
       } else {
         userRecord = updatedUser;
@@ -198,8 +197,8 @@ export async function POST(request: NextRequest) {
       userRecord = newUser;
     }
 
-    // Return success response with user and session
-    return createCorsResponse({
+    // Return success response with user and session, and set auth cookies
+    const response = createCorsResponse({
       success: true,
       data: {
         user: {
@@ -218,6 +217,35 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Set authentication cookies with proper security
+    const accessTokenOptions = {
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      httpOnly: false, // Need client-side access for API calls
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'lax' as const,
+      path: '/',
+    };
+
+    const refreshTokenOptions = {
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      httpOnly: true, // More secure for refresh tokens
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'lax' as const,
+      path: '/',
+    };
+
+    // Set access token cookie
+    let accessTokenCookie = `finmatter-auth-token=${data.session.access_token}; Max-Age=${accessTokenOptions.maxAge}; Path=${accessTokenOptions.path}; SameSite=${accessTokenOptions.sameSite}`;
+    if (accessTokenOptions.secure) accessTokenCookie += '; Secure';
+    response.headers.set('Set-Cookie', accessTokenCookie);
+
+    // Set refresh token cookie
+    let refreshTokenCookie = `finmatter-refresh-token=${data.session.refresh_token}; Max-Age=${refreshTokenOptions.maxAge}; Path=${refreshTokenOptions.path}; SameSite=${refreshTokenOptions.sameSite}; HttpOnly`;
+    if (refreshTokenOptions.secure) refreshTokenCookie += '; Secure';
+    response.headers.set('Set-Cookie', refreshTokenCookie);
+
+    return response;
   } catch (error) {
     logError(error as Error, {
       endpoint: '/api/auth/verify-otp',

@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-// import { useAuthStore } from '@/stores/authStore';
+import { useReturnUrl } from '@/hooks/useReturnUrl';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface AuthGuardProps {
@@ -20,26 +20,16 @@ export function AuthGuard({
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, isAuthenticated, onboardingCompleted } = useAuth();
+  const { saveReturnUrl } = useReturnUrl();
 
   useEffect(() => {
     const checkAuth = async () => {
-      console.log('AuthGuard: checkAuth called', {
-        isLoading,
-        isAuthenticated,
-        onboardingCompleted,
-        pathname,
-      });
-
       if (isLoading) {
-        console.log('AuthGuard: Still loading, skipping check');
         return;
       }
 
       // Initialize auth if not done yet
       if (user === null && !isLoading) {
-        console.log(
-          'AuthGuard: No user found, but useAuth should handle initialization',
-        );
         return;
       }
 
@@ -47,7 +37,8 @@ export function AuthGuard({
       if (requireAuth && !isAuthenticated) {
         // Redirect to login if not authenticated
         if (pathname !== '/auth/login' && pathname !== '/auth/verify-otp') {
-          console.log('AuthGuard: Redirecting to login');
+          // Save current URL so we can return after login
+          saveReturnUrl();
           router.push('/auth/login');
         }
         return;
@@ -63,10 +54,7 @@ export function AuthGuard({
       }
 
       // Redirect authenticated users away from auth pages
-      if (
-        isAuthenticated &&
-        (pathname === '/auth/login' || pathname === '/auth/verify-otp')
-      ) {
+      if (isAuthenticated && pathname.startsWith('/auth')) {
         if (onboardingCompleted) {
           router.push('/dashboard');
         } else {
@@ -96,22 +84,14 @@ export function AuthGuard({
     requireAuth,
     requireOnboarding,
     user,
+    saveReturnUrl,
   ]);
 
   // Show loading spinner while checking auth OR when redirecting
   if (isLoading || (requireAuth && !isAuthenticated)) {
-    console.log(
-      'AuthGuard: Showing loading spinner - isLoading:',
-      isLoading,
-      'requireAuth:',
-      requireAuth,
-      'isAuthenticated:',
-      isAuthenticated,
-    );
-
     // Trigger redirect immediately when not loading and not authenticated
     if (!isLoading && requireAuth && !isAuthenticated) {
-      console.log('AuthGuard: Triggering immediate redirect to login');
+      saveReturnUrl();
       router.push('/auth/login');
     }
 

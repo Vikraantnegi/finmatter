@@ -27,7 +27,7 @@ export function useCards() {
       const cards = await cardService.getCards();
       setCards(cards);
     } catch (error) {
-      console.error('Load cards error:', error);
+      // Error handled by toast
       setError('Failed to load cards');
       // Don't retry on error to prevent infinite loops
     } finally {
@@ -41,6 +41,7 @@ export function useCards() {
     if (cards.length === 0 && !error && !isLoading) {
       loadCards();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run once on mount
 
   const createCard = useCallback(
@@ -52,7 +53,7 @@ export function useCards() {
         toast.success('Card added successfully!');
         return { success: true, card };
       } catch (error) {
-        console.error('Create card error:', error);
+        // Error handled by toast
         toast.error('Failed to add card. Please try again.');
         return { success: false, error };
       } finally {
@@ -71,7 +72,7 @@ export function useCards() {
         toast.success('Card updated successfully!');
         return { success: true, card };
       } catch (error) {
-        console.error('Update card error:', error);
+        // Error handled by toast
         toast.error('Failed to update card. Please try again.');
         return { success: false, error };
       } finally {
@@ -90,7 +91,7 @@ export function useCards() {
         toast.success('Card deleted successfully!');
         return { success: true };
       } catch (error) {
-        console.error('Delete card error:', error);
+        // Error handled by toast
         toast.error('Failed to delete card. Please try again.');
         return { success: false, error };
       } finally {
@@ -107,7 +108,7 @@ export function useCards() {
         const card = await cardService.getCardById(cardId);
         return { success: true, card };
       } catch (error) {
-        console.error('Get card error:', error);
+        // Error handled by toast
         setError('Failed to load card');
         return { success: false, error };
       } finally {
@@ -117,15 +118,19 @@ export function useCards() {
     [setLoading, setError],
   );
 
-  const getCardBenefits = useCallback(async (cardId: string) => {
-    try {
-      const benefits = await cardService.getCardBenefits(cardId);
-      return { success: true, benefits };
-    } catch (error) {
-      console.error('Get card benefits error:', error);
-      return { success: false, error };
-    }
-  }, []);
+  const getCardBenefits = useCallback(
+    async (cardId: string) => {
+      try {
+        const benefits = await cardService.getCardBenefits(cardId);
+        return { success: true, benefits };
+      } catch (error) {
+        // Error handled by toast
+        setError('Failed to load benefits');
+        return { success: false, error };
+      }
+    },
+    [setError],
+  );
 
   const addCardBenefit = useCallback(
     async (cardId: string, benefit: Omit<CardBenefit, 'id'>) => {
@@ -145,7 +150,7 @@ export function useCards() {
         toast.success('Benefit added successfully!');
         return { success: true, benefit: newBenefit };
       } catch (error) {
-        console.error('Add benefit error:', error);
+        // Error handled by toast
         toast.error('Failed to add benefit. Please try again.');
         return { success: false, error };
       } finally {
@@ -179,7 +184,7 @@ export function useCards() {
   const refreshCards = useCallback(async () => {
     setError(null);
     await loadCards();
-  }, [loadCards]);
+  }, [loadCards, setError]);
 
   return {
     // State

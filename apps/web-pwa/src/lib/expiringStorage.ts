@@ -10,14 +10,14 @@ const DEFAULT_EXPIRY_DAYS = 10;
 const DEFAULT_EXPIRY_MS = DEFAULT_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
 
 export const expiringStorage = {
-  getItem: <T>(name: string): T | null => {
+  getItem: (name: string): string | null => {
     if (typeof window === 'undefined') return null;
 
     try {
       const item = localStorage.getItem(name);
       if (!item) return null;
 
-      const parsed: StorageValue<T> = JSON.parse(item);
+      const parsed: StorageValue<any> = JSON.parse(item);
       const now = Date.now();
 
       // Check if expired
@@ -26,27 +26,28 @@ export const expiringStorage = {
         return null;
       }
 
-      return parsed.state;
+      return JSON.stringify(parsed.state);
     } catch (error) {
-      console.error('Error reading from storage:', error);
+      // Silently fail
       localStorage.removeItem(name);
       return null;
     }
   },
 
-  setItem: <T>(name: string, value: T): void => {
+  setItem: (name: string, value: string): void => {
     if (typeof window === 'undefined') return;
 
     try {
-      const storageValue: StorageValue<T> = {
-        state: value,
+      const parsedValue = JSON.parse(value);
+      const storageValue: StorageValue<any> = {
+        state: parsedValue,
         timestamp: Date.now(),
         expiresAt: Date.now() + DEFAULT_EXPIRY_MS,
       };
 
       localStorage.setItem(name, JSON.stringify(storageValue));
     } catch (error) {
-      console.error('Error writing to storage:', error);
+      // Silently fail
     }
   },
 
@@ -76,7 +77,7 @@ export const expiringStorage = {
         localStorage.setItem(name, JSON.stringify(updatedValue));
       }
     } catch (error) {
-      console.error('Error extending storage expiry:', error);
+      // Silently fail
     }
   },
 
@@ -93,7 +94,7 @@ export const expiringStorage = {
 
       return Math.max(0, parsed.expiresAt - now);
     } catch (error) {
-      console.error('Error getting remaining time:', error);
+      // Silently fail
       return 0;
     }
   },

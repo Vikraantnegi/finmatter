@@ -238,6 +238,5 @@ export function logError(
     console.error('🚨 Frontend Error:', errorContext);
   }
 
-  // TODO: In production, send to logging service
   // sendToLoggingService(errorContext);
 }

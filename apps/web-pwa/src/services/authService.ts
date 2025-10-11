@@ -79,18 +79,35 @@ export class AuthService {
     }
   }
 
+  /**
+   * Refresh access token using httpOnly refresh token cookie
+   * No need to pass refresh token - it's automatically sent via cookie
+   */
+  async refreshToken(): Promise<any> {
+    try {
+      const response = await retryWithBackoff(async () => {
+        // Empty body - refresh token comes from httpOnly cookie
+        return await apiClient.post('/api/auth/refresh', {});
+      });
+      return response;
+    } catch (error) {
+      logError(error, {
+        endpoint: '/api/auth/refresh',
+        additionalData: { operation: 'refreshToken' },
+      });
+
+      const errorInfo = handleApiError(error);
+      throw new Error(errorInfo.message);
+    }
+  }
+
   async completeOnboarding(userData: {
     firstName: string;
     lastName?: string;
     notificationsEnabled: boolean;
   }): Promise<any> {
-    try {
-      const response = await apiClient.put('/api/users/onboarding', userData);
-      return response;
-    } catch (error) {
-      console.error('Complete onboarding error:', error);
-      throw error;
-    }
+    const response = await apiClient.put('/api/users/onboarding', userData);
+    return response;
   }
 }
 

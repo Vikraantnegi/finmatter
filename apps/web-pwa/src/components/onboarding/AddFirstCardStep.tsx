@@ -19,7 +19,7 @@ export default function AddFirstCardStep({ onSkip }: AddFirstCardStepProps) {
       // Navigate to add card page
       router.push('/cards/add');
     } catch (error) {
-      console.error('Error navigating to add card:', error);
+      // Error handled by component
     } finally {
       setIsLoading(false);
     }

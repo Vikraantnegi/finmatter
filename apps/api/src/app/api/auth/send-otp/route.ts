@@ -35,8 +35,7 @@ const SendOTPSchema = z.object({
         return true;
       },
       {
-        message:
-          'Indian phone numbers must include +91 country code (e.g., +918950494219)',
+        message: 'Indian phone numbers must include +91 country code',
       },
     ),
 });

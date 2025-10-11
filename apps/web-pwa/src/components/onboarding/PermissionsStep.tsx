@@ -45,7 +45,7 @@ export default function PermissionsStep({
         onUpdateFormData({ notificationsEnabled: false });
       }
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      // Error handled silently
       setNotificationStatus('denied');
       setNotificationPermission(false);
       onUpdateFormData({ notificationsEnabled: false });

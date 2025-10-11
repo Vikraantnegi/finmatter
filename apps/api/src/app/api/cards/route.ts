@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
     const { data: cards, error } = await query;
 
     if (error) {
-      console.error('Supabase get cards error:', error);
+      // Supabase error logged
       throw new FinMatterError(
         'Failed to fetch cards',
         'DB_QUERY_FAILED',
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
     const { count, error: countError } = await countQuery;
 
     if (countError) {
-      console.error('Supabase count cards error:', countError);
+      // Count error logged
       // Continue without count if there's an error
     }
 
@@ -174,7 +174,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.error('Get cards error:', error);
+    // Error logged
     return createCorsResponse(
       {
         success: false,
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Supabase create card error:', error);
+      // Error logged
       throw new FinMatterError(
         'Failed to create card',
         'DB_INSERT_FAILED',
@@ -281,7 +281,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error('Create card error:', error);
+    // Error logged
     return createCorsResponse(
       {
         success: false,

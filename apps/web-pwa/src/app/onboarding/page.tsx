@@ -14,15 +14,7 @@ import AddFirstCardStep from '@/components/onboarding/AddFirstCardStep';
 function OnboardingContent() {
   const { currentStep, isLoading, nextStep, updateFormData } = useOnboarding();
 
-  console.log(
-    'OnboardingContent: currentStep =',
-    currentStep,
-    'isLoading =',
-    isLoading,
-  );
-
   if (isLoading) {
-    console.log('OnboardingContent: Showing loading spinner');
     return (
       <div className='min-h-screen flex items-center justify-center gradient-bg'>
         <LoadingSpinner size='lg' />
@@ -61,7 +53,6 @@ function OnboardingContent() {
 }
 
 export default function OnboardingPage() {
-  console.log('OnboardingPage: Component rendering');
   return (
     <AuthGuard requireAuth={true} requireOnboarding={false}>
       <OnboardingContent />

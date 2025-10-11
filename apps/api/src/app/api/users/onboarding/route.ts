@@ -26,25 +26,15 @@ const CompleteOnboardingSchema = z.object({
  */
 async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
   const authHeader = request.headers.get('Authorization');
-  console.log(
-    '🔑 Auth header:',
-    authHeader ? `${authHeader.substring(0, 20)}...` : 'null',
-  );
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new Error('Unauthorized');
   }
 
   const token = authHeader.split(' ')[1];
-  console.log('🎫 Token:', token ? `${token.substring(0, 20)}...` : 'null');
 
   const { data: userResponse, error: userError } =
     await supabaseAdmin.auth.getUser(token);
-
-  console.log('👤 Supabase response:', {
-    hasUser: !!userResponse?.user,
-    error: userError?.message,
-  });
 
   if (userError || !userResponse?.user) {
     throw new Error('Invalid token');
@@ -67,21 +57,12 @@ export async function OPTIONS() {
 export async function PUT(request: NextRequest) {
   let body;
   try {
-    console.log('🔍 Onboarding API called');
-    console.log(
-      '📋 Request headers:',
-      Object.fromEntries(request.headers.entries()),
-    );
-
     const userId = await getAuthenticatedUserId(request);
-    console.log('✅ User authenticated:', userId);
 
     // Parse and validate request body
     try {
       body = await request.json();
-      console.log('📦 Request body:', body);
     } catch (parseError) {
-      console.error('❌ Request body parsing failed:', parseError);
       const errorResponse = createErrorResponse(
         ErrorCodes.VALIDATION_ERROR,
         'Invalid JSON in request body',
@@ -97,7 +78,6 @@ export async function PUT(request: NextRequest) {
 
     const validation = CompleteOnboardingSchema.safeParse(body);
     if (!validation.success) {
-      console.error('❌ Validation failed:', validation.error.errors);
       const errorResponse = createErrorResponse(
         ErrorCodes.VALIDATION_ERROR,
         'Invalid request data',
@@ -107,14 +87,8 @@ export async function PUT(request: NextRequest) {
     }
 
     const { firstName, lastName, notificationsEnabled } = validation.data;
-    console.log('✅ Data validated:', {
-      firstName,
-      lastName,
-      notificationsEnabled,
-    });
 
     // Update user record
-    console.log('🔄 Updating user record...');
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .update({
@@ -133,7 +107,6 @@ export async function PUT(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('❌ Database update failed:', error);
       logError(error, {
         userId,
         endpoint: '/api/users/onboarding',
@@ -158,8 +131,6 @@ export async function PUT(request: NextRequest) {
       return createCorsResponse(errorResponse, { status: appError.statusCode });
     }
 
-    console.log('✅ User updated successfully:', user?.id);
-
     return createCorsResponse({
       success: true,
       data: {
@@ -182,8 +153,6 @@ export async function PUT(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Onboarding API error:', error);
-
     // Handle specific error types
     if (error instanceof Error) {
       if (error.message === 'Unauthorized') {

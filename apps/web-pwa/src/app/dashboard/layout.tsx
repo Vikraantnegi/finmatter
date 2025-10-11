@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { AuthGuard } from '@/components/auth/AuthGuard';
+import { useBlockScroll } from '@/hooks/useBlockScroll';
 import {
   Home,
   CreditCard,
@@ -19,6 +20,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, signOut } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Block scrolling when sidebar is open on mobile
+  useBlockScroll(sidebarOpen);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -111,7 +115,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className='lg:pl-64'>
         {/* Mobile header */}
-        <div className='lg:hidden flex items-center justify-between h-16 px-4 bg-white border-b border-gray-200'>
+        <div className='lg:hidden flex items-center justify-between h-16 px-4 bg-white border-b border-gray-200 sticky top-0 z-30'>
           <button
             onClick={() => setSidebarOpen(true)}
             className='p-2 hover:bg-gray-100 rounded-lg'

@@ -114,7 +114,7 @@ export const useCardStore = create<CardState>()(
               });
             }
           } catch (error) {
-            console.error('Fetch cards error:', error);
+            // Error handled
             set({
               error: 'An unexpected error occurred',
               loading: false,
@@ -146,7 +146,7 @@ export const useCardStore = create<CardState>()(
               return null;
             }
           } catch (error) {
-            console.error('Create card error:', error);
+            // Error handled
             set({
               error: 'An unexpected error occurred',
               loading: false,
@@ -184,7 +184,7 @@ export const useCardStore = create<CardState>()(
               return null;
             }
           } catch (error) {
-            console.error('Update card error:', error);
+            // Error handled
             set({
               error: 'An unexpected error occurred',
               loading: false,

@@ -1,11 +1,19 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import toast from 'react-hot-toast';
+import { authCookies } from './cookies';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
 
 class ApiClient {
   private client: AxiosInstance;
+  private _authToken: string | null = null;
+  private _refreshToken: string | null = null;
+  private _isRefreshing: boolean = false;
+  private _failedQueue: Array<{
+    resolve: (value?: any) => void;
+    reject: (error?: any) => void;
+  }> = [];
 
   constructor() {
     this.client = axios.create({
@@ -14,6 +22,7 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
+      withCredentials: true, // Include cookies in all requests (for httpOnly refresh token)
     });
 
     this.setupInterceptors();
@@ -27,22 +36,10 @@ class ApiClient {
         const token = this.getAuthToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
-          console.log(
-            '✅ Added Authorization header:',
-            `Bearer ${token.substring(0, 20)}...`,
-          );
-        } else {
-          console.log('❌ No token available, skipping Authorization header');
         }
-
-        console.log(
-          `🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`,
-        );
-        console.log('📋 Request headers:', config.headers);
         return config;
       },
       error => {
-        console.error('❌ Request Error:', error);
         return Promise.reject(error);
       },
     );
@@ -50,25 +47,80 @@ class ApiClient {
     // Response interceptor
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
-        // console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
         return response;
       },
-      error => {
-        console.error(
-          '❌ Response Error:',
-          error.response?.data || error.message,
-        );
+      async error => {
+        const originalRequest = error.config;
 
-        // Handle common errors with better messages
-        if (error.response?.status === 401) {
-          const errorMessage =
-            error.response?.data?.error?.message ||
-            'Session expired. Please login again.';
-          toast.error(errorMessage);
-          // Redirect to login
-          setTimeout(() => {
-            window.location.href = '/auth/login';
-          }, 1000);
+        // Handle 401 errors with token refresh
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          if (this._isRefreshing) {
+            // If already refreshing, queue this request
+            return new Promise((resolve, reject) => {
+              this._failedQueue.push({ resolve, reject });
+            })
+              .then(() => {
+                return this.client(originalRequest);
+              })
+              .catch(err => {
+                return Promise.reject(err);
+              });
+          }
+
+          originalRequest._retry = true;
+          this._isRefreshing = true;
+
+          try {
+            const newToken = await this.refreshAuthToken();
+            if (newToken) {
+              this._authToken = newToken;
+
+              // Process failed queue
+              this._failedQueue.forEach(({ resolve }) => {
+                resolve();
+              });
+              this._failedQueue = [];
+
+              // Retry original request with new token
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              return this.client(originalRequest);
+            } else {
+              throw new Error('Token refresh failed');
+            }
+          } catch (refreshError) {
+            // Process failed queue with error
+            this._failedQueue.forEach(({ reject }) => {
+              reject(refreshError);
+            });
+            this._failedQueue = [];
+
+            // Better UX for session expiration
+            this.clearAuthToken();
+
+            // Save current URL so user can return after re-login
+            if (typeof window !== 'undefined') {
+              const currentPath = window.location.pathname;
+              const excludedPaths = ['/auth/login', '/auth/verify-otp', '/'];
+
+              if (!excludedPaths.some(path => currentPath.startsWith(path))) {
+                sessionStorage.setItem('finmatter-return-url', currentPath);
+              }
+            }
+
+            // Show toast with more time to read
+            toast.error('Your session has expired. Please login again.', {
+              duration: 3000,
+            });
+
+            // Soft redirect with delay for better UX
+            setTimeout(() => {
+              window.location.href = '/auth/login';
+            }, 1500);
+
+            return Promise.reject(refreshError);
+          } finally {
+            this._isRefreshing = false;
+          }
         } else if (error.response?.status === 403) {
           const errorMessage =
             error.response?.data?.error?.message ||
@@ -110,37 +162,98 @@ class ApiClient {
   }
 
   private getAuthToken(): string | null {
-    if (typeof window === 'undefined') return null;
-
-    // Get token from auth manager
-    try {
-      const authData = localStorage.getItem('finmatter-auth');
-      if (authData) {
-        const parsed = JSON.parse(authData);
-        const token = parsed.session?.token || null;
-        console.log(
-          '🔑 Extracted token:',
-          token ? `${token.substring(0, 20)}...` : 'null',
-        );
-        return token;
-      }
-    } catch (error) {
-      console.error('Error getting auth token:', error);
+    // First check internal token (fastest)
+    if (this._authToken) {
+      return this._authToken;
     }
-    console.log('❌ No auth token found');
+
+    // Then check localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const authData = localStorage.getItem('finmatter-auth');
+        if (authData) {
+          const parsed = JSON.parse(authData);
+          const token = parsed.state?.sessionToken || null;
+          if (token) {
+            this._authToken = token; // Cache it
+            return token;
+          }
+        }
+      } catch (error) {
+        // Silently fail
+      }
+    }
+
+    // Finally check cookies
+    const cookieToken = authCookies.getAccessToken();
+    if (cookieToken) {
+      this._authToken = cookieToken; // Cache it
+      return cookieToken;
+    }
+
     return null;
   }
 
-  public setAuthToken(token: string) {
-    // This method is kept for backward compatibility
-    // Session management is now handled by AuthManager
-    console.log('🔑 Auth token set:', token ? `${token.substring(0, 20)}...` : 'null');
+  public setAuthToken(token: string, _refreshToken?: string) {
+    // Store access token internally for immediate use
+    this._authToken = token;
+    // Don't store refresh token client-side - it's in httpOnly cookie
+    this._refreshToken = null;
+
+    // Store access token in cookie (refresh token set by server as httpOnly)
+    if (typeof window !== 'undefined') {
+      authCookies.setAccessToken(token);
+    }
   }
 
   public clearAuthToken() {
-    // Clear auth storage
-    localStorage.removeItem('finmatter-auth');
-    console.log('🗑️ Auth token cleared');
+    // Clear internal tokens, localStorage, and cookies
+    this._authToken = null;
+    this._refreshToken = null;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('finmatter-auth');
+      authCookies.clearTokens();
+    }
+  }
+
+  private async refreshAuthToken(): Promise<string | null> {
+    // Refresh token is stored in httpOnly cookie - automatically sent with request
+    // We don't need to get it from client-side storage (more secure)
+
+    try {
+      // Send empty body - refresh token comes from httpOnly cookie
+      const response = await axios.post(
+        `${API_BASE_URL}/api/auth/refresh`,
+        {}, // Empty body
+        {
+          withCredentials: true, // Include cookies in request
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (response.data.success && response.data.data?.session) {
+        const newToken = response.data.data.session.token;
+        // Note: newRefreshToken is set by server as httpOnly cookie
+
+        // Update internal access token
+        this._authToken = newToken;
+        // Don't store refresh token client-side - it's in httpOnly cookie
+        this._refreshToken = null;
+
+        // Update cookies (access token only - refresh token set by server)
+        if (typeof window !== 'undefined') {
+          authCookies.setAccessToken(newToken);
+        }
+
+        return newToken;
+      } else {
+        return null;
+      }
+    } catch (error) {
+      return null;
+    }
   }
 
   // Generic HTTP methods

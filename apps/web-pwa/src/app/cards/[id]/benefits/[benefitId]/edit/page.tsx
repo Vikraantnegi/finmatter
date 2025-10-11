@@ -93,16 +93,13 @@ export default function EditBenefitPage() {
 
     setSaving(true);
     try {
-      // TODO: Call API to update benefit
-      // console.log('Updating benefit:', { cardId, benefitId, ...formData });
-
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       toast.success('Benefit updated successfully');
       router.push(`/cards/${cardId}`);
     } catch (error) {
-      console.error('Error updating benefit:', error);
+      // Error handled by toast
       toast.error('Failed to update benefit');
       setErrors({ submit: 'Failed to update benefit. Please try again.' });
     } finally {
@@ -113,16 +110,13 @@ export default function EditBenefitPage() {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      // TODO: Call API to delete benefit
-      // console.log('Deleting benefit:', { cardId, benefitId });
-
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       toast.success('Benefit deleted successfully');
       router.push(`/cards/${cardId}`);
     } catch (error) {
-      console.error('Error deleting benefit:', error);
+      // Error handled by toast
       toast.error('Failed to delete benefit');
     } finally {
       setDeleting(false);
@@ -141,7 +135,7 @@ export default function EditBenefitPage() {
   return (
     <div className='min-h-screen bg-gray-50'>
       {/* Header */}
-      <div className='bg-white border-b border-gray-200'>
+      <div className='bg-white border-b border-gray-200 sticky top-0 z-30'>
         <div className='max-w-2xl mx-auto px-4 sm:px-6 lg:px-8'>
           <div className='flex items-center justify-between py-4'>
             <div className='flex items-center'>

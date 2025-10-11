@@ -38,7 +38,7 @@ export const cardService = {
 
       return response.data;
     } catch (error) {
-      console.error('Get cards error:', error);
+      // Error handled
       throw error;
     }
   },
@@ -53,7 +53,7 @@ export const cardService = {
       const response = await apiClient.get(`/api/cards/${cardId}`);
       return response.data;
     } catch (error) {
-      console.error('Get card error:', error);
+      // Error handled
       throw error;
     }
   },
@@ -66,7 +66,7 @@ export const cardService = {
       const response = await apiClient.post('/api/cards', cardData);
       return response.data;
     } catch (error) {
-      console.error('Create card error:', error);
+      // Error handled
       throw error;
     }
   },
@@ -82,7 +82,7 @@ export const cardService = {
       const response = await apiClient.put(`/api/cards/${cardId}`, updateData);
       return response.data;
     } catch (error) {
-      console.error('Update card error:', error);
+      // Error handled
       throw error;
     }
   },
@@ -95,7 +95,7 @@ export const cardService = {
       const response = await apiClient.delete(`/api/cards/${cardId}`);
       return response.data;
     } catch (error) {
-      console.error('Delete card error:', error);
+      // Error handled
       throw error;
     }
   },
@@ -112,7 +112,7 @@ export const cardService = {
       const response = await apiClient.get(`/api/cards/${cardId}/benefits`);
       return response.data;
     } catch (error) {
-      console.error('Get card benefits error:', error);
+      // Error handled
       throw error;
     }
   },
@@ -141,7 +141,7 @@ export const cardService = {
       );
       return response.data;
     } catch (error) {
-      console.error('Add card benefit error:', error);
+      // Error handled
       throw error;
     }
   },
@@ -171,7 +171,7 @@ export const cardService = {
       );
       return response.data;
     } catch (error) {
-      console.error('Update card benefit error:', error);
+      // Error handled
       throw error;
     }
   },
@@ -189,7 +189,7 @@ export const cardService = {
       );
       return response.data;
     } catch (error) {
-      console.error('Delete card benefit error:', error);
+      // Error handled
       throw error;
     }
   },

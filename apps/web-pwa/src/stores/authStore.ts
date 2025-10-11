@@ -4,8 +4,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '@finmatter/types';
 import { supabase } from '@/lib/supabase';
-import { expiringStorage } from '@/lib/expiringStorage';
 import { apiClient } from '@/lib/apiClient';
+import { authCookies } from '@/lib/cookies';
+import { authService } from '@/services/authService';
 
 // Extended user type for API responses that include onboarding status
 interface UserWithOnboarding extends User {
@@ -14,6 +15,17 @@ interface UserWithOnboarding extends User {
   lastName?: string;
   name?: string;
 }
+
+// Token refresh threshold - only refresh if expiring in next 15 minutes
+const REFRESH_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
+
+// Helper function to check if token should be refreshed
+const shouldRefreshToken = (expiresAt: string): boolean => {
+  const now = Date.now();
+  const expiry = new Date(expiresAt).getTime();
+  const timeUntilExpiry = expiry - now;
+  return timeUntilExpiry < REFRESH_THRESHOLD_MS && timeUntilExpiry > 0;
+};
 
 interface AuthState {
   user: User | null;
@@ -34,7 +46,7 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   setSession: (token: string, expiresAt: string) => void;
   clearSession: () => void;
-  refreshSession: () => void;
+  refreshSession: () => Promise<void>;
   signOut: () => Promise<void>;
   initializeAuth: () => Promise<void>;
   clearAuth: () => void;
@@ -50,7 +62,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      isLoading: true,
+      isLoading: false, // Default to false - will be set to true only during auth initialization
       isAuthenticated: false,
 
       // Onboarding state
@@ -82,34 +94,50 @@ export const useAuthStore = create<AuthState>()(
         set({ sessionToken: null, sessionExpiresAt: null });
       },
 
-      refreshSession: () => {
-        const { sessionToken } = get();
-        if (sessionToken) {
-          const newExpiresAt = new Date(
-            Date.now() + 10 * 24 * 60 * 60 * 1000,
-          ).toISOString();
-          set({ sessionExpiresAt: newExpiresAt });
-          // Also extend in storage
-          expiringStorage.extendExpiry('auth-storage');
+      refreshSession: async () => {
+        // Refresh token is in httpOnly cookie - server reads it automatically
+        // We just need to call the refresh endpoint
+        try {
+          const response = await authService.refreshToken();
+
+          if (response.success && response.data?.session) {
+            set({
+              sessionToken: response.data.session.token,
+              sessionExpiresAt: response.data.session.expiresAt,
+            });
+            // Update API client with new access token
+            // Refresh token is managed by server via httpOnly cookie
+            apiClient.setAuthToken(response.data.session.token);
+            return;
+          }
+        } catch (error) {
+          // If refresh fails, clear auth state to prevent loops
+          get().clearAuth();
+          return;
         }
+
+        // If refresh failed, clear auth
+        get().clearAuth();
       },
 
       signOut: async () => {
         try {
           await supabase.auth.signOut();
-          set({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            onboardingCompleted: false,
-            userName: null,
-            notificationsEnabled: false,
-            sessionToken: null,
-            sessionExpiresAt: null,
-          });
         } catch (error) {
-          console.error('Error signing out:', error);
+          // Sign out from Supabase failed, but continue with local cleanup
         }
+
+        // Always clear local auth state
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          onboardingCompleted: false,
+          userName: null,
+          notificationsEnabled: false,
+          sessionToken: null,
+          sessionExpiresAt: null,
+        });
       },
 
       clearAuth: () => {
@@ -127,52 +155,70 @@ export const useAuthStore = create<AuthState>()(
 
       initializeAuth: async () => {
         try {
-          console.log('AuthStore: Starting auth initialization');
+          // Start loading
           set({ isLoading: true });
 
-          // Check if we have a valid session from persisted state
-          const { sessionToken, sessionExpiresAt, user } = get();
-          console.log('AuthStore: Checking persisted state', {
-            sessionToken: !!sessionToken,
-            sessionExpiresAt,
-            user: !!user,
-          });
+          // Check cookies for tokens (priority over localStorage)
+          const cookieAccessToken = authCookies.getAccessToken();
 
-          if (sessionToken && sessionExpiresAt && user) {
+          // Check persisted state
+          const {
+            sessionToken: currentSessionToken,
+            sessionExpiresAt: currentSessionExpiry,
+            user: currentUser,
+          } = get();
+
+          // Use cookie token if available, otherwise use localStorage token
+          const activeToken = cookieAccessToken || currentSessionToken;
+
+          if (activeToken && currentSessionExpiry && currentUser) {
             const now = new Date();
-            const expiresAt = new Date(sessionExpiresAt);
+            const expiresAt = new Date(currentSessionExpiry);
 
-            if (now < expiresAt) {
-              // Session is still valid, refresh it and fetch fresh user data
-              console.log('AuthStore: Session is valid, refreshing and fetching user data');
-              get().refreshSession();
-              
-              // Fetch fresh user profile data from our API
-              try {
-                const response = await apiClient.get(`/api/users/${user.id}`) as { 
-                  success: boolean; 
-                  data?: { user: UserWithOnboarding }; 
-                  error?: any 
-                };
-                if (response.success && response.data?.user) {
-                  console.log('AuthStore: Fresh user data fetched:', response.data.user);
-                  set({
-                    user: response.data.user,
-                    isAuthenticated: true,
-                    isLoading: false,
-                    onboardingCompleted: response.data.user.onboardingCompleted || false,
-                  });
-                  return;
-                }
-              } catch (error) {
-                console.warn('AuthStore: Failed to fetch fresh user data, using cached data:', error);
-                set({ isLoading: false });
+            // Check if token is expired
+            if (now >= expiresAt) {
+              // Token expired - clear and redirect
+              get().clearSession();
+              set({
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+              });
+              return;
+            }
+
+            // Only refresh if expiring soon (< 15 minutes)
+            if (shouldRefreshToken(currentSessionExpiry)) {
+              await get().refreshSession();
+            }
+
+            // Fetch fresh user profile data from our API
+            try {
+              const response = (await apiClient.get(
+                `/api/users/${currentUser.id}`,
+              )) as {
+                success: boolean;
+                data?: { user: UserWithOnboarding };
+                error?: any;
+              };
+              if (response.success && response.data?.user) {
+                set({
+                  user: response.data.user,
+                  isAuthenticated: true,
+                  isLoading: false,
+                  onboardingCompleted:
+                    response.data.user.onboardingCompleted || false,
+                });
                 return;
               }
-            } else {
-              // Session expired, clear it
-              console.log('AuthStore: Session expired, clearing');
-              get().clearSession();
+            } catch (error) {
+              set({
+                isAuthenticated: true,
+                isLoading: false,
+                onboardingCompleted:
+                  (currentUser as any).onboardingCompleted || false,
+              });
+              return;
             }
           }
 
@@ -180,16 +226,7 @@ export const useAuthStore = create<AuthState>()(
           const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
           const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-          console.log('AuthStore: Supabase config check', {
-            hasUrl: !!supabaseUrl,
-            hasKey: !!supabaseKey,
-            urlLength: supabaseUrl?.length || 0,
-          });
-
           if (!supabaseUrl || !supabaseKey || supabaseUrl.length < 10) {
-            console.warn(
-              'AuthStore: Supabase not properly configured, skipping session check',
-            );
             set({
               user: null,
               isAuthenticated: false,
@@ -206,46 +243,40 @@ export const useAuthStore = create<AuthState>()(
             ),
           );
 
-          console.log('AuthStore: Attempting to get Supabase session...');
           const sessionPromise = supabase.auth.getSession();
 
           const {
             data: { session },
           } = (await Promise.race([sessionPromise, timeoutPromise])) as any;
-          console.log('AuthStore: Supabase session result:', {
-            hasSession: !!session,
-            hasUser: !!session?.user,
-          });
 
           if (session?.user) {
-            console.log('AuthStore: Found Supabase session, fetching profile from API');
-            
             // Set the auth token for API calls
             apiClient.setAuthToken(session.access_token);
-            
+
             try {
               // Fetch user profile from our API endpoint
-              const response = await apiClient.get(`/api/users/${session.user.id}`) as { 
-                success: boolean; 
-                data?: { user: UserWithOnboarding }; 
-                error?: any 
+              const response = (await apiClient.get(
+                `/api/users/${session.user.id}`,
+              )) as {
+                success: boolean;
+                data?: { user: UserWithOnboarding };
+                error?: any;
               };
               if (response.success && response.data?.user) {
-                console.log('AuthStore: User profile fetched from API:', response.data.user);
-                
                 set({
                   user: response.data.user,
                   isAuthenticated: true,
                   isLoading: false,
-                  onboardingCompleted: response.data.user.onboardingCompleted || false,
+                  onboardingCompleted:
+                    response.data.user.onboardingCompleted || false,
                   sessionToken: session.access_token,
-                  sessionExpiresAt: new Date(session.expires_at! * 1000).toISOString(),
+                  sessionExpiresAt: new Date(
+                    session.expires_at! * 1000,
+                  ).toISOString(),
                 });
                 return;
               }
             } catch (error) {
-              console.warn('AuthStore: Failed to fetch user profile from API, falling back to Supabase:', error);
-              
               // Fallback to direct Supabase query
               const profilePromise = supabase
                 .from('users')
@@ -266,8 +297,14 @@ export const useAuthStore = create<AuthState>()(
                 biometricEnabled: false,
                 isVerified: true,
                 profileData: {
-                  firstName: profile?.profile_data?.firstName || profile?.name?.split(' ')[0] || '',
-                  lastName: profile?.profile_data?.lastName || profile?.name?.split(' ').slice(1).join(' ') || '',
+                  firstName:
+                    profile?.profile_data?.firstName ||
+                    profile?.name?.split(' ')[0] ||
+                    '',
+                  lastName:
+                    profile?.profile_data?.lastName ||
+                    profile?.name?.split(' ').slice(1).join(' ') ||
+                    '',
                 },
               };
 
@@ -277,13 +314,13 @@ export const useAuthStore = create<AuthState>()(
                 isLoading: false,
                 onboardingCompleted: profile?.onboarding_completed || false,
                 sessionToken: session.access_token,
-                sessionExpiresAt: new Date(session.expires_at! * 1000).toISOString(),
+                sessionExpiresAt: new Date(
+                  session.expires_at! * 1000,
+                ).toISOString(),
               });
               return;
             }
           } else {
-            console.log('AuthStore: No Supabase session found');
-            console.log('AuthStore: Setting isLoading to false');
             set({
               user: null,
               isAuthenticated: false,
@@ -291,8 +328,6 @@ export const useAuthStore = create<AuthState>()(
             });
           }
         } catch (error) {
-          console.error('Error initializing auth:', error);
-          console.log('AuthStore: Setting isLoading to false after error');
           set({
             user: null,
             isAuthenticated: false,
@@ -325,10 +360,14 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // Call API to complete onboarding using apiClient
-          const response = await apiClient.put('/api/users/onboarding', {
+          const response = (await apiClient.put('/api/users/onboarding', {
             firstName: userName || 'User',
             notificationsEnabled: notificationsEnabled || false,
-          }) as { success: boolean; error?: { message?: string }; data?: { user: any } };
+          })) as {
+            success: boolean;
+            error?: { message?: string };
+            data?: { user: any };
+          };
 
           if (response.success) {
             // Update the user data with the response from the API
@@ -340,9 +379,9 @@ export const useAuthStore = create<AuthState>()(
                   lastName: response.data.user.lastName || '',
                 },
               };
-              set({ 
+              set({
                 onboardingCompleted: true,
-                user: updatedUser 
+                user: updatedUser,
               });
             } else {
               set({ onboardingCompleted: true });
@@ -353,7 +392,6 @@ export const useAuthStore = create<AuthState>()(
             );
           }
         } catch (error) {
-          console.error('Error completing onboarding:', error);
           // Still mark as completed locally even if API fails
           set({ onboardingCompleted: true });
         }
@@ -361,7 +399,6 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      storage: expiringStorage,
       partialize: state => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,

@@ -31,25 +31,15 @@ async function getAuthenticatedUserIdAndValidateAccess(
   targetUserId: string,
 ): Promise<string> {
   const authHeader = request.headers.get('Authorization');
-  console.log(
-    '🔑 Auth header:',
-    authHeader ? `${authHeader.substring(0, 20)}...` : 'null',
-  );
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new Error('Unauthorized');
   }
 
   const token = authHeader.split(' ')[1];
-  console.log('🎫 Token:', token ? `${token.substring(0, 20)}...` : 'null');
 
   const { data: userResponse, error: userError } =
     await supabaseAdmin.auth.getUser(token);
-
-  console.log('👤 Supabase response:', {
-    hasUser: !!userResponse?.user,
-    error: userError?.message,
-  });
 
   if (userError || !userResponse?.user) {
     throw new Error('Invalid token');
@@ -82,13 +72,10 @@ export async function GET(
   { params }: { params: { userId: string } },
 ) {
   try {
-    console.log('🔍 Get user profile API called for user:', params.userId);
-
     const userId = await getAuthenticatedUserIdAndValidateAccess(
       request,
       params.userId,
     );
-    console.log('✅ User authenticated and authorized:', userId);
 
     // Fetch complete user profile from database
     const { data: user, error } = await supabaseAdmin
@@ -98,7 +85,6 @@ export async function GET(
       .single();
 
     if (error) {
-      console.error('❌ Database fetch failed:', error);
       logError(error, {
         userId,
         endpoint: `/api/users/${userId}`,
@@ -131,8 +117,6 @@ export async function GET(
       return createCorsResponse(errorResponse, { status: 404 });
     }
 
-    console.log('✅ User profile fetched successfully:', user.id);
-
     // Return complete user profile data
     return createCorsResponse({
       success: true,
@@ -141,8 +125,12 @@ export async function GET(
           id: user.id,
           phoneNumber: user.phone_number,
           name: user.name,
-          firstName: user.profile_data?.firstName || user.name?.split(' ')[0] || '',
-          lastName: user.profile_data?.lastName || user.name?.split(' ').slice(1).join(' ') || '',
+          firstName:
+            user.profile_data?.firstName || user.name?.split(' ')[0] || '',
+          lastName:
+            user.profile_data?.lastName ||
+            user.name?.split(' ').slice(1).join(' ') ||
+            '',
           onboardingCompleted: user.onboarding_completed || false,
           isVerified: user.is_verified,
           biometricEnabled: user.biometric_enabled,
@@ -151,15 +139,17 @@ export async function GET(
           updatedAt: user.updated_at,
           lastLogin: user.last_login,
           profileData: {
-            firstName: user.profile_data?.firstName || user.name?.split(' ')[0] || '',
-            lastName: user.profile_data?.lastName || user.name?.split(' ').slice(1).join(' ') || '',
+            firstName:
+              user.profile_data?.firstName || user.name?.split(' ')[0] || '',
+            lastName:
+              user.profile_data?.lastName ||
+              user.name?.split(' ').slice(1).join(' ') ||
+              '',
           },
         },
       },
     });
   } catch (error) {
-    console.error('❌ Get user profile API error:', error);
-
     // Handle specific error types
     if (error instanceof Error) {
       if (error.message === 'Unauthorized') {
@@ -204,7 +194,9 @@ export async function GET(
     const errorResponse = createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Failed to fetch user profile',
-      { originalError: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        originalError: error instanceof Error ? error.message : 'Unknown error',
+      },
       { retryable: true },
     );
 
@@ -221,21 +213,16 @@ export async function PUT(
   { params }: { params: { userId: string } },
 ) {
   try {
-    console.log('🔍 Update user profile API called for user:', params.userId);
-
     const userId = await getAuthenticatedUserIdAndValidateAccess(
       request,
       params.userId,
     );
-    console.log('✅ User authenticated and authorized:', userId);
 
     // Parse and validate request body
     let body;
     try {
       body = await request.json();
-      console.log('📦 Request body:', body);
     } catch (parseError) {
-      console.error('❌ Request body parsing failed:', parseError);
       const errorResponse = createErrorResponse(
         ErrorCodes.VALIDATION_ERROR,
         'Invalid JSON in request body',
@@ -251,7 +238,6 @@ export async function PUT(
 
     const validation = UpdateUserSchema.safeParse(body);
     if (!validation.success) {
-      console.error('❌ Validation failed:', validation.error.errors);
       const errorResponse = createErrorResponse(
         ErrorCodes.VALIDATION_ERROR,
         'Invalid request data',
@@ -267,7 +253,10 @@ export async function PUT(
       updated_at: new Date().toISOString(),
     };
 
-    if (updateData.firstName !== undefined || updateData.lastName !== undefined) {
+    if (
+      updateData.firstName !== undefined ||
+      updateData.lastName !== undefined
+    ) {
       const firstName = updateData.firstName || '';
       const lastName = updateData.lastName || '';
       dbUpdateData.name = lastName ? `${firstName} ${lastName}` : firstName;
@@ -294,7 +283,6 @@ export async function PUT(
     }
 
     // Update user record
-    console.log('🔄 Updating user record...');
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .update(dbUpdateData)
@@ -303,7 +291,6 @@ export async function PUT(
       .single();
 
     if (error) {
-      console.error('❌ Database update failed:', error);
       logError(error, {
         userId,
         endpoint: `/api/users/${userId}`,
@@ -327,8 +314,6 @@ export async function PUT(
       return createCorsResponse(errorResponse, { status: appError.statusCode });
     }
 
-    console.log('✅ User updated successfully:', user?.id);
-
     return createCorsResponse({
       success: true,
       data: {
@@ -336,8 +321,12 @@ export async function PUT(
           id: user.id,
           phoneNumber: user.phone_number,
           name: user.name,
-          firstName: user.profile_data?.firstName || user.name?.split(' ')[0] || '',
-          lastName: user.profile_data?.lastName || user.name?.split(' ').slice(1).join(' ') || '',
+          firstName:
+            user.profile_data?.firstName || user.name?.split(' ')[0] || '',
+          lastName:
+            user.profile_data?.lastName ||
+            user.name?.split(' ').slice(1).join(' ') ||
+            '',
           onboardingCompleted: user.onboarding_completed,
           isVerified: user.is_verified,
           biometricEnabled: user.biometric_enabled,
@@ -346,15 +335,17 @@ export async function PUT(
           updatedAt: user.updated_at,
           lastLogin: user.last_login,
           profileData: {
-            firstName: user.profile_data?.firstName || user.name?.split(' ')[0] || '',
-            lastName: user.profile_data?.lastName || user.name?.split(' ').slice(1).join(' ') || '',
+            firstName:
+              user.profile_data?.firstName || user.name?.split(' ')[0] || '',
+            lastName:
+              user.profile_data?.lastName ||
+              user.name?.split(' ').slice(1).join(' ') ||
+              '',
           },
         },
       },
     });
   } catch (error) {
-    console.error('❌ Update user profile API error:', error);
-
     // Handle specific error types
     if (error instanceof Error) {
       if (error.message === 'Unauthorized') {
@@ -399,7 +390,9 @@ export async function PUT(
     const errorResponse = createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Failed to update user profile',
-      { originalError: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        originalError: error instanceof Error ? error.message : 'Unknown error',
+      },
       { retryable: true },
     );
 

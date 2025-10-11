@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import OtpInput from 'react-otp-input';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { AuthRedirectGuard } from '@/components/auth/AuthRedirectGuard';
 import { useAuth } from '@/hooks/useAuth';
 // import { AuthGuard } from '@/components/auth/AuthGuard';
 
@@ -33,18 +34,12 @@ function VerifyOtpContent() {
   });
 
   useEffect(() => {
-    console.log('VerifyOtpContent: Component mounted/updated');
     // Get phone number from session storage instead of URL
     const pendingPhoneNumber = sessionStorage.getItem('pendingPhoneNumber');
-    console.log(
-      'VerifyOtpContent: pendingPhoneNumber from session:',
-      pendingPhoneNumber,
-    );
     if (pendingPhoneNumber) {
       setPhone(pendingPhoneNumber);
     } else {
       // If no phone number in session, redirect to login
-      console.log('VerifyOtpContent: No phone number, redirecting to login');
       router.push('/auth/login');
     }
   }, [router]);
@@ -108,96 +103,99 @@ function VerifyOtpContent() {
   }
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4'>
-      <div className='max-w-md w-full space-y-8'>
-        <div className='text-center'>
-          <h2 className='mt-6 text-3xl font-bold text-gray-900'>
-            Verify Your Phone
-          </h2>
-          <p className='mt-2 text-sm text-gray-600'>
-            We sent a 6-digit code to{' '}
-            <span className='font-medium'>{phone}</span>
-          </p>
-        </div>
+    <AuthRedirectGuard>
+      <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4'>
+        <div className='max-w-md w-full space-y-8'>
+          <div className='text-center'>
+            <h2 className='mt-6 text-3xl font-bold text-gray-900'>
+              Verify Your Phone
+            </h2>
+            <p className='mt-2 text-sm text-gray-600'>
+              We sent a 6-digit code to{' '}
+              <span className='font-medium'>{phone}</span>
+            </p>
+          </div>
 
-        <div className='card'>
-          <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Enter OTP
-              </label>
-              <div className='flex justify-center'>
-                <OtpInput
-                  value={otp}
-                  onChange={handleOtpChange}
-                  numInputs={6}
-                  renderInput={props => (
-                    <input
-                      {...props}
-                      className='text-gray-900 bg-white border-gray-300 focus:border-primary-500 focus:ring-primary-500'
-                    />
-                  )}
-                  inputStyle={{
-                    width: '3rem',
-                    height: '3rem',
-                    margin: '0 0.25rem',
-                    fontSize: '1.25rem',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    textAlign: 'center' as const,
-                    color: '#111827',
-                    backgroundColor: '#ffffff',
-                  }}
-                  containerStyle={{
-                    justifyContent: 'center',
-                  }}
-                  shouldAutoFocus
-                />
+          <div className='card'>
+            <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
+                  Enter OTP
+                </label>
+                <div className='flex justify-center'>
+                  <OtpInput
+                    value={otp}
+                    onChange={handleOtpChange}
+                    numInputs={6}
+                    renderInput={props => (
+                      <input
+                        {...props}
+                        className='text-gray-900 bg-white border-gray-300 focus:border-primary-500 focus:ring-primary-500'
+                      />
+                    )}
+                    inputStyle={{
+                      width: '3rem',
+                      height: '3rem',
+                      margin: '0 0.25rem',
+                      fontSize: '1.25rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      textAlign: 'center' as const,
+                      color: '#111827',
+                      backgroundColor: '#ffffff',
+                    }}
+                    containerStyle={{
+                      justifyContent: 'center',
+                    }}
+                    shouldAutoFocus
+                  />
+                </div>
+                {errors.otp && (
+                  <p className='text-sm text-error-600'>{errors.otp.message}</p>
+                )}
               </div>
-              {errors.otp && (
-                <p className='text-sm text-error-600'>{errors.otp.message}</p>
-              )}
-            </div>
 
-            <Button
-              type='submit'
-              disabled={otp.length !== 6 || isLoading}
-              className='w-full'
-              size='lg'
-            >
-              {isLoading ? <LoadingSpinner size='sm' className='mr-2' /> : null}
-              {isLoading ? 'Verifying...' : 'Verify OTP'}
-            </Button>
-          </form>
+              <Button
+                type='submit'
+                disabled={otp.length !== 6 || isLoading}
+                className='w-full'
+                size='lg'
+              >
+                {isLoading ? (
+                  <LoadingSpinner size='sm' className='mr-2' />
+                ) : null}
+                {isLoading ? 'Verifying...' : 'Verify OTP'}
+              </Button>
+            </form>
 
-          <div className='mt-6 text-center space-y-4'>
-            <button
-              type='button'
-              onClick={handleResendOtp}
-              disabled={isLoading}
-              className='text-sm text-primary-600 hover:text-primary-500 disabled:text-gray-400'
-            >
-              Didn&apos;t receive the code? Resend OTP
-            </button>
-
-            <div>
+            <div className='mt-6 text-center space-y-4'>
               <button
                 type='button'
-                onClick={() => router.push('/auth/login')}
-                className='text-sm text-gray-600 hover:text-gray-500'
+                onClick={handleResendOtp}
+                disabled={isLoading}
+                className='text-sm text-primary-600 hover:text-primary-500 disabled:text-gray-400'
               >
-                Change phone number
+                Didn&apos;t receive the code? Resend OTP
               </button>
+
+              <div>
+                <button
+                  type='button'
+                  onClick={() => router.push('/auth/login')}
+                  className='text-sm text-gray-600 hover:text-gray-500'
+                >
+                  Change phone number
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </AuthRedirectGuard>
   );
 }
 
 export default function VerifyOtpPage() {
-  console.log('VerifyOtpPage: Component rendering');
   return (
     <Suspense fallback={<LoadingSpinner size='lg' />}>
       <VerifyOtpContent />

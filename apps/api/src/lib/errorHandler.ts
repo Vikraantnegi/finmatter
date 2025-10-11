@@ -204,7 +204,6 @@ export function logError(
     console.error('🚨 Error occurred:', errorInfo);
   }
 
-  // TODO: In production, send to logging service (e.g., Sentry, LogRocket)
   // logToService(errorInfo);
 }
 

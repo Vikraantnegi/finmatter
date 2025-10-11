@@ -46,7 +46,7 @@ export function useOnboarding() {
         toast.error('Failed to complete onboarding. Please try again.');
       }
     } catch (error) {
-      console.error('Onboarding completion error:', error);
+      // Error handled by component
       toast.error('Failed to complete onboarding. Please try again.');
     } finally {
       setIsLoading(false);

@@ -1,14 +1,16 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { authService } from '@/services/authService';
 import { apiClient } from '@/lib/apiClient';
+import { useReturnUrl } from '@/hooks/useReturnUrl';
 import toast from 'react-hot-toast';
 
 export function useAuth() {
   const router = useRouter();
+  const { navigateToReturnUrl } = useReturnUrl();
   const {
     user,
     isLoading,
@@ -19,22 +21,10 @@ export function useAuth() {
     setOnboardingCompleted,
     setSession,
     clearAuth,
-    initializeAuth,
   } = useAuthStore();
 
-  // Initialize auth state on mount using the auth store's initializeAuth
-  useEffect(() => {
-    console.log('useAuth: Initializing auth on mount');
-
-    // Check if already initialized to prevent loops
-    const storeState = useAuthStore.getState();
-    if (storeState.isLoading === false) {
-      console.log('useAuth: Auth already initialized, skipping');
-      return;
-    }
-
-    initializeAuth();
-  }, []); // Empty dependency array to run only once
+  // Auth initialization is now handled by AuthProvider in root layout
+  // No need to initialize here - prevents duplicate initialization
 
   const sendOTP = useCallback(
     async (phoneNumber: string) => {
@@ -54,7 +44,6 @@ export function useAuth() {
           return { success: false, error: response.error };
         }
       } catch (error) {
-        console.error('Send OTP error:', error);
         toast.error('Failed to send OTP. Please try again.');
         return { success: false, error };
       } finally {
@@ -92,31 +81,30 @@ export function useAuth() {
 
           // Fetch complete user profile data from our API
           try {
-            console.log('🔄 Fetching complete user profile after login...');
             const profileResponse = await authService.getCurrentUser(user.id);
             if (profileResponse.success && profileResponse.data?.user) {
-              console.log('✅ Complete user profile fetched:', profileResponse.data.user);
               setUser(profileResponse.data.user);
-              setOnboardingCompleted(profileResponse.data.user.onboardingCompleted || false);
+              setOnboardingCompleted(
+                profileResponse.data.user.onboardingCompleted || false,
+              );
             } else {
-              console.warn('⚠️ Failed to fetch complete profile, using basic user data');
               setUser(user);
               setOnboardingCompleted(apiUser.onboardingCompleted || false);
             }
           } catch (error) {
-            console.warn('⚠️ Error fetching complete profile, using basic user data:', error);
             setUser(user);
             setOnboardingCompleted(apiUser.onboardingCompleted || false);
           }
 
           toast.success('Welcome to FinMatter!');
 
-          // Navigation happens after all state updates complete
-          // This is the proper async pattern - navigate after the async flow resolves
-          const targetRoute = apiUser.onboardingCompleted
-            ? '/dashboard'
-            : '/onboarding';
-          router.push(targetRoute);
+          // Navigate to onboarding if not completed, otherwise to return URL or dashboard
+          if (!apiUser.onboardingCompleted) {
+            router.push('/onboarding');
+          } else {
+            // Navigate to saved return URL or dashboard
+            navigateToReturnUrl('/dashboard');
+          }
           router.refresh(); // Ensure clean render of the new route
 
           return { success: true, user };
@@ -127,14 +115,20 @@ export function useAuth() {
           return { success: false, error: response.error };
         }
       } catch (error) {
-        console.error('Verify OTP error:', error);
         toast.error('Failed to verify OTP. Please try again.');
         return { success: false, error };
       } finally {
         setLoading(false);
       }
     },
-    [setUser, setOnboardingCompleted, setLoading, setSession, router],
+    [
+      setUser,
+      setOnboardingCompleted,
+      setLoading,
+      setSession,
+      router,
+      navigateToReturnUrl,
+    ],
   );
 
   const signOut = useCallback(async () => {
@@ -148,7 +142,6 @@ export function useAuth() {
       router.push('/auth/login');
       router.refresh();
     } catch (error) {
-      console.error('Sign out error:', error);
       toast.error('Failed to sign out. Please try again.');
     } finally {
       setLoading(false);
@@ -163,13 +156,10 @@ export function useAuth() {
     }) => {
       try {
         setLoading(true);
-        console.log('🔄 Starting onboarding completion...', userData);
 
         const response = await authService.completeOnboarding(userData);
-        console.log('📦 Onboarding response:', response);
 
         if (response.success && response.data?.user) {
-          console.log('✅ Onboarding completed successfully');
           setUser(response.data.user);
           setOnboardingCompleted(true);
           toast.success('Onboarding completed!');
@@ -179,15 +169,12 @@ export function useAuth() {
 
           return { success: true };
         } else {
-          console.error('❌ Onboarding failed:', response.error);
           const errorMessage =
             response.error?.message || 'Failed to complete onboarding';
           toast.error(errorMessage);
           return { success: false, error: response.error };
         }
       } catch (error) {
-        console.error('❌ Complete onboarding error:', error);
-
         // Handle different error types
         let errorMessage = 'Failed to complete onboarding. Please try again.';
 

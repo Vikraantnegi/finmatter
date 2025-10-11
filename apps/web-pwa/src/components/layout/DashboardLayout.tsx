@@ -3,6 +3,7 @@
 import { ReactNode, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
+import { useBlockScroll } from '@/hooks/useBlockScroll';
 import { cn } from '@/lib/utils';
 import {
   CreditCard,
@@ -31,12 +32,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, signOut } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Block scrolling when sidebar is open on mobile
+  useBlockScroll(sidebarOpen);
+
   const handleSignOut = async () => {
     try {
       await signOut();
       router.push('/auth/login');
     } catch (error) {
-      console.error('Sign out error:', error);
+      // Error handled by toast
     }
   };
 

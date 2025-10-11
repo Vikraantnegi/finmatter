@@ -57,7 +57,7 @@ export default function CardDetailPage() {
       toast.success('Card deleted successfully');
       router.push('/cards');
     } catch (error) {
-      console.error('Delete card error:', error);
+      // Error handled by toast
       toast.error('Failed to delete card');
     } finally {
       setDeleting(false);
@@ -84,7 +84,7 @@ export default function CardDetailPage() {
   return (
     <div className='min-h-screen bg-gray-50'>
       {/* Header */}
-      <div className='bg-white border-b border-gray-200'>
+      <div className='bg-white border-b border-gray-200 sticky top-0 z-30'>
         <div className='max-w-4xl mx-auto px-4 sm:px-6 lg:px-8'>
           <div className='flex items-center justify-between py-4'>
             <div className='flex items-center'>

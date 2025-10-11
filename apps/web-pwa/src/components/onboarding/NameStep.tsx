@@ -43,13 +43,13 @@ export default function NameStep({ onNext, onUpdateFormData }: NameStepProps) {
       setIsLoading(true);
       // Update both the auth store and the onboarding form data
       setUserName(data.firstName.trim());
-      onUpdateFormData({ 
+      onUpdateFormData({
         firstName: data.firstName.trim(),
-        lastName: data.lastName?.trim() || undefined
+        lastName: data.lastName?.trim() || undefined,
       });
       onNext();
     } catch (error) {
-      console.error('Error saving name:', error);
+      // Error handled by hook
     } finally {
       setIsLoading(false);
     }

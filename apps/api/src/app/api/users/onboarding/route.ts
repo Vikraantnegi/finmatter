@@ -88,7 +88,68 @@ export async function PUT(request: NextRequest) {
 
     const { firstName, lastName, notificationsEnabled } = validation.data;
 
-    // Update user record
+    // Check if user has already completed onboarding (idempotency)
+    const { data: currentUser, error: fetchError } = await supabaseAdmin
+      .from('users')
+      .select(
+        'onboarding_completed, name, profile_data, phone_number, is_verified, biometric_enabled, created_at, updated_at',
+      )
+      .eq('id', userId)
+      .single();
+
+    if (fetchError) {
+      logError(fetchError, {
+        userId,
+        endpoint: '/api/users/onboarding',
+        additionalData: {
+          operation: 'fetch_user',
+          error: fetchError.message,
+        },
+      });
+
+      const appError = handleSupabaseError(fetchError, 'select');
+      const errorResponse = createErrorResponse(
+        appError.code as keyof typeof ErrorCodes,
+        appError.message,
+        { originalError: fetchError.message, userId },
+        {
+          statusCode: appError.statusCode,
+          retryable: appError.statusCode >= 500,
+        },
+      );
+
+      return createCorsResponse(errorResponse, { status: appError.statusCode });
+    }
+
+    // If already onboarded, return success with current data (idempotent)
+    if (currentUser?.onboarding_completed) {
+      return createCorsResponse({
+        success: true,
+        message: 'Onboarding already completed',
+        data: {
+          user: {
+            id: userId,
+            phoneNumber: currentUser.phone_number,
+            name: currentUser.name,
+            firstName:
+              currentUser.profile_data?.firstName ||
+              currentUser.name?.split(' ')[0] ||
+              '',
+            lastName:
+              currentUser.profile_data?.lastName ||
+              currentUser.name?.split(' ').slice(1).join(' ') ||
+              '',
+            onboardingCompleted: true,
+            isVerified: currentUser.is_verified,
+            biometricEnabled: currentUser.biometric_enabled,
+            createdAt: currentUser.created_at,
+            updatedAt: currentUser.updated_at,
+          },
+        },
+      });
+    }
+
+    // Update user record (first time onboarding)
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .update({

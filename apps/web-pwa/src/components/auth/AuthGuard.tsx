@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useReturnUrl } from '@/hooks/useReturnUrl';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { getAuthRedirect } from '@/lib/routing';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -20,7 +21,7 @@ export function AuthGuard({
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, isAuthenticated, onboardingCompleted } = useAuth();
-  const { saveReturnUrl } = useReturnUrl();
+  const { saveReturnUrl, getReturnUrl } = useReturnUrl();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -33,11 +34,28 @@ export function AuthGuard({
         return;
       }
 
+      // Use centralized routing logic
+      const returnUrl = getReturnUrl();
+      const redirect = getAuthRedirect({
+        isAuthenticated,
+        onboardingCompleted,
+        currentPath: pathname,
+        returnUrl: returnUrl || undefined,
+      });
+
+      if (redirect) {
+        // Save return URL if we're redirecting to login
+        if (redirect === '/auth/login' && requireAuth) {
+          saveReturnUrl();
+        }
+        router.push(redirect);
+        return;
+      }
+
+      // Additional checks for custom guard requirements
       // Handle authentication requirements
       if (requireAuth && !isAuthenticated) {
-        // Redirect to login if not authenticated
         if (pathname !== '/auth/login' && pathname !== '/auth/verify-otp') {
-          // Save current URL so we can return after login
           saveReturnUrl();
           router.push('/auth/login');
         }
@@ -46,30 +64,9 @@ export function AuthGuard({
 
       // Handle onboarding requirements
       if (requireOnboarding && isAuthenticated && !onboardingCompleted) {
-        // Redirect to onboarding if not completed
         if (pathname !== '/onboarding') {
           router.push('/onboarding');
         }
-        return;
-      }
-
-      // Redirect authenticated users away from auth pages
-      if (isAuthenticated && pathname.startsWith('/auth')) {
-        if (onboardingCompleted) {
-          router.push('/dashboard');
-        } else {
-          router.push('/onboarding');
-        }
-        return;
-      }
-
-      // Redirect completed users away from onboarding
-      if (
-        isAuthenticated &&
-        onboardingCompleted &&
-        pathname === '/onboarding'
-      ) {
-        router.push('/dashboard');
         return;
       }
     };
@@ -85,6 +82,7 @@ export function AuthGuard({
     requireOnboarding,
     user,
     saveReturnUrl,
+    getReturnUrl,
   ]);
 
   // Show loading spinner while checking auth OR when redirecting

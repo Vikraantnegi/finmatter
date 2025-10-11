@@ -108,6 +108,33 @@ export const useAuthStore = create<AuthState>()(
             // Update API client with new access token
             // Refresh token is managed by server via httpOnly cookie
             apiClient.setAuthToken(response.data.session.token);
+
+            // Re-fetch user profile to get latest data including onboarding status
+            const user = get().user;
+            if (user) {
+              try {
+                const profileResponse = (await apiClient.get(
+                  `/api/users/${user.id}`,
+                )) as {
+                  success: boolean;
+                  data?: { user: UserWithOnboarding };
+                  error?: any;
+                };
+
+                if (profileResponse.success && profileResponse.data?.user) {
+                  set({
+                    user: profileResponse.data.user,
+                    onboardingCompleted:
+                      profileResponse.data.user.onboardingCompleted || false,
+                  });
+                }
+              } catch (profileError) {
+                // Profile fetch failed but token refresh succeeded
+                // Continue with existing user data
+                console.error('Failed to refresh user profile:', profileError);
+              }
+            }
+
             return;
           }
         } catch (error) {

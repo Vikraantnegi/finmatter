@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
+import { getAuthRedirect } from '@/lib/routing';
 
 interface AuthRedirectGuardProps {
   children: React.ReactNode;
@@ -18,6 +19,7 @@ export function AuthRedirectGuard({
   redirectTo,
 }: AuthRedirectGuardProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { isLoading, isAuthenticated, onboardingCompleted } = useAuthStore();
 
   useEffect(() => {
@@ -26,16 +28,31 @@ export function AuthRedirectGuard({
       return;
     }
 
-    // If authenticated, redirect away from auth pages
+    // If authenticated, use centralized routing logic
     if (isAuthenticated) {
-      // Determine where to redirect based on onboarding status
-      const targetRoute = onboardingCompleted ? '/dashboard' : '/onboarding';
-      const finalRedirectTo = redirectTo || targetRoute;
+      const redirect = getAuthRedirect({
+        isAuthenticated,
+        onboardingCompleted,
+        currentPath: pathname,
+        returnUrl: redirectTo,
+      });
 
-      router.replace(finalRedirectTo);
+      if (redirect) {
+        router.replace(redirect);
+      } else if (redirectTo) {
+        // Custom redirectTo prop takes precedence if no standard redirect
+        router.replace(redirectTo);
+      }
       return;
     }
-  }, [isLoading, isAuthenticated, onboardingCompleted, router, redirectTo]);
+  }, [
+    isLoading,
+    isAuthenticated,
+    onboardingCompleted,
+    pathname,
+    router,
+    redirectTo,
+  ]);
 
   // While auth is loading, show loading
   if (isLoading) {

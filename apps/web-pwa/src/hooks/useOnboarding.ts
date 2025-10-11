@@ -13,6 +13,9 @@ export type OnboardingStep =
 
 export function useOnboarding() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
+  const [completedSteps, setCompletedSteps] = useState<Set<OnboardingStep>>(
+    new Set(),
+  );
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -26,19 +29,39 @@ export function useOnboarding() {
     () => ['welcome', 'tutorial', 'name', 'permissions', 'addCard'],
     [],
   );
+
+  // Define which steps are required
+  const requiredSteps: OnboardingStep[] = useMemo(
+    () => ['welcome', 'name'],
+    [],
+  );
+
   const currentStepIndex = steps.indexOf(currentStep);
 
   const completeOnboardingFlow = useCallback(async () => {
+    // Validate required fields
     if (!formData.firstName.trim()) {
       toast.error('First name is required');
+      setCurrentStep('name');
+      return;
+    }
+
+    // Validate minimum steps completed
+    const missingRequiredSteps = requiredSteps.filter(
+      step => !completedSteps.has(step),
+    );
+
+    if (missingRequiredSteps.length > 0) {
+      toast.error('Please complete all required steps');
+      setCurrentStep(missingRequiredSteps[0]);
       return;
     }
 
     try {
       setIsLoading(true);
       const result = await completeOnboarding({
-        firstName: formData.firstName,
-        lastName: formData.lastName || undefined,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName?.trim() || undefined,
         notificationsEnabled: formData.notificationsEnabled,
       });
 
@@ -51,16 +74,19 @@ export function useOnboarding() {
     } finally {
       setIsLoading(false);
     }
-  }, [formData, completeOnboarding]);
+  }, [formData, completedSteps, requiredSteps, completeOnboarding]);
 
   const nextStep = useCallback(() => {
+    // Mark current step as completed
+    setCompletedSteps(prev => new Set([...prev, currentStep]));
+
     if (currentStepIndex < steps.length - 1) {
       setCurrentStep(steps[currentStepIndex + 1]);
     } else {
       // Complete onboarding
       completeOnboardingFlow();
     }
-  }, [currentStepIndex, steps, completeOnboardingFlow]);
+  }, [currentStep, currentStepIndex, steps, completeOnboardingFlow]);
 
   const prevStep = useCallback(() => {
     if (currentStepIndex > 0) {
@@ -101,6 +127,7 @@ export function useOnboarding() {
     // State
     currentStep,
     currentStepIndex,
+    completedSteps,
     formData,
     isLoading,
     progress,
@@ -118,5 +145,6 @@ export function useOnboarding() {
     isFirstStep: currentStepIndex === 0,
     isLastStep: currentStepIndex === steps.length - 1,
     totalSteps: steps.length,
+    requiredSteps,
   };
 }

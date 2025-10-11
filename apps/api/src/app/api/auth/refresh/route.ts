@@ -110,10 +110,10 @@ export async function POST(request: NextRequest) {
 
     // Set new access token cookie
     const accessTokenCookie = `finmatter-auth-token=${data.session.access_token}; Max-Age=${accessTokenOptions.maxAge}; Path=${accessTokenOptions.path}; SameSite=${accessTokenOptions.sameSite}${accessTokenOptions.secure ? '; Secure' : ''}`;
-    
+
     // Set new refresh token cookie
     const newRefreshTokenCookie = `finmatter-refresh-token=${data.session.refresh_token}; Max-Age=${refreshTokenOptions.maxAge}; Path=${refreshTokenOptions.path}; SameSite=${refreshTokenOptions.sameSite}; HttpOnly${refreshTokenOptions.secure ? '; Secure' : ''}`;
-    
+
     response.headers.append('Set-Cookie', accessTokenCookie);
     response.headers.append('Set-Cookie', newRefreshTokenCookie);
 

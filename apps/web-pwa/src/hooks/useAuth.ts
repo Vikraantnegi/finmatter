@@ -60,12 +60,7 @@ export function useAuth() {
         const response = await authService.verifyOTP(phoneNumber, otp);
 
         if (response.success && response.data?.user && response.data?.session) {
-          // Type assertion: API returns additional fields beyond the base type
-          const apiUser = response.data.user as typeof response.data.user & {
-            onboardingCompleted?: boolean;
-          };
-
-          const user = {
+          const initialUser = {
             ...response.data.user,
             updatedAt: new Date().toISOString(),
           };
@@ -80,34 +75,41 @@ export function useAuth() {
           apiClient.setAuthToken(response.data.session.token);
 
           // Fetch complete user profile data from our API
+          // IMPORTANT: Wait for profile fetch before navigating
           try {
-            const profileResponse = await authService.getCurrentUser(user.id);
+            const profileResponse = await authService.getCurrentUser(
+              initialUser.id,
+            );
+
             if (profileResponse.success && profileResponse.data?.user) {
-              setUser(profileResponse.data.user);
-              setOnboardingCompleted(
-                profileResponse.data.user.onboardingCompleted || false,
-              );
+              // Use the complete profile data
+              const completeUser = profileResponse.data.user;
+              setUser(completeUser);
+              setOnboardingCompleted(completeUser.onboardingCompleted || false);
+
+              toast.success('Welcome to FinMatter!');
+
+              // Navigate based on VERIFIED profile data
+              if (!completeUser.onboardingCompleted) {
+                router.push('/onboarding');
+              } else {
+                navigateToReturnUrl('/dashboard');
+              }
+              router.refresh();
+
+              return { success: true, user: completeUser };
             } else {
-              setUser(user);
-              setOnboardingCompleted(apiUser.onboardingCompleted || false);
+              // Profile fetch failed - treat as error
+              throw new Error('Failed to load user profile');
             }
-          } catch (error) {
-            setUser(user);
-            setOnboardingCompleted(apiUser.onboardingCompleted || false);
+          } catch (profileError) {
+            // Profile fetch failed - clear auth and redirect to login
+            console.error('Profile fetch error:', profileError);
+            clearAuth();
+            toast.error('Failed to load profile. Please try logging in again.');
+            router.push('/auth/login');
+            return { success: false, error: profileError };
           }
-
-          toast.success('Welcome to FinMatter!');
-
-          // Navigate to onboarding if not completed, otherwise to return URL or dashboard
-          if (!apiUser.onboardingCompleted) {
-            router.push('/onboarding');
-          } else {
-            // Navigate to saved return URL or dashboard
-            navigateToReturnUrl('/dashboard');
-          }
-          router.refresh(); // Ensure clean render of the new route
-
-          return { success: true, user };
         } else {
           toast.error(
             typeof response.error === 'string' ? response.error : 'Invalid OTP',
@@ -126,6 +128,7 @@ export function useAuth() {
       setOnboardingCompleted,
       setLoading,
       setSession,
+      clearAuth,
       router,
       navigateToReturnUrl,
     ],

@@ -84,6 +84,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [clearAuth]);
 
+  // Visibility change sync - re-fetch user profile when tab becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      // Only sync when tab becomes visible
+      if (document.visibilityState === 'visible') {
+        const { isAuthenticated, user } = useAuthStore.getState();
+
+        // Only re-fetch if user is authenticated
+        if (isAuthenticated && user) {
+          try {
+            // Re-fetch user profile to get latest data
+            const { initializeAuth } = useAuthStore.getState();
+            await initializeAuth();
+          } catch (error) {
+            // Failed to sync - continue with existing data
+            console.error(
+              'Failed to sync user state on visibility change:',
+              error,
+            );
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () =>
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   // Show loading screen while initializing auth
   if (!initialized) {
     return (

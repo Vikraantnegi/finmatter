@@ -92,7 +92,7 @@ export async function PUT(request: NextRequest) {
     const { data: currentUser, error: fetchError } = await supabaseAdmin
       .from('users')
       .select(
-        'onboarding_completed, name, profile_data, phone_number, is_verified, biometric_enabled, created_at, updated_at',
+        'onboarding_completed, profile_data, phone_number, is_verified, biometric_enabled, created_at, updated_at',
       )
       .eq('id', userId)
       .single();
@@ -130,15 +130,8 @@ export async function PUT(request: NextRequest) {
           user: {
             id: userId,
             phoneNumber: currentUser.phone_number,
-            name: currentUser.name,
-            firstName:
-              currentUser.profile_data?.firstName ||
-              currentUser.name?.split(' ')[0] ||
-              '',
-            lastName:
-              currentUser.profile_data?.lastName ||
-              currentUser.name?.split(' ').slice(1).join(' ') ||
-              '',
+            firstName: currentUser.profile_data?.firstName || '',
+            lastName: currentUser.profile_data?.lastName || '',
             onboardingCompleted: true,
             isVerified: currentUser.is_verified,
             biometricEnabled: currentUser.biometric_enabled,
@@ -153,7 +146,6 @@ export async function PUT(request: NextRequest) {
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .update({
-        name: lastName ? `${firstName} ${lastName}` : firstName,
         onboarding_completed: true,
         notifications_enabled: notificationsEnabled || false,
         profile_data: {
@@ -198,13 +190,8 @@ export async function PUT(request: NextRequest) {
         user: {
           id: user.id,
           phoneNumber: user.phone_number,
-          name: user.name,
-          firstName:
-            user.profile_data?.firstName || user.name?.split(' ')[0] || '',
-          lastName:
-            user.profile_data?.lastName ||
-            user.name?.split(' ').slice(1).join(' ') ||
-            '',
+          firstName: user.profile_data?.firstName || '',
+          lastName: user.profile_data?.lastName || '',
           onboardingCompleted: user.onboarding_completed,
           isVerified: user.is_verified,
           biometricEnabled: user.biometric_enabled,

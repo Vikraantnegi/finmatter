@@ -19,7 +19,6 @@ import { z } from 'zod';
 const UpdateUserSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(50).optional(),
   lastName: z.string().max(50).optional(),
-  name: z.string().max(100).optional(),
   email: z.string().email().optional(),
   notificationsEnabled: z.boolean().optional(),
   onboardingCompleted: z.boolean().optional(),
@@ -124,13 +123,8 @@ export async function GET(
         user: {
           id: user.id,
           phoneNumber: user.phone_number,
-          name: user.name,
-          firstName:
-            user.profile_data?.firstName || user.name?.split(' ')[0] || '',
-          lastName:
-            user.profile_data?.lastName ||
-            user.name?.split(' ').slice(1).join(' ') ||
-            '',
+          firstName: user.profile_data?.firstName || '',
+          lastName: user.profile_data?.lastName || '',
           onboardingCompleted: user.onboarding_completed || false,
           isVerified: user.is_verified,
           biometricEnabled: user.biometric_enabled,
@@ -139,12 +133,8 @@ export async function GET(
           updatedAt: user.updated_at,
           lastLogin: user.last_login,
           profileData: {
-            firstName:
-              user.profile_data?.firstName || user.name?.split(' ')[0] || '',
-            lastName:
-              user.profile_data?.lastName ||
-              user.name?.split(' ').slice(1).join(' ') ||
-              '',
+            firstName: user.profile_data?.firstName || '',
+            lastName: user.profile_data?.lastName || '',
           },
         },
       },
@@ -259,15 +249,10 @@ export async function PUT(
     ) {
       const firstName = updateData.firstName || '';
       const lastName = updateData.lastName || '';
-      dbUpdateData.name = lastName ? `${firstName} ${lastName}` : firstName;
       dbUpdateData.profile_data = {
         firstName,
         lastName,
       };
-    }
-
-    if (updateData.name !== undefined) {
-      dbUpdateData.name = updateData.name;
     }
 
     if (updateData.email !== undefined) {
@@ -320,13 +305,8 @@ export async function PUT(
         user: {
           id: user.id,
           phoneNumber: user.phone_number,
-          name: user.name,
-          firstName:
-            user.profile_data?.firstName || user.name?.split(' ')[0] || '',
-          lastName:
-            user.profile_data?.lastName ||
-            user.name?.split(' ').slice(1).join(' ') ||
-            '',
+          firstName: user.profile_data?.firstName || '',
+          lastName: user.profile_data?.lastName || '',
           onboardingCompleted: user.onboarding_completed,
           isVerified: user.is_verified,
           biometricEnabled: user.biometric_enabled,
@@ -335,12 +315,8 @@ export async function PUT(
           updatedAt: user.updated_at,
           lastLogin: user.last_login,
           profileData: {
-            firstName:
-              user.profile_data?.firstName || user.name?.split(' ')[0] || '',
-            lastName:
-              user.profile_data?.lastName ||
-              user.name?.split(' ').slice(1).join(' ') ||
-              '',
+            firstName: user.profile_data?.firstName || '',
+            lastName: user.profile_data?.lastName || '',
           },
         },
       },

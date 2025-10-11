@@ -21,12 +21,10 @@ export type CustomUsersTableUser = {
   last_login?: string;
   biometric_enabled: boolean;
   is_verified: boolean;
-  profile_data?: UserProfileData;
+  profile_data?: UserProfileData; // Source of truth for firstName/lastName
   updated_at: string;
-  name?: string;
-  email?: string;
+  email?: string; // Reserved for future implementation
   notifications_enabled?: boolean;
-  sms_permission_granted?: boolean;
   onboarding_completed?: boolean;
   last_otp_verification?: string; // ISO date string of last OTP verification
 };

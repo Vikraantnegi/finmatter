@@ -10,7 +10,7 @@ import { CustomUsersTableUser } from '@finmatter/types';
 
 export async function PUT(req: NextRequest) {
   try {
-    const { name, email, onboardingCompleted } = await req.json();
+    const { email, onboardingCompleted } = await req.json();
     const authHeader = req.headers.get('Authorization');
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -28,9 +28,6 @@ export async function PUT(req: NextRequest) {
     const userId = userResponse.user.id;
     const updateData: Partial<CustomUsersTableUser> = {};
 
-    if (name !== undefined) {
-      updateData.name = name;
-    }
     if (email !== undefined) {
       updateData.email = email;
     }

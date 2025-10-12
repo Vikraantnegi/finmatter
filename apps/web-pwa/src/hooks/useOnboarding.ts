@@ -65,13 +65,17 @@ export function useOnboarding() {
         notificationsEnabled: formData.notificationsEnabled,
       });
 
-      if (!result.success) {
+      if (result.success) {
+        // Onboarding completed successfully - navigation handled by completeOnboarding
+        // Keep loading state until navigation completes
+        return;
+      } else {
         toast.error('Failed to complete onboarding. Please try again.');
+        setIsLoading(false);
       }
     } catch (error) {
       // Error handled by component
       toast.error('Failed to complete onboarding. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   }, [formData, completedSteps, requiredSteps, completeOnboarding]);

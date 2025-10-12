@@ -40,8 +40,9 @@ const GetCardsSchema = z.object({
 /**
  * Handle CORS preflight requests
  */
-export async function OPTIONS() {
-  return handleCorsPreflight();
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return handleCorsPreflight(origin || undefined);
 }
 
 /**
@@ -70,6 +71,7 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
  * Get user's cards with optional filtering
  */
 export async function GET(request: NextRequest) {
+  const origin = request.headers.get('origin');
   try {
     const userId = await getAuthenticatedUserId(request);
 
@@ -193,6 +195,7 @@ export async function GET(request: NextRequest) {
  * Create a new card
  */
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin');
   try {
     const userId = await getAuthenticatedUserId(request);
 

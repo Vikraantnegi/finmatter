@@ -83,8 +83,9 @@ function checkRateLimit(phoneNumber: string): {
 /**
  * Handle CORS preflight requests
  */
-export async function OPTIONS() {
-  return handleCorsPreflight();
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return handleCorsPreflight(origin || undefined);
 }
 
 /**
@@ -92,6 +93,7 @@ export async function OPTIONS() {
  * Send OTP to phone number
  */
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin');
   let body: any;
   try {
     // Parse and validate request body
@@ -104,7 +106,7 @@ export async function POST(request: NextRequest) {
         'Invalid phone number format',
         validation.error.errors,
       );
-      return createCorsResponse(errorResponse, { status: 400 });
+      return createCorsResponse(errorResponse, { status: 400, origin: origin || undefined });
     }
 
     const { phoneNumber } = validation.data;
@@ -135,7 +137,7 @@ export async function POST(request: NextRequest) {
         },
       };
 
-      return createCorsResponse(response, { status: 429 });
+      return createCorsResponse(response, { status: 429, origin: origin || undefined });
     }
 
     // Send OTP using Supabase Auth with Twilio
@@ -164,7 +166,7 @@ export async function POST(request: NextRequest) {
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode });
+      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
     }
 
     // Return success response
@@ -175,7 +177,7 @@ export async function POST(request: NextRequest) {
         message: 'OTP sent successfully',
         expiresIn: 300, // 5 minutes in seconds
       },
-    });
+    }, { origin: origin || undefined });
   } catch (error) {
     logError(error as Error, {
       endpoint: '/api/auth/send-otp',
@@ -189,6 +191,6 @@ export async function POST(request: NextRequest) {
       { retryable: true },
     );
 
-    return createCorsResponse(errorResponse, { status: 500 });
+    return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
   }
 }

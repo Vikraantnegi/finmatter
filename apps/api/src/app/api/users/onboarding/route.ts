@@ -46,8 +46,9 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
 /**
  * Handle CORS preflight requests
  */
-export async function OPTIONS() {
-  return handleCorsPreflight();
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return handleCorsPreflight(origin || undefined);
 }
 
 /**
@@ -55,6 +56,7 @@ export async function OPTIONS() {
  * Complete user onboarding
  */
 export async function PUT(request: NextRequest) {
+  const origin = request.headers.get('origin');
   let body;
   try {
     const userId = await getAuthenticatedUserId(request);
@@ -73,7 +75,7 @@ export async function PUT(request: NextRequest) {
               : 'Unknown parsing error',
         },
       );
-      return createCorsResponse(errorResponse, { status: 400 });
+      return createCorsResponse(errorResponse, { status: 400, origin: origin || undefined });
     }
 
     const validation = CompleteOnboardingSchema.safeParse(body);
@@ -83,7 +85,7 @@ export async function PUT(request: NextRequest) {
         'Invalid request data',
         validation.error.errors,
       );
-      return createCorsResponse(errorResponse, { status: 400 });
+      return createCorsResponse(errorResponse, { status: 400, origin: origin || undefined });
     }
 
     const { firstName, lastName, notificationsEnabled } = validation.data;
@@ -118,7 +120,7 @@ export async function PUT(request: NextRequest) {
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode });
+      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
     }
 
     // If already onboarded, return success with current data (idempotent)
@@ -139,7 +141,7 @@ export async function PUT(request: NextRequest) {
             updatedAt: currentUser.updated_at,
           },
         },
-      });
+      }, { origin: origin || undefined });
     }
 
     // Update user record (first time onboarding)
@@ -181,7 +183,7 @@ export async function PUT(request: NextRequest) {
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode });
+      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
     }
 
     return createCorsResponse({
@@ -199,7 +201,7 @@ export async function PUT(request: NextRequest) {
           updatedAt: user.updated_at,
         },
       },
-    });
+    }, { origin: origin || undefined });
   } catch (error) {
     // Handle specific error types
     if (error instanceof Error) {
@@ -210,7 +212,7 @@ export async function PUT(request: NextRequest) {
           { message: 'Please login to continue' },
           { statusCode: 401 },
         );
-        return createCorsResponse(errorResponse, { status: 401 });
+        return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
       }
 
       if (error.message === 'Invalid token') {
@@ -220,7 +222,7 @@ export async function PUT(request: NextRequest) {
           { message: 'Please login again' },
           { statusCode: 401 },
         );
-        return createCorsResponse(errorResponse, { status: 401 });
+        return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
       }
     }
 
@@ -239,6 +241,6 @@ export async function PUT(request: NextRequest) {
       { retryable: true },
     );
 
-    return createCorsResponse(errorResponse, { status: 500 });
+    return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
   }
 }

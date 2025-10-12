@@ -19,8 +19,9 @@ import {
 /**
  * Handle CORS preflight requests
  */
-export async function OPTIONS() {
-  return handleCorsPreflight();
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return handleCorsPreflight(origin || undefined);
 }
 
 /**
@@ -28,6 +29,7 @@ export async function OPTIONS() {
  * Refresh access token using refresh token from httpOnly cookie
  */
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin');
   try {
     // Get refresh token from httpOnly cookie (more secure than request body)
     const refreshTokenCookie = request.cookies.get('finmatter-refresh-token');
@@ -40,7 +42,7 @@ export async function POST(request: NextRequest) {
         undefined,
         { retryable: false },
       );
-      return createCorsResponse(errorResponse, { status: 401 });
+      return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
     }
 
     // Refresh the session using Supabase
@@ -65,7 +67,7 @@ export async function POST(request: NextRequest) {
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode });
+      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
     }
 
     if (!data.session) {
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
         undefined,
         { retryable: false },
       );
-      return createCorsResponse(errorResponse, { status: 401 });
+      return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
     }
 
     // Return success response with new session and update cookies
@@ -89,7 +91,7 @@ export async function POST(request: NextRequest) {
         },
         message: 'Session refreshed successfully',
       },
-    });
+    }, { origin: origin || undefined });
 
     // Update authentication cookies with new tokens and proper security
     const accessTokenOptions = {
@@ -133,6 +135,6 @@ export async function POST(request: NextRequest) {
       { retryable: true },
     );
 
-    return createCorsResponse(errorResponse, { status: 500 });
+    return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
   }
 }

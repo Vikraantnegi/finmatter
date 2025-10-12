@@ -62,9 +62,10 @@ export function getAuthRedirect({
     return returnUrl || '/dashboard';
   }
 
-  // Redirect from onboarding page to dashboard (already completed)
+  // Don't auto-redirect from onboarding page - let the onboarding completion handle navigation
+  // This prevents race conditions between AuthGuard and onboarding completion
   if (currentPath === '/onboarding') {
-    return '/dashboard';
+    return null;
   }
 
   // Redirect from root to dashboard

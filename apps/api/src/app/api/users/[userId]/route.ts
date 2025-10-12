@@ -58,8 +58,9 @@ async function getAuthenticatedUserIdAndValidateAccess(
 /**
  * Handle CORS preflight requests
  */
-export async function OPTIONS() {
-  return handleCorsPreflight();
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return handleCorsPreflight(origin || undefined);
 }
 
 /**
@@ -70,6 +71,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { userId: string } },
 ) {
+  const origin = request.headers.get('origin');
   try {
     const userId = await getAuthenticatedUserIdAndValidateAccess(
       request,
@@ -103,7 +105,7 @@ export async function GET(
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode });
+      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
     }
 
     if (!user) {
@@ -113,7 +115,7 @@ export async function GET(
         { userId },
         { statusCode: 404 },
       );
-      return createCorsResponse(errorResponse, { status: 404 });
+      return createCorsResponse(errorResponse, { status: 404, origin: origin || undefined });
     }
 
     // Return complete user profile data
@@ -138,7 +140,7 @@ export async function GET(
           },
         },
       },
-    });
+    }, { origin: origin || undefined });
   } catch (error) {
     // Handle specific error types
     if (error instanceof Error) {
@@ -149,7 +151,7 @@ export async function GET(
           { message: 'Please login to continue' },
           { statusCode: 401 },
         );
-        return createCorsResponse(errorResponse, { status: 401 });
+        return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
       }
 
       if (error.message === 'Invalid token') {
@@ -159,7 +161,7 @@ export async function GET(
           { message: 'Please login again' },
           { statusCode: 401 },
         );
-        return createCorsResponse(errorResponse, { status: 401 });
+        return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
       }
 
       if (error.message === 'Forbidden: Cannot access other user data') {
@@ -169,7 +171,7 @@ export async function GET(
           { message: 'Cannot access other user data' },
           { statusCode: 403 },
         );
-        return createCorsResponse(errorResponse, { status: 403 });
+        return createCorsResponse(errorResponse, { status: 403, origin: origin || undefined });
       }
     }
 
@@ -190,7 +192,7 @@ export async function GET(
       { retryable: true },
     );
 
-    return createCorsResponse(errorResponse, { status: 500 });
+    return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
   }
 }
 
@@ -202,6 +204,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { userId: string } },
 ) {
+  const origin = request.headers.get('origin');
   try {
     const userId = await getAuthenticatedUserIdAndValidateAccess(
       request,
@@ -223,7 +226,7 @@ export async function PUT(
               : 'Unknown parsing error',
         },
       );
-      return createCorsResponse(errorResponse, { status: 400 });
+      return createCorsResponse(errorResponse, { status: 400, origin: origin || undefined });
     }
 
     const validation = UpdateUserSchema.safeParse(body);
@@ -233,7 +236,7 @@ export async function PUT(
         'Invalid request data',
         validation.error.errors,
       );
-      return createCorsResponse(errorResponse, { status: 400 });
+      return createCorsResponse(errorResponse, { status: 400, origin: origin || undefined });
     }
 
     const updateData = validation.data;
@@ -296,7 +299,7 @@ export async function PUT(
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode });
+      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
     }
 
     return createCorsResponse({
@@ -320,7 +323,7 @@ export async function PUT(
           },
         },
       },
-    });
+    }, { origin: origin || undefined });
   } catch (error) {
     // Handle specific error types
     if (error instanceof Error) {
@@ -331,7 +334,7 @@ export async function PUT(
           { message: 'Please login to continue' },
           { statusCode: 401 },
         );
-        return createCorsResponse(errorResponse, { status: 401 });
+        return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
       }
 
       if (error.message === 'Invalid token') {
@@ -341,7 +344,7 @@ export async function PUT(
           { message: 'Please login again' },
           { statusCode: 401 },
         );
-        return createCorsResponse(errorResponse, { status: 401 });
+        return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
       }
 
       if (error.message === 'Forbidden: Cannot access other user data') {
@@ -351,7 +354,7 @@ export async function PUT(
           { message: 'Cannot access other user data' },
           { statusCode: 403 },
         );
-        return createCorsResponse(errorResponse, { status: 403 });
+        return createCorsResponse(errorResponse, { status: 403, origin: origin || undefined });
       }
     }
 
@@ -372,6 +375,6 @@ export async function PUT(
       { retryable: true },
     );
 
-    return createCorsResponse(errorResponse, { status: 500 });
+    return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
   }
 }

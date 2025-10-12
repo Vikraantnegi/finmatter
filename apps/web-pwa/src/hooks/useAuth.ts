@@ -167,8 +167,9 @@ export function useAuth() {
           setOnboardingCompleted(true);
           toast.success('Onboarding completed!');
 
-          // Use replace to avoid back button issues and ensure clean navigation
-          router.replace('/dashboard');
+          // Navigate immediately with push (not replace) to ensure clean transition
+          // This prevents Next.js from re-rendering the current page with stale state
+          window.location.href = '/dashboard';
 
           return { success: true };
         } else {

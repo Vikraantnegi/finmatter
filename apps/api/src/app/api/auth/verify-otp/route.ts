@@ -47,8 +47,9 @@ const VerifyOTPSchema = z.object({
 /**
  * Handle CORS preflight requests
  */
-export async function OPTIONS() {
-  return handleCorsPreflight();
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return handleCorsPreflight(origin || undefined);
 }
 
 /**
@@ -56,6 +57,7 @@ export async function OPTIONS() {
  * Verify OTP and create session
  */
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin');
   let body: any;
   try {
     // Parse and validate request body
@@ -68,7 +70,7 @@ export async function POST(request: NextRequest) {
         'Invalid request data',
         validation.error.errors,
       );
-      return createCorsResponse(errorResponse, { status: 400 });
+      return createCorsResponse(errorResponse, { status: 400, origin: origin || undefined });
     }
 
     const { phoneNumber, otp } = validation.data;
@@ -101,7 +103,7 @@ export async function POST(request: NextRequest) {
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode });
+      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
     }
 
     if (!data.user || !data.session) {
@@ -111,7 +113,7 @@ export async function POST(request: NextRequest) {
         { userId: data.user?.id },
         { retryable: true },
       );
-      return createCorsResponse(errorResponse, { status: 500 });
+      return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
     }
 
     // Get or create user in our custom users table
@@ -137,7 +139,7 @@ export async function POST(request: NextRequest) {
         { originalError: userError.message },
         { retryable: true },
       );
-      return createCorsResponse(errorResponse, { status: 500 });
+      return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
     }
 
     if (existingUser) {
@@ -169,7 +171,10 @@ export async function POST(request: NextRequest) {
           is_verified: true,
           last_login: new Date().toISOString(),
           last_otp_verification: new Date().toISOString(), // Track OTP verification for 30-day logic
-          profile_data: {},
+          profile_data: {
+            firstName: '', // Required by constraint, will be set during onboarding
+            lastName: '',
+          },
         })
         .select()
         .single();
@@ -191,7 +196,7 @@ export async function POST(request: NextRequest) {
           { originalError: createError.message },
           { retryable: true },
         );
-        return createCorsResponse(errorResponse, { status: 500 });
+        return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
       }
 
       userRecord = newUser;
@@ -216,7 +221,7 @@ export async function POST(request: NextRequest) {
           expiresAt: new Date(data.session.expires_at! * 1000).toISOString(),
         },
       },
-    });
+    }, { origin: origin || undefined });
 
     // Set authentication cookies with proper security
     const accessTokenOptions = {
@@ -259,6 +264,6 @@ export async function POST(request: NextRequest) {
       { retryable: true },
     );
 
-    return createCorsResponse(errorResponse, { status: 500 });
+    return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
   }
 }

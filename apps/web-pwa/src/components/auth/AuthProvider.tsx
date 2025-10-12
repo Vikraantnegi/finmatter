@@ -89,21 +89,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const handleVisibilityChange = async () => {
       // Only sync when tab becomes visible
       if (document.visibilityState === 'visible') {
-        const { isAuthenticated, user } = useAuthStore.getState();
+        const { isAuthenticated, user, isLoading } = useAuthStore.getState();
 
-        // Only re-fetch if user is authenticated
-        if (isAuthenticated && user) {
-          try {
-            // Re-fetch user profile to get latest data
-            const { initializeAuth } = useAuthStore.getState();
-            await initializeAuth();
-          } catch (error) {
-            // Failed to sync - continue with existing data
-            console.error(
-              'Failed to sync user state on visibility change:',
-              error,
-            );
-          }
+        // Don't re-fetch if auth is already loading or if user is not authenticated
+        if (isLoading || !isAuthenticated || !user) {
+          return;
+        }
+
+        // Don't re-fetch if we're on onboarding page (to avoid interfering with completion flow)
+        if (window.location.pathname === '/onboarding') {
+          return;
+        }
+
+        try {
+          // Re-fetch user profile to get latest data
+          const { initializeAuth } = useAuthStore.getState();
+          await initializeAuth();
+        } catch (error) {
+          // Failed to sync - continue with existing data
+          console.error(
+            'Failed to sync user state on visibility change:',
+            error,
+          );
         }
       }
     };

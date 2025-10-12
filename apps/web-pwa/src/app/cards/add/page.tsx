@@ -178,10 +178,50 @@ export default function AddCardPage() {
 
       // Redirect to card details or cards list
       router.push(`/cards/${response.id}`);
-    } catch (error) {
-      // Error handled by toast
-      setErrors({ submit: 'Failed to create card. Please try again.' });
-      toast.error('Failed to create card. Please try again.');
+    } catch (error: any) {
+      console.error('Failed to create card:', error);
+
+      // Check for specific error codes from API
+      const errorData = error.response?.data?.error || error.error;
+
+      if (errorData?.code === 'CARD_ALREADY_EXISTS') {
+        // Duplicate card error
+        setErrors({
+          lastFourDigits: errorData.message,
+          submit: errorData.suggestion || 'This card already exists.',
+        });
+        toast.error(errorData.message);
+      } else if (errorData?.code === 'VALIDATION_ERROR') {
+        // Validation errors - map to form fields
+        const details = errorData.details;
+        if (Array.isArray(details)) {
+          const fieldErrors: any = {};
+          details.forEach((err: any) => {
+            if (err.path && err.path.length > 0) {
+              const fieldName = err.path[0];
+              fieldErrors[fieldName] = err.message;
+            }
+          });
+          setErrors(fieldErrors);
+          toast.error('Please check your input and try again.');
+        } else {
+          setErrors({ submit: errorData.message });
+          toast.error(errorData.message);
+        }
+      } else if (errorData?.code === 'USER_NOT_FOUND') {
+        // Session expired
+        toast.error(errorData.message);
+        // Redirect to login after a delay
+        setTimeout(() => {
+          window.location.href = '/auth/login';
+        }, 2000);
+      } else {
+        // Generic error
+        const errorMessage =
+          errorData?.message || 'Failed to create card. Please try again.';
+        setErrors({ submit: errorMessage });
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -424,6 +464,9 @@ export default function AddCardPage() {
           <div>
             <label className='block text-sm font-medium text-gray-700 mb-1'>
               Billing Day
+              <span className='ml-1 text-xs font-normal text-gray-500'>
+                (Optional)
+              </span>
             </label>
             <input
               type='text'
@@ -437,8 +480,12 @@ export default function AddCardPage() {
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                 errors.billingDay ? 'border-red-300' : 'border-gray-300'
               }`}
-              placeholder='15'
+              placeholder='15 (optional)'
             />
+            <p className='text-xs text-gray-500 mt-1 flex items-center gap-1'>
+              <span>💡</span>
+              <span>We'll fetch this from your statement</span>
+            </p>
             {errors.billingDay && (
               <p className='text-red-500 text-sm mt-1'>{errors.billingDay}</p>
             )}
@@ -469,7 +516,14 @@ export default function AddCardPage() {
           Back
         </Button>
         <Button onClick={handleSubmit} disabled={loading} className='flex-1'>
-          {loading ? <LoadingSpinner size='sm' /> : 'Add Card'}
+          {loading ? (
+            <div className='flex items-center justify-center gap-2'>
+              <LoadingSpinner size='sm' />
+              <span>Adding Card...</span>
+            </div>
+          ) : (
+            'Add Card'
+          )}
         </Button>
       </div>
     </div>

@@ -7,6 +7,8 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CardVisual } from '@/components/cards/CardVisual';
 import { FilterModal } from '@/components/cards/FilterModal';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { UtilizationAlert } from '@/components/cards/UtilizationAlert';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useCardStore } from '@/stores/cardStore';
 // import { Card } from '@finmatter/types';
 import { Plus, Filter, Search } from 'lucide-react';
@@ -103,8 +105,17 @@ export default function CardsPage() {
 
   if (loading) {
     return (
-      <div className='min-h-screen flex items-center justify-center'>
-        <LoadingSpinner size='lg' />
+      <div className='min-h-screen bg-gray-50'>
+        <div className='bg-white border-b border-gray-200 sticky top-0 z-30'>
+          <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+            <div className='flex items-center justify-between py-6'>
+              <h1 className='text-3xl font-bold text-gray-900'>My Cards</h1>
+            </div>
+          </div>
+        </div>
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6'>
+          <CardListSkeleton count={6} />
+        </div>
       </div>
     );
   }
@@ -193,6 +204,13 @@ export default function CardsPage() {
         </div>
       </div>
 
+      {/* Utilization Alert */}
+      {cards.length > 0 && (
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6'>
+          <UtilizationAlert cards={cards} />
+        </div>
+      )}
+
       {/* Cards List */}
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6'>
         {filteredCards.length === 0 ? (
@@ -208,9 +226,14 @@ export default function CardsPage() {
                 ? {
                     label: 'Add Card',
                     onClick: handleAddCard,
+                    icon: <Plus className='w-4 h-4' />,
                   }
                 : undefined
             }
+            illustration={
+              !searchQuery && !selectedCategory ? 'cards' : 'search'
+            }
+            showBenefits={!searchQuery && !selectedCategory}
           />
         ) : (
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>

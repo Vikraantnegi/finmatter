@@ -8,8 +8,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { FinMatterError } from '@finmatter/shared';
+import { createCorsResponse, handleCorsPreflight } from '@/lib/cors';
 import { z } from 'zod';
 import { DatabaseCard } from '@finmatter/types';
+import { dbCardToApiCard } from '@/lib/dataTransform';
 
 // Request validation schemas
 const UpdateCardSchema = z.object({
@@ -31,7 +33,33 @@ const UpdateCardSchema = z.object({
   expiryDate: z.string().optional(),
   creditLimit: z.number().min(0).optional(),
   availableCredit: z.number().min(0).optional(),
-});
+  billingDay: z.number().min(1).max(31).optional(),
+  cardMetadataId: z.string().optional(),
+  bankId: z.string().optional(),
+  primaryColor: z.string().optional(),
+  secondaryColor: z.string().optional(),
+  isCustom: z.boolean().optional(),
+}).refine(
+  (data) => {
+    // Validate availableCredit <= creditLimit if both are provided
+    if (data.availableCredit !== undefined && data.creditLimit !== undefined) {
+      return data.availableCredit <= data.creditLimit;
+    }
+    return true;
+  },
+  {
+    message: 'Available credit cannot exceed credit limit',
+    path: ['availableCredit'],
+  }
+);
+
+/**
+ * Handle CORS preflight requests
+ */
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return handleCorsPreflight(origin || undefined);
+}
 
 /**
  * Helper function to get authenticated user ID
@@ -83,12 +111,13 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
+  const origin = request.headers.get('origin');
   try {
     const userId = await getAuthenticatedUserId(request);
     const cardId = params.id;
 
     if (!cardId) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -96,11 +125,11 @@ export async function GET(
             message: 'Card ID is required',
           },
         },
-        { status: 400 },
+        { status: 400, origin: origin || undefined },
       );
     }
 
-    // Verify ownership and get card
+    // Verify ownership and get card (exclude soft-deleted)
     const { data: card, error } = await supabaseAdmin
       .from('cards')
       .select(
@@ -111,10 +140,11 @@ export async function GET(
       )
       .eq('id', cardId)
       .eq('user_id', userId)
+      .is('deleted_at', null)
       .single();
 
     if (error || !card) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -122,19 +152,25 @@ export async function GET(
             message: 'Card not found',
           },
         },
-        { status: 404 },
+        { status: 404, origin: origin || undefined },
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        card,
+    // Transform database format to API format
+    const transformedCard = dbCardToApiCard(card);
+
+    return createCorsResponse(
+      {
+        success: true,
+        data: {
+          card: transformedCard,
+        },
       },
-    });
+      { origin: origin || undefined },
+    );
   } catch (error) {
     if (error instanceof FinMatterError) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -142,12 +178,12 @@ export async function GET(
             message: error.message,
           },
         },
-        { status: error.statusCode },
+        { status: error.statusCode, origin: origin || undefined },
       );
     }
 
     console.error('Get card error:', error);
-    return NextResponse.json(
+    return createCorsResponse(
       {
         success: false,
         error: {
@@ -155,7 +191,7 @@ export async function GET(
           message: 'An unexpected error occurred',
         },
       },
-      { status: 500 },
+      { status: 500, origin: origin || undefined },
     );
   }
 }
@@ -168,6 +204,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
+  const origin = request.headers.get('origin');
   try {
     const userId = await getAuthenticatedUserId(request);
     const cardId = params.id;
@@ -240,11 +277,23 @@ export async function PUT(
       updateData.credit_limit = validatedData.creditLimit;
     if (validatedData.availableCredit !== undefined)
       updateData.available_credit = validatedData.availableCredit;
+    if (validatedData.billingDay !== undefined)
+      updateData.billing_day = validatedData.billingDay;
+    if (validatedData.cardMetadataId !== undefined)
+      updateData.card_metadata_id = validatedData.cardMetadataId;
+    if (validatedData.bankId !== undefined)
+      updateData.bank_id = validatedData.bankId;
+    if (validatedData.primaryColor !== undefined)
+      updateData.primary_color = validatedData.primaryColor;
+    if (validatedData.secondaryColor !== undefined)
+      updateData.secondary_color = validatedData.secondaryColor;
+    if (validatedData.isCustom !== undefined)
+      updateData.is_custom = validatedData.isCustom;
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json(
+      return createCorsResponse(
         { success: true, message: 'No data to update' },
-        { status: 200 },
+        { status: 200, origin: origin || undefined },
       );
     }
 
@@ -272,15 +321,21 @@ export async function PUT(
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        card,
+    // Transform database format to API format
+    const transformedCard = dbCardToApiCard(card);
+
+    return createCorsResponse(
+      {
+        success: true,
+        data: {
+          card: transformedCard,
+        },
       },
-    });
+      { origin: origin || undefined },
+    );
   } catch (error) {
     if (error instanceof FinMatterError) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -288,12 +343,12 @@ export async function PUT(
             message: error.message,
           },
         },
-        { status: error.statusCode },
+        { status: error.statusCode, origin: origin || undefined },
       );
     }
 
     console.error('Update card error:', error);
-    return NextResponse.json(
+    return createCorsResponse(
       {
         success: false,
         error: {
@@ -301,25 +356,26 @@ export async function PUT(
           message: 'An unexpected error occurred',
         },
       },
-      { status: 500 },
+      { status: 500, origin: origin || undefined },
     );
   }
 }
 
 /**
  * DELETE /api/cards/[id]
- * Soft delete card (set status to inactive)
+ * Soft delete card (set deleted_at timestamp)
  */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
+  const origin = request.headers.get('origin');
   try {
     const userId = await getAuthenticatedUserId(request);
     const cardId = params.id;
 
     if (!cardId) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -327,20 +383,23 @@ export async function DELETE(
             message: 'Card ID is required',
           },
         },
-        { status: 400 },
+        { status: 400, origin: origin || undefined },
       );
     }
 
     // Verify card ownership
     await verifyCardOwnership(cardId, userId);
 
-    // Soft delete by setting status to inactive
+    // Soft delete by setting deleted_at timestamp
     const { data: card, error } = await supabaseAdmin
       .from('cards')
-      .update({ status: 'inactive' })
+      .update({ 
+        deleted_at: new Date().toISOString(),
+        status: 'inactive' // Also mark as inactive for extra safety
+      })
       .eq('id', cardId)
       .eq('user_id', userId)
-      .select('id, card_name, status')
+      .select()
       .single();
 
     if (error) {
@@ -353,16 +412,22 @@ export async function DELETE(
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        message: 'Card deleted successfully',
-        card,
+    // Transform database format to API format
+    const transformedCard = dbCardToApiCard(card);
+
+    return createCorsResponse(
+      {
+        success: true,
+        data: {
+          message: 'Card deleted successfully',
+          card: transformedCard,
+        },
       },
-    });
+      { origin: origin || undefined },
+    );
   } catch (error) {
     if (error instanceof FinMatterError) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -370,12 +435,12 @@ export async function DELETE(
             message: error.message,
           },
         },
-        { status: error.statusCode },
+        { status: error.statusCode, origin: origin || undefined },
       );
     }
 
     console.error('Delete card error:', error);
-    return NextResponse.json(
+    return createCorsResponse(
       {
         success: false,
         error: {
@@ -383,7 +448,7 @@ export async function DELETE(
           message: 'An unexpected error occurred',
         },
       },
-      { status: 500 },
+      { status: 500, origin: origin || undefined },
     );
   }
 }

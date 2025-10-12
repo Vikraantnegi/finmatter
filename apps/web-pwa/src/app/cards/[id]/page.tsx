@@ -366,7 +366,14 @@ export default function CardDetailPage() {
               disabled={deleting}
               className='flex-1 bg-red-600 hover:bg-red-700'
             >
-              {deleting ? <LoadingSpinner size='sm' /> : 'Delete'}
+              {deleting ? (
+                <div className='flex items-center justify-center gap-2'>
+                  <LoadingSpinner size='sm' />
+                  <span>Deleting...</span>
+                </div>
+              ) : (
+                'Delete'
+              )}
             </Button>
           </div>
         </div>

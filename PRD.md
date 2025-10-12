@@ -240,6 +240,123 @@ No comprehensive solution exists in India that provides AI-driven guidance on cr
 - Reward redemption suggestions
 - Anniversary benefit reminders
 
+#### 3.3.4 Card Comparison Tool
+
+**User Stories:**
+
+- As a user, I want to compare multiple cards side-by-side to decide which to keep
+- As a user, I want to see which card is best for each category at a glance
+- As a user, I want to compare annual fees, rewards, and limits across cards
+
+**Requirements:**
+
+- Select 2-4 cards for comparison
+- Display side-by-side comparison table with key metrics
+- Highlight best values in each category
+- Compare:
+  - Annual fees
+  - Credit limits and utilization
+  - Reward rates by category
+  - Benefits and perks
+  - Network and card type
+- Export comparison as PDF or image
+- Save comparison for future reference
+- Share comparison with others
+
+**Acceptance Criteria:**
+
+- Support comparing 2-4 cards simultaneously
+- Highlight best value in each row
+- Responsive design for mobile and desktop
+- Load comparison in <2 seconds
+- Allow adding/removing cards from comparison dynamically
+
+#### 3.3.5 Card Analytics Dashboard
+
+**User Stories:**
+
+- As a user, I want to see which cards I use most frequently
+- As a user, I want to understand my spending patterns across cards
+- As a user, I want to identify underutilized cards
+- As a user, I want to see optimization opportunities
+
+**Requirements:**
+
+- **Overview Stats:**
+  - Total rewards earned (monthly/yearly)
+  - Best performing card
+  - Optimization score (out of 100)
+  - Total spending across all cards
+
+- **Visual Analytics:**
+  - Pie chart: Spending by card
+  - Bar chart: Rewards earned by card
+  - Line chart: Utilization trends over time
+  - Heatmap: Best card for each category
+
+- **Insights:**
+  - Most used card (by transaction count/amount)
+  - Underutilized cards (suggest cancellation)
+  - Missed optimization opportunities
+  - Category-wise spending breakdown
+
+- **Optimization Suggestions:**
+  - "Use Card X for Category Y to save ₹Z/month"
+  - Show potential monthly savings
+  - Track suggestion acceptance rate
+  - Learn from user behavior
+
+**Acceptance Criteria:**
+
+- Dashboard loads within 3 seconds
+- All charts are interactive
+- Show data for last 3/6/12 months
+- Calculate optimization score accurately
+- Provide at least 3 actionable suggestions
+- Support export to PDF
+
+#### 3.3.6 Payment Reminders
+
+**User Stories:**
+
+- As a user, I want to be reminded of upcoming payment due dates
+- As a user, I want to avoid late payment fees
+- As a user, I want to see all upcoming payments in one place
+
+**Requirements:**
+
+- **Due Date Calculation:**
+  - Calculate from billing day (typically billing day + 15-20 days)
+  - Support custom due date entry
+  - Handle different bank policies
+
+- **Reminder System:**
+  - Show "Due in X days" badge on card
+  - Dashboard widget showing all upcoming payments
+  - Push notifications (7 days, 3 days, 1 day before)
+  - Email reminders (optional)
+
+- **Payment Tracking:**
+  - Mark payment as made
+  - Track payment history
+  - Show minimum payment vs total due
+  - Calculate interest if minimum paid
+
+- **Smart Features:**
+  - Suggest optimal payment amount
+  - Warn about interest charges
+  - Track on-time payment streak
+  - Credit score impact indicator
+
+**Acceptance Criteria:**
+
+- Reminders trigger at correct times
+- Support all major Indian banks' billing cycles
+- Push notifications work reliably
+- Users can snooze/dismiss reminders
+- Payment history persists
+- Zero missed payments for active users
+
 ---
 
 ### 3.4 Phase 4: Extended Features & Scaling

@@ -1,31 +1,20 @@
 import { apiClient } from '@/lib/apiClient';
-import { Card } from '@finmatter/types';
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-    details?: any;
-  };
-}
-
-interface GetCardsResponse {
-  cards: Card[];
-  pagination: {
-    limit: number;
-    offset: number;
-    total: number;
-    hasMore: boolean;
-  };
-}
+import type {
+  Card,
+  CardBenefit,
+  GetCardsResponse,
+  GetCardResponse,
+  CreateCardResponse,
+  UpdateCardResponse,
+  DeleteCardResponse,
+  GetBenefitsResponse,
+  CreateBenefitResponse,
+} from '@finmatter/types';
 
 export class CardService {
   async getCards(): Promise<Card[]> {
     try {
-      const response =
-        await apiClient.get<ApiResponse<GetCardsResponse>>('/api/cards');
+      const response = await apiClient.get<GetCardsResponse>('/api/cards');
       if (response.success && response.data?.cards) {
         return response.data.cards;
       }
@@ -38,7 +27,7 @@ export class CardService {
 
   async getCardById(cardId: string): Promise<Card> {
     try {
-      const response = await apiClient.get<ApiResponse<{ card: Card }>>(
+      const response = await apiClient.get<GetCardResponse>(
         `/api/cards/${cardId}`,
       );
       if (response.success && response.data?.card) {
@@ -53,7 +42,7 @@ export class CardService {
 
   async createCard(cardData: any): Promise<Card> {
     try {
-      const response = await apiClient.post<ApiResponse<{ card: Card }>>(
+      const response = await apiClient.post<CreateCardResponse>(
         '/api/cards',
         cardData,
       );
@@ -69,7 +58,7 @@ export class CardService {
 
   async updateCard(cardId: string, cardData: Partial<Card>): Promise<Card> {
     try {
-      const response = await apiClient.put<ApiResponse<{ card: Card }>>(
+      const response = await apiClient.put<UpdateCardResponse>(
         `/api/cards/${cardId}`,
         cardData,
       );
@@ -85,7 +74,7 @@ export class CardService {
 
   async deleteCard(cardId: string): Promise<void> {
     try {
-      const response = await apiClient.delete<ApiResponse<void>>(
+      const response = await apiClient.delete<DeleteCardResponse>(
         `/api/cards/${cardId}`,
       );
       if (!response.success) {
@@ -97,9 +86,9 @@ export class CardService {
     }
   }
 
-  async getCardBenefits(cardId: string): Promise<any[]> {
+  async getCardBenefits(cardId: string): Promise<CardBenefit[]> {
     try {
-      const response = await apiClient.get<ApiResponse<{ benefits: any[] }>>(
+      const response = await apiClient.get<GetBenefitsResponse>(
         `/api/cards/${cardId}/benefits`,
       );
       if (response.success && response.data?.benefits) {
@@ -112,9 +101,9 @@ export class CardService {
     }
   }
 
-  async addCardBenefit(cardId: string, benefit: any): Promise<any> {
+  async addCardBenefit(cardId: string, benefit: any): Promise<CardBenefit> {
     try {
-      const response = await apiClient.post<ApiResponse<{ benefit: any }>>(
+      const response = await apiClient.post<CreateBenefitResponse>(
         `/api/cards/${cardId}/benefits`,
         benefit,
       );

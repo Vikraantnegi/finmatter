@@ -1,9 +1,12 @@
 import type { Metadata } from 'next';
 import React from 'react';
 import { Inter } from 'next/font/google';
+import { SWRConfig } from 'swr';
 import './globals.css';
 import { Providers } from '@/components/providers/Providers';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { swrConfig } from '@/lib/swr';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -55,9 +58,13 @@ export default function RootLayout({
         <meta name='apple-mobile-web-app-title' content='FinMatter' />
       </head>
       <body className={inter.className}>
-        <Providers>
-          <AuthProvider>{children}</AuthProvider>
-        </Providers>
+        <ErrorBoundary>
+          <SWRConfig value={swrConfig}>
+            <Providers>
+              <AuthProvider>{children}</AuthProvider>
+            </Providers>
+          </SWRConfig>
+        </ErrorBoundary>
       </body>
     </html>
   );

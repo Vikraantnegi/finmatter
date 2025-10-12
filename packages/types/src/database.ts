@@ -48,20 +48,29 @@ export interface DatabaseCard extends AuditFields {
   expiry_date?: Date;
   credit_limit?: number;
   available_credit?: number;
+  billing_day?: number; // Day of month (1-31) when statement is generated
+  deleted_at?: Date; // Timestamp for soft delete
+  card_metadata_id?: string; // Reference to CC Engine card metadata
+  bank_id?: string; // Reference to CC Engine bank metadata
+  primary_color?: string; // Card primary color for visual representation
+  secondary_color?: string; // Card secondary color for visual representation
+  is_custom?: boolean; // Whether this is a custom card (true) or from metadata (false)
 }
 
 // Card benefits table
 export interface DatabaseCardBenefit {
   id: string;
   card_id: string;
-  category: string;
-  reward_rate: number;
-  reward_type: 'cashback' | 'points' | 'miles';
-  reward_cap?: number;
-  conditions?: Record<string, any>;
-  is_active: boolean;
-  valid_from?: Date;
-  valid_until?: Date;
+  category: string; // Spending category (e.g., 'dining', 'shopping', 'fuel', 'travel')
+  reward_rate: number; // Reward rate as number (e.g., 5.0 for 5%)
+  reward_type: 'cashback' | 'points' | 'miles'; // Type of reward
+  reward_cap?: number; // Maximum reward amount per period
+  conditions?: Record<string, any>; // Additional conditions as JSON
+  is_active: boolean; // Whether benefit is currently active
+  valid_from?: Date; // Start date for benefit validity
+  valid_until?: Date; // End date for benefit validity
+  description?: string; // Custom benefit description
+  value?: string; // Benefit value display (e.g., "5% cashback", "1000 points")
   created_at: Date;
   updated_at: Date;
 }

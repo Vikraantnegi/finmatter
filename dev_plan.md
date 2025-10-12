@@ -909,9 +909,170 @@ Make this feel secure and trustworthy. AA is still new for many users.
 
 ---
 
-## Week 10-11: Polish, Testing, & Beta Prep
+## Week 10: Advanced Card Features
 
-### Cursor Prompt 25: Error Handling & Edge Cases
+### Cursor Prompt 25: Card Comparison Tool
+
+```
+Build card comparison feature in web-pwa:
+
+1. Create comparison page:
+   - apps/web-pwa/src/app/cards/compare/page.tsx
+   - Accept query params: ?ids=card1,card2,card3
+   - Support 2-4 cards in comparison
+
+2. Features:
+   - Side-by-side comparison table
+   - Highlight best values (green checkmark)
+   - Compare:
+     * Basic info (bank, name, network, type)
+     * Financials (annual fee, credit limit, utilization)
+     * Rewards (by category)
+     * Benefits and perks
+   - Export to PDF option
+   - Share comparison link
+
+3. Card selection UI:
+   - Add checkboxes to cards list page
+   - "Compare Selected" button (shows when 2+ selected)
+   - Max 4 cards selectable
+   - Navigate to comparison page with selected IDs
+
+4. Comparison logic:
+   - Determine "best" value for each metric:
+     * Annual fee: Lower is better (FREE is best)
+     * Credit limit: Higher is better
+     * Utilization: Lower is better
+     * Reward rate: Higher is better
+   - Add visual indicators (✨ for best, ⚠️ for worst)
+
+5. Responsive design:
+   - Desktop: Full table view
+   - Mobile: Swipeable cards or accordion
+
+Use react-to-pdf for PDF export.
+```
+
+### Cursor Prompt 26: Card Analytics Dashboard
+
+```
+Build analytics dashboard for card portfolio:
+
+1. Create analytics page:
+   - apps/web-pwa/src/app/cards/analytics/page.tsx
+   - Show comprehensive portfolio insights
+
+2. Install charting library:
+   - pnpm add recharts (or chart.js)
+   - Create reusable chart components
+
+3. Analytics sections:
+   
+   a) Overview Stats (Top Row):
+      - Total rewards earned this month
+      - Best performing card
+      - Optimization score (0-100)
+      - Total spending
+
+   b) Spending by Card (Pie Chart):
+      - Show percentage and amount per card
+      - Click to filter transactions
+
+   c) Rewards by Card (Bar Chart):
+      - Compare rewards earned across cards
+      - Show monthly/yearly toggle
+
+   d) Utilization Trends (Line Chart):
+      - Show utilization over last 6 months
+      - Highlight danger zones (>70%)
+
+   e) Optimization Opportunities:
+      - List missed savings
+      - "You used Card A for dining, Card B would save ₹X"
+      - Show potential monthly savings
+      - Track acceptance rate
+
+4. Create analytics hook:
+   - apps/web-pwa/src/hooks/useCardAnalytics.ts
+   - Calculate all metrics
+   - Support date range filtering
+   - Cache calculations
+
+5. Optimization Score Algorithm:
+   ```typescript
+   optimizationScore = (
+     actualRewards / potentialOptimalRewards
+   ) * 100
+   
+   // Factors:
+   // - Using best card for each category
+   // - Maximizing reward caps
+   // - Avoiding annual fees on unused cards
+   // - Maintaining healthy utilization
+   ```
+
+Note: For MVP, use mock transaction data. Replace with real data once transactions feature is built.
+```
+
+### Cursor Prompt 27: Payment Reminders System
+
+```
+Build payment reminder system:
+
+1. Database migration:
+   - Add payment_reminders table:
+     * id, user_id, card_id
+     * due_date (calculated or manual)
+     * amount_due, minimum_payment
+     * status (pending, paid, overdue)
+     * reminder_sent (boolean)
+     * paid_at (timestamp)
+
+2. Due date calculation utility:
+   - apps/web-pwa/src/lib/paymentUtils.ts
+   - Function: calculateDueDate(billingDay: number): Date
+   - Logic: billing_day + 15 days (default)
+   - Support bank-specific rules:
+     * HDFC: billing day + 20 days
+     * SBI: billing day + 15 days
+     * ICICI: billing day + 18 days
+
+3. Create reminder component:
+   - apps/web-pwa/src/components/cards/PaymentReminder.tsx
+   - Show on card detail page
+   - Show "Due in X days" badge
+   - Color coding:
+     * Green: >7 days
+     * Yellow: 3-7 days
+     * Red: <3 days or overdue
+
+4. Dashboard widget:
+   - apps/web-pwa/src/components/dashboard/UpcomingPayments.tsx
+   - List all cards with upcoming payments
+   - Sort by due date (closest first)
+   - Quick "Mark as Paid" action
+
+5. Notification system:
+   - API endpoint: POST /api/reminders/schedule
+   - Schedule push notifications:
+     * 7 days before due date
+     * 3 days before due date
+     * 1 day before due date
+     * On due date (if not paid)
+   - Use Supabase Edge Functions or cron job
+
+6. Payment tracking:
+   - "Mark as Paid" button
+   - Store payment date
+   - Track on-time payment streak
+   - Show payment history
+
+For MVP: Calculate due dates, show reminders. Push notifications can be added in Phase 2.
+```
+
+## Week 11: Polish, Testing, & Beta Prep
+
+### Cursor Prompt 28: Error Handling & Edge Cases
 
 ```
 Implement comprehensive error handling across the app:

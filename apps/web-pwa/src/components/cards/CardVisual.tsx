@@ -2,6 +2,8 @@
 
 import { Card } from '@finmatter/types';
 import { CreditCard, Eye } from 'lucide-react';
+import { getNetworkLogo } from '@/components/icons/CardNetworks';
+import { getCardColors, getCardStatusInfo } from '@/lib/cardColors';
 
 interface CardVisualProps {
   card: Card;
@@ -20,31 +22,61 @@ export function CardVisual({
       ? ((card.creditLimit - card.availableCredit) / card.creditLimit) * 100
       : 0;
 
-  // Get card colors from metadata or use defaults
-  const primaryColor = card.primaryColor || '#3b82f6';
-  const secondaryColor = card.secondaryColor || '#1d4ed8';
+  // Get card colors (use custom, bank-specific, or generate)
+  const colors = getCardColors(
+    card.bankName,
+    card.primaryColor,
+    card.secondaryColor,
+  );
 
   // Generate gradient style
   const gradientStyle = {
-    background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+    background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
   };
+
+  // Get network logo component
+  const NetworkLogo = getNetworkLogo(card.network);
+
+  // Get status badge info
+  const statusInfo = getCardStatusInfo({
+    status: card.status,
+    expiryDate: card.expiryDate,
+    deletedAt: card.deletedAt,
+  });
+
+  // Check if card is inactive/deleted
+  const isInactive = card.status === 'inactive' || card.deletedAt;
 
   return (
     <div
       className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${className}`}
     >
       {/* Card Visual */}
-      <div className='relative h-48 p-6 text-white' style={gradientStyle}>
-        {/* Card Network Logo */}
-        <div className='flex justify-between items-start mb-4'>
-          <div className='flex items-center space-x-2'>
-            <CreditCard className='w-6 h-6' />
-            <span className='font-medium text-sm opacity-90'>
-              {card.network?.toUpperCase() || 'VISA'}
+      <div
+        className={`relative h-48 p-6 text-white transition-all duration-300 hover:shadow-xl ${
+          isInactive ? 'opacity-60 grayscale' : ''
+        }`}
+        style={gradientStyle}
+      >
+        {/* Status Badge */}
+        {statusInfo && statusInfo.show && (
+          <div className='absolute top-3 right-3 z-10'>
+            <span
+              className={`${statusInfo.bgColor} ${statusInfo.color} text-xs px-2 py-1 rounded-full font-semibold shadow-sm`}
+            >
+              {statusInfo.label}
             </span>
           </div>
+        )}
+
+        {/* Bank Name & Network Logo */}
+        <div className='flex justify-between items-start mb-4'>
+          <div>
+            <div className='text-xs opacity-75 mb-1'>{card.bankName}</div>
+            <NetworkLogo className='w-12 h-8' />
+          </div>
           <div className='text-right'>
-            <div className='text-xs opacity-75'>BALANCE</div>
+            <div className='text-xs opacity-75'>AVAILABLE</div>
             <div className='font-bold text-lg'>
               ₹{card.availableCredit?.toLocaleString() || '0'}
             </div>
@@ -83,6 +115,15 @@ export function CardVisual({
         <div className='absolute bottom-4 right-8 opacity-10'>
           <div className='w-8 h-8 rounded-full bg-white'></div>
         </div>
+
+        {/* Inactive Overlay */}
+        {isInactive && (
+          <div className='absolute inset-0 bg-gray-900 bg-opacity-50 rounded-t-xl flex items-center justify-center'>
+            <span className='text-white text-2xl font-bold tracking-wider'>
+              {card.deletedAt ? 'DELETED' : 'INACTIVE'}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Card Info */}

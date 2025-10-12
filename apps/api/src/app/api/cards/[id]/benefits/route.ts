@@ -9,8 +9,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { FinMatterError } from '@finmatter/shared';
+import { createCorsResponse, handleCorsPreflight } from '@/lib/cors';
 import { z } from 'zod';
 import { DatabaseCardBenefit } from '@finmatter/types';
+import { dbBenefitsToApiBenefits, dbBenefitToApiBenefit } from '@/lib/dataTransform';
 
 // Request validation schemas
 const CreateBenefitSchema = z.object({
@@ -23,7 +25,19 @@ const CreateBenefitSchema = z.object({
   rewardCap: z.number().min(0, 'Reward cap must be positive').optional(),
   conditions: z.record(z.any()).optional(),
   isActive: z.boolean().default(true),
+  validFrom: z.string().optional(), // NEW
+  validUntil: z.string().optional(), // NEW
+  description: z.string().optional(), // NEW
+  value: z.string().optional(), // NEW
 });
+
+/**
+ * Handle CORS preflight requests
+ */
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return handleCorsPreflight(origin || undefined);
+}
 
 /**
  * Helper function to get authenticated user ID
@@ -73,12 +87,13 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
+  const origin = request.headers.get('origin');
   try {
     const userId = await getAuthenticatedUserId(request);
     const cardId = params.id;
 
     if (!cardId) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -86,7 +101,7 @@ export async function GET(
             message: 'Card ID is required',
           },
         },
-        { status: 400 },
+        { status: 400, origin: origin || undefined },
       );
     }
 
@@ -110,15 +125,21 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        benefits: benefits || [],
+    // Transform database format to API format
+    const transformedBenefits = dbBenefitsToApiBenefits(benefits || []);
+
+    return createCorsResponse(
+      {
+        success: true,
+        data: {
+          benefits: transformedBenefits,
+        },
       },
-    });
+      { origin: origin || undefined },
+    );
   } catch (error) {
     if (error instanceof FinMatterError) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -126,12 +147,12 @@ export async function GET(
             message: error.message,
           },
         },
-        { status: error.statusCode },
+        { status: error.statusCode, origin: origin || undefined },
       );
     }
 
     console.error('Get benefits error:', error);
-    return NextResponse.json(
+    return createCorsResponse(
       {
         success: false,
         error: {
@@ -139,7 +160,7 @@ export async function GET(
           message: 'An unexpected error occurred',
         },
       },
-      { status: 500 },
+      { status: 500, origin: origin || undefined },
     );
   }
 }
@@ -152,6 +173,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
+  const origin = request.headers.get('origin');
   try {
     const userId = await getAuthenticatedUserId(request);
     const cardId = params.id;
@@ -204,6 +226,10 @@ export async function POST(
       reward_cap: benefitData.rewardCap || 0,
       conditions: benefitData.conditions || {},
       is_active: benefitData.isActive,
+      valid_from: benefitData.validFrom ? new Date(benefitData.validFrom) : undefined,
+      valid_until: benefitData.validUntil ? new Date(benefitData.validUntil) : undefined,
+      description: benefitData.description,
+      value: benefitData.value,
     };
 
     // Insert benefit
@@ -223,18 +249,21 @@ export async function POST(
       );
     }
 
-    return NextResponse.json(
+    // Transform database format to API format
+    const transformedBenefit = dbBenefitToApiBenefit(benefit);
+
+    return createCorsResponse(
       {
         success: true,
         data: {
-          benefit,
+          benefit: transformedBenefit,
         },
       },
-      { status: 201 },
+      { status: 201, origin: origin || undefined },
     );
   } catch (error) {
     if (error instanceof FinMatterError) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -242,12 +271,12 @@ export async function POST(
             message: error.message,
           },
         },
-        { status: error.statusCode },
+        { status: error.statusCode, origin: origin || undefined },
       );
     }
 
     console.error('Create benefit error:', error);
-    return NextResponse.json(
+    return createCorsResponse(
       {
         success: false,
         error: {
@@ -255,7 +284,7 @@ export async function POST(
           message: 'An unexpected error occurred',
         },
       },
-      { status: 500 },
+      { status: 500, origin: origin || undefined },
     );
   }
 }

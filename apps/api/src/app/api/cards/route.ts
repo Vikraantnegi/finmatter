@@ -10,6 +10,9 @@ import { FinMatterError } from '@finmatter/shared';
 import { createCorsResponse, handleCorsPreflight } from '@/lib/cors';
 import { z } from 'zod';
 import { DatabaseCard } from '@finmatter/types';
+import { dbCardsToApiCards, dbCardToApiCard } from '@/lib/dataTransform';
+import { sanitizeCardName, sanitizeLastFourDigits, sanitizeCreditAmount } from '@/lib/sanitize';
+import { withRateLimit, CARD_CREATE_LIMIT } from '@/lib/rateLimit';
 
 // Request validation schemas
 const CreateCardSchema = z.object({
@@ -27,7 +30,25 @@ const CreateCardSchema = z.object({
   expiryDate: z.string().optional(),
   creditLimit: z.number().min(0).optional(),
   availableCredit: z.number().min(0).optional(),
-});
+  billingDay: z.number().min(1).max(31).optional(), // Optional - can be extracted from statements later
+  cardMetadataId: z.string().optional(),
+  bankId: z.string().optional(),
+  primaryColor: z.string().optional(),
+  secondaryColor: z.string().optional(),
+  isCustom: z.boolean().optional(),
+}).refine(
+  (data) => {
+    // Validate availableCredit <= creditLimit
+    if (data.availableCredit !== undefined && data.creditLimit !== undefined) {
+      return data.availableCredit <= data.creditLimit;
+    }
+    return true;
+  },
+  {
+    message: 'Available credit cannot exceed credit limit',
+    path: ['availableCredit'],
+  }
+);
 
 const GetCardsSchema = z.object({
   status: z.enum(['active', 'inactive', 'blocked', 'expired']).optional(),
@@ -103,7 +124,7 @@ export async function GET(request: NextRequest) {
 
     const { status, cardType, bankName, limit, offset } = validation.data;
 
-    // Build query
+    // Build query - only fetch non-deleted cards by default
     let query = supabaseAdmin
       .from('cards')
       .select(
@@ -113,6 +134,7 @@ export async function GET(request: NextRequest) {
       `,
       )
       .eq('user_id', userId)
+      .is('deleted_at', null) // Only get active cards
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -137,7 +159,8 @@ export async function GET(request: NextRequest) {
     let countQuery = supabaseAdmin
       .from('cards')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .is('deleted_at', null); // Only count active cards
 
     if (status) countQuery = countQuery.eq('status', status);
     if (cardType) countQuery = countQuery.eq('card_type', cardType);
@@ -150,18 +173,24 @@ export async function GET(request: NextRequest) {
       // Continue without count if there's an error
     }
 
-    return createCorsResponse({
-      success: true,
-      data: {
-        cards: cards || [],
-        pagination: {
-          limit,
-          offset,
-          total: count || 0,
-          hasMore: (count || 0) > offset + limit,
+    // Transform database format to API format
+    const transformedCards = dbCardsToApiCards(cards || []);
+
+    return createCorsResponse(
+      {
+        success: true,
+        data: {
+          cards: transformedCards,
+          pagination: {
+            limit,
+            offset,
+            total: count || 0,
+            hasMore: (count || 0) > offset + limit,
+          },
         },
       },
-    });
+      { origin: origin || undefined }
+    );
   } catch (error) {
     if (error instanceof FinMatterError) {
       return createCorsResponse(
@@ -193,9 +222,41 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/cards
  * Create a new card
+ * Rate limited: 10 cards per 15 minutes
  */
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin');
+  
+  // Apply rate limiting
+  const { checkRateLimit, getClientIdentifier } = await import('@/lib/rateLimit');
+  const identifier = await getClientIdentifier(request);
+  const rateLimit = checkRateLimit(identifier, CARD_CREATE_LIMIT);
+
+  if (rateLimit.limited) {
+    return createCorsResponse(
+      {
+        success: false,
+        error: {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: CARD_CREATE_LIMIT.message || 'Too many cards created.',
+          details: {
+            retryAfter: rateLimit.retryAfter,
+          },
+          suggestion: `Please wait ${rateLimit.retryAfter} seconds before adding more cards.`,
+        },
+      },
+      {
+        status: 429,
+        origin: origin || undefined,
+        headers: {
+          'Retry-After': rateLimit.retryAfter.toString(),
+          'X-RateLimit-Limit': CARD_CREATE_LIMIT.max.toString(),
+          'X-RateLimit-Remaining': '0',
+        },
+      },
+    );
+  }
+
   try {
     const userId = await getAuthenticatedUserId(request);
 
@@ -219,24 +280,35 @@ export async function POST(request: NextRequest) {
 
     const cardData = validation.data;
 
+    // Sanitize inputs before database insert (security)
+    const sanitizedBankName = sanitizeCardName(cardData.bankName);
+    const sanitizedCardName = sanitizeCardName(cardData.cardName);
+    const sanitizedLastFour = sanitizeLastFourDigits(cardData.lastFourDigits);
+
     // Prepare database insert data
-    const insertData: Omit<DatabaseCard, 'id' | 'createdAt' | 'updatedAt'> = {
+    const insertData = {
       user_id: userId,
-      bank_name: cardData.bankName,
-      card_name: cardData.cardName,
-      last_four_digits: cardData.lastFourDigits, // TODO: Encrypt this in production
+      bank_name: sanitizedBankName,
+      card_name: sanitizedCardName,
+      last_four_digits: sanitizedLastFour, // TODO: Encrypt this in production
       card_type: cardData.cardType,
       network: cardData.network,
       reward_type: cardData.rewardType,
       annual_fee: cardData.annualFee,
       currency: cardData.currency,
-      status: 'active',
+      status: 'active' as const,
       issue_date: cardData.issueDate ? new Date(cardData.issueDate) : undefined,
       expiry_date: cardData.expiryDate
         ? new Date(cardData.expiryDate)
         : undefined,
-      credit_limit: cardData.creditLimit || undefined,
-      available_credit: cardData.availableCredit || undefined,
+      credit_limit: cardData.creditLimit ? sanitizeCreditAmount(cardData.creditLimit) : undefined,
+      available_credit: cardData.availableCredit ? sanitizeCreditAmount(cardData.availableCredit) : undefined,
+      billing_day: cardData.billingDay || undefined,
+      card_metadata_id: cardData.cardMetadataId || undefined,
+      bank_id: cardData.bankId || undefined,
+      primary_color: cardData.primaryColor || undefined,
+      secondary_color: cardData.secondaryColor || undefined,
+      is_custom: cardData.isCustom || false,
     };
 
     // Insert card
@@ -252,7 +324,43 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      // Error logged
+      // Handle duplicate card error (unique constraint violation)
+      if (error.code === '23505') {
+        return createCorsResponse(
+          {
+            success: false,
+            error: {
+              code: 'CARD_ALREADY_EXISTS',
+              message: `You've already added a card from ${cardData.bankName} ending in ${cardData.lastFourDigits}.`,
+              details: {
+                field: 'lastFourDigits',
+                bankName: cardData.bankName,
+                lastFourDigits: cardData.lastFourDigits,
+              },
+              suggestion: 'Check your cards list or try different card details.',
+            },
+          },
+          { status: 409, origin: origin || undefined },
+        );
+      }
+
+      // Handle foreign key violation (user not found)
+      if (error.code === '23503') {
+        return createCorsResponse(
+          {
+            success: false,
+            error: {
+              code: 'USER_NOT_FOUND',
+              message: 'Your session has expired. Please login again.',
+              suggestion: 'Refresh the page and login.',
+            },
+          },
+          { status: 401, origin: origin || undefined },
+        );
+      }
+
+      // Generic database error
+      console.error('Supabase create card error:', error);
       throw new FinMatterError(
         'Failed to create card',
         'DB_INSERT_FAILED',
@@ -261,14 +369,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Transform database format to API format
+    const transformedCard = dbCardToApiCard(card);
+
     return createCorsResponse(
       {
         success: true,
         data: {
-          card,
+          card: transformedCard,
         },
       },
-      { status: 201 },
+      { status: 201, origin: origin || undefined },
     );
   } catch (error) {
     if (error instanceof FinMatterError) {
@@ -280,7 +391,7 @@ export async function POST(request: NextRequest) {
             message: error.message,
           },
         },
-        { status: error.statusCode },
+        { status: error.statusCode, origin: origin || undefined },
       );
     }
 
@@ -293,7 +404,7 @@ export async function POST(request: NextRequest) {
           message: 'An unexpected error occurred',
         },
       },
-      { status: 500 },
+      { status: 500, origin: origin || undefined },
     );
   }
 }

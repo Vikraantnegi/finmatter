@@ -1,432 +1,222 @@
-import type {
-  PaginationParams,
-  PaginatedResponse,
-  ApiResponse,
-  ApiError,
-} from './common';
-
 /**
- * API request and response types for FinMatter
+ * Standard API Response Types for FinMatter
+ * Used across all API endpoints for consistency and type safety
  */
 
-// Auth API types (Phone Authentication)
-export type SendOTPRequest = {
-  phoneNumber: string;
-};
+import type { User, UserWithOnboarding } from './user';
+import type { Card, CardBenefit } from './card';
+
+/**
+ * Generic API response wrapper
+ * All API endpoints should return this structure
+ */
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: ApiError;
+  meta?: ApiMeta;
+}
+
+/**
+ * API error structure - designed to be user-friendly and actionable
+ */
+export interface ApiError {
+  code: string; // Machine-readable error code (e.g., 'CARD_ALREADY_EXISTS')
+  message: string; // Human-readable error message for display
+  details?: any; // Additional error details (validation errors, etc.)
+  field?: string; // Which field caused the error (for form validation highlighting)
+  suggestion?: string; // What the user should do next (actionable guidance)
+}
+
+/**
+ * API metadata for debugging, monitoring, and observability
+ */
+export interface ApiMeta {
+  requestId?: string; // Unique request identifier for tracing
+  timestamp: string; // ISO timestamp of response
+  duration?: number; // Response time in milliseconds
+  version?: string; // API version (for future versioning)
+}
+
+/**
+ * Paginated response wrapper
+ * Used for list endpoints that support pagination
+ */
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: PaginationMeta;
+}
+
+/**
+ * Pagination metadata
+ */
+export interface PaginationMeta {
+  limit: number; // Items per page
+  offset: number; // Current offset
+  total: number; // Total items available
+  hasMore: boolean; // Whether more items exist
+  page: number; // Current page number (1-indexed)
+  totalPages: number; // Total number of pages
+}
+
+// ============================================
+// AUTH API RESPONSES
+// ============================================
 
 export type SendOTPResponse = ApiResponse<{
-  success: boolean;
   message: string;
-  expiresIn: number; // seconds
+  expiresIn: number; // Seconds until OTP expires
 }>;
-
-export type VerifyOTPRequest = {
-  phoneNumber: string;
-  otp: string;
-};
 
 export type VerifyOTPResponse = ApiResponse<{
-  user: {
-    id: string;
-    phoneNumber: string;
-    isVerified: boolean;
-    biometricEnabled: boolean;
-    createdAt: string;
-    lastLogin?: string;
-  };
+  user: User;
   session: {
     token: string;
-    refreshToken: string;
     expiresAt: string;
   };
 }>;
-
-// Legacy email-based auth types (deprecated)
-export type LoginRequest = {
-  email: string;
-  password: string;
-  rememberMe?: boolean;
-};
-
-export type LoginResponse = ApiResponse<{
-  user: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    displayName?: string;
-    avatar?: string;
-    role: string;
-    status: string;
-  };
-  session: {
-    token: string;
-    refreshToken: string;
-    expiresAt: string;
-  };
-}>;
-
-export type SignupRequest = {
-  email: string;
-  password: string;
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
-};
-
-export type SignupResponse = ApiResponse<{
-  user: {
-    id: string;
-    email: string;
-    status: string;
-  };
-  verificationRequired: boolean;
-}>;
-
-export type RefreshTokenRequest = {
-  refreshToken: string;
-};
 
 export type RefreshTokenResponse = ApiResponse<{
-  token: string;
-  refreshToken: string;
-  expiresAt: string;
+  session: {
+    token: string;
+    expiresAt: string;
+  };
 }>;
 
-export type ForgotPasswordRequest = {
-  email: string;
-};
+// ============================================
+// USER API RESPONSES
+// ============================================
 
-export type ResetPasswordRequest = {
-  token: string;
-  password: string;
-};
-
-// Cards API types
-export type GetCardsRequest = PaginationParams & {
-  status?: string;
-  bankName?: string;
-};
-
-export type GetCardsResponse = PaginatedResponse<{
-  id: string;
-  bankName: string;
-  cardName: string;
-  lastFourDigits: string;
-  cardType: string;
-  network: string;
-  rewardType: string;
-  annualFee: number;
-  status: string;
-  benefits: Array<{
-    category: string;
-    rewardRate: number;
-    rewardType: string;
-    isActive: boolean;
-  }>;
+export type GetUserResponse = ApiResponse<{ 
+  user: UserWithOnboarding;
 }>;
 
-export type CreateCardRequest = {
-  bankName: string;
-  cardName: string;
-  lastFourDigits: string;
-  cardType: string;
-  network: string;
-  rewardType: string;
-  annualFee: number;
-  benefits: Array<{
-    category: string;
-    rewardRate: number;
-    rewardType: string;
-    rewardCap?: number;
-    conditions?: string[];
-  }>;
-};
-
-export type CreateCardResponse = ApiResponse<{
-  id: string;
-  bankName: string;
-  cardName: string;
-  lastFourDigits: string;
+export type UpdateUserResponse = ApiResponse<{ 
+  user: UserWithOnboarding;
 }>;
 
-export type UpdateCardRequest = {
-  cardName?: string;
-  rewardType?: string;
-  annualFee?: number;
-  status?: string;
-  benefits?: Array<{
-    id?: string;
-    category: string;
-    rewardRate: number;
-    rewardType: string;
-    rewardCap?: number;
-    conditions?: string[];
-    isActive?: boolean;
-  }>;
-};
+export type CompleteOnboardingResponse = ApiResponse<{ 
+  user: UserWithOnboarding;
+}>;
 
-export type DeleteCardResponse = ApiResponse<{
+// ============================================
+// CARDS API RESPONSES
+// ============================================
+
+export type GetCardsResponse = ApiResponse<{
+  cards: Card[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+    hasMore: boolean;
+  };
+}>;
+
+export type GetCardResponse = ApiResponse<{ 
+  card: Card;
+}>;
+
+export type CreateCardResponse = ApiResponse<{ 
+  card: Card;
+}>;
+
+export type UpdateCardResponse = ApiResponse<{ 
+  card: Card;
+}>;
+
+export type DeleteCardResponse = ApiResponse<{ 
+  message: string;
+  card: Card;
+}>;
+
+// ============================================
+// CARD BENEFITS API RESPONSES
+// ============================================
+
+export type GetBenefitsResponse = ApiResponse<{ 
+  benefits: CardBenefit[];
+}>;
+
+export type GetBenefitResponse = ApiResponse<{ 
+  benefit: CardBenefit;
+}>;
+
+export type CreateBenefitResponse = ApiResponse<{ 
+  benefit: CardBenefit;
+}>;
+
+export type UpdateBenefitResponse = ApiResponse<{ 
+  benefit: CardBenefit;
+}>;
+
+export type DeleteBenefitResponse = ApiResponse<{ 
   message: string;
 }>;
 
-// Transactions API types
-export type GetTransactionsRequest = PaginationParams & {
-  cardId?: string;
-  category?: string;
-  startDate?: string;
-  endDate?: string;
-  search?: string;
-  amountRange?: {
-    min: number;
-    max: number;
-  };
-};
+// ============================================
+// HELPER TYPE GUARDS
+// ============================================
 
-export type GetTransactionsResponse = PaginatedResponse<{
-  id: string;
-  amount: number;
-  currency: string;
-  type: string;
-  status: string;
-  merchantName: string;
-  category: string;
-  subcategory?: string;
-  date: string;
-  card?: {
-    id: string;
-    cardName: string;
-    lastFourDigits: string;
-  };
-  tags?: string[];
-  notes?: string;
-}>;
+/**
+ * Type guard to check if response is successful
+ */
+export function isSuccessResponse<T>(
+  response: ApiResponse<T>
+): response is ApiResponse<T> & { success: true; data: T } {
+  return response.success === true && response.data !== undefined;
+}
 
-export type CreateTransactionRequest = {
-  cardId?: string;
-  amount: number;
-  type: string;
-  merchantName: string;
-  description?: string;
-  date: string;
-  category: string;
-  subcategory?: string;
-  tags?: string[];
-  notes?: string;
-};
+/**
+ * Type guard to check if response is an error
+ */
+export function isErrorResponse(
+  response: ApiResponse<any>
+): response is ApiResponse<any> & { success: false; error: ApiError } {
+  return response.success === false && response.error !== undefined;
+}
 
-export type UpdateTransactionRequest = {
-  category?: string;
-  subcategory?: string;
-  tags?: string[];
-  notes?: string;
-  merchantName?: string;
-  amount?: number;
-};
+// ============================================
+// ERROR CODES (for consistency)
+// ============================================
 
-export type TransactionStatsResponse = ApiResponse<{
-  totalSpent: number;
-  totalEarned: number;
-  transactionCount: number;
-  averageTransactionValue: number;
-  categoryBreakdown: Array<{
-    category: string;
-    amount: number;
-    percentage: number;
-    count: number;
-  }>;
-  monthlyTrend: Array<{
-    month: string;
-    amount: number;
-    count: number;
-  }>;
-}>;
+export const API_ERROR_CODES = {
+  // Auth errors
+  AUTH_REQUIRED: 'AUTH_REQUIRED',
+  INVALID_TOKEN: 'INVALID_TOKEN',
+  INVALID_OTP: 'INVALID_OTP',
+  OTP_EXPIRED: 'OTP_EXPIRED',
+  TOO_MANY_ATTEMPTS: 'TOO_MANY_ATTEMPTS',
+  
+  // Validation errors
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  INVALID_INPUT: 'INVALID_INPUT',
+  MISSING_FIELD: 'MISSING_FIELD',
+  
+  // Resource errors
+  NOT_FOUND: 'NOT_FOUND',
+  CARD_NOT_FOUND: 'CARD_NOT_FOUND',
+  USER_NOT_FOUND: 'USER_NOT_FOUND',
+  BENEFIT_NOT_FOUND: 'BENEFIT_NOT_FOUND',
+  
+  // Conflict errors
+  ALREADY_EXISTS: 'ALREADY_EXISTS',
+  CARD_ALREADY_EXISTS: 'CARD_ALREADY_EXISTS',
+  DUPLICATE_CARD: 'DUPLICATE_CARD',
+  
+  // Database errors
+  DB_QUERY_FAILED: 'DB_QUERY_FAILED',
+  DB_INSERT_FAILED: 'DB_INSERT_FAILED',
+  DB_UPDATE_FAILED: 'DB_UPDATE_FAILED',
+  DB_DELETE_FAILED: 'DB_DELETE_FAILED',
+  
+  // Rate limiting
+  RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
+  
+  // Generic errors
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  NETWORK_ERROR: 'NETWORK_ERROR',
+  UNKNOWN_ERROR: 'UNKNOWN_ERROR',
+} as const;
 
-// Statements API types
-export type UploadStatementRequest = {
-  cardId: string;
-  bankName: string;
-  statementPeriod: {
-    startDate: string;
-    endDate: string;
-  };
-  file: File;
-};
-
-export type UploadStatementResponse = ApiResponse<{
-  statementId: string;
-  transactionCount: number;
-  status: string;
-}>;
-
-export type GetStatementsRequest = PaginationParams & {
-  cardId?: string;
-  status?: string;
-};
-
-export type GetStatementsResponse = PaginatedResponse<{
-  id: string;
-  cardId: string;
-  bankName: string;
-  uploadDate: string;
-  transactionCount: number;
-  status: string;
-  statementPeriod: {
-    startDate: string;
-    endDate: string;
-  };
-}>;
-
-// Optimizer API types
-export type CardOptimizerRequest = {
-  amount: number;
-  category: string;
-  merchantName?: string;
-};
-
-export type CardOptimizerResponse = ApiResponse<{
-  bestCard: {
-    id: string;
-    cardName: string;
-    bankName: string;
-    lastFourDigits: string;
-  };
-  expectedReward: number;
-  rewardType: string;
-  reasoning: string;
-  confidence: number;
-  alternatives: Array<{
-    card: {
-      id: string;
-      cardName: string;
-      bankName: string;
-      lastFourDigits: string;
-    };
-    reward: number;
-    reasoning: string;
-  }>;
-}>;
-
-export type BatchOptimizerRequest = {
-  transactions: Array<{
-    amount: number;
-    category: string;
-    merchantName?: string;
-  }>;
-};
-
-export type BatchOptimizerResponse = ApiResponse<{
-  recommendations: Array<{
-    transaction: {
-      amount: number;
-      category: string;
-      merchantName?: string;
-    };
-    recommendation: CardOptimizerResponse['data'];
-  }>;
-}>;
-
-// AI Assistant API types
-export type AIChatRequest = {
-  message: string;
-  conversationId?: string;
-  context?: Record<string, any>;
-};
-
-export type AIChatResponse = ApiResponse<{
-  reply: string;
-  conversationId: string;
-  confidence: number;
-  sources?: string[];
-  suggestions?: string[];
-}>;
-
-// Goals API types
-export type GetGoalsRequest = PaginationParams & {
-  type?: string;
-  status?: string;
-};
-
-export type CreateGoalRequest = {
-  goalType: string;
-  category?: string;
-  targetAmount: number;
-  period: string;
-  startDate: string;
-  endDate: string;
-  notificationsEnabled?: boolean;
-};
-
-export type UpdateGoalRequest = {
-  targetAmount?: number;
-  period?: string;
-  endDate?: string;
-  notificationsEnabled?: boolean;
-  isActive?: boolean;
-};
-
-// Analytics API types
-export type DashboardOverviewResponse = ApiResponse<{
-  totalSpending: number;
-  topCategory: {
-    category: string;
-    amount: number;
-    percentage: number;
-  };
-  mostUsedCard: {
-    cardId: string;
-    cardName: string;
-    amount: number;
-    percentage: number;
-  };
-  monthOverMonth: {
-    currentMonth: number;
-    previousMonth: number;
-    change: number;
-    changePercentage: number;
-  };
-  recentTransactions: Array<{
-    id: string;
-    amount: number;
-    merchantName: string;
-    category: string;
-    date: string;
-  }>;
-}>;
-
-export type SpendingByCategoryResponse = ApiResponse<{
-  categories: Array<{
-    category: string;
-    amount: number;
-    percentage: number;
-    count: number;
-    trend: 'up' | 'down' | 'stable';
-  }>;
-  totalAmount: number;
-  period: {
-    startDate: string;
-    endDate: string;
-  };
-}>;
-
-export type CardUsageResponse = ApiResponse<{
-  cards: Array<{
-    cardId: string;
-    cardName: string;
-    bankName: string;
-    amount: number;
-    percentage: number;
-    transactionCount: number;
-    averageTransactionValue: number;
-    rewardsEarned: number;
-  }>;
-  totalSpending: number;
-  totalRewards: number;
-}>;
-
-// Error response type
-export type ErrorResponse = {
-  success: false;
-  error: ApiError;
-  timestamp: string;
-};
+export type ApiErrorCode = typeof API_ERROR_CODES[keyof typeof API_ERROR_CODES];

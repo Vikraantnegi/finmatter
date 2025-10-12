@@ -6,6 +6,7 @@ import { useAuth, useCards } from '@/hooks';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
 import { CardVisual } from '@/components/cards/CardVisual';
+import { UtilizationAlert } from '@/components/cards/UtilizationAlert';
 import {
   CreditCard,
   Plus,
@@ -42,8 +43,25 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div className='min-h-screen flex items-center justify-center'>
-        <LoadingSpinner size='lg' />
+      <div className='min-h-screen bg-gray-50'>
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+          <div className='mb-8'>
+            <div className='h-8 w-48 bg-gray-200 rounded animate-pulse mb-2'></div>
+            <div className='h-4 w-64 bg-gray-200 rounded animate-pulse'></div>
+          </div>
+          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
+            {[1, 2, 3, 4].map(i => (
+              <div
+                key={i}
+                className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'
+              >
+                <div className='h-12 w-12 bg-gray-200 rounded-lg animate-pulse mb-4'></div>
+                <div className='h-8 w-20 bg-gray-200 rounded animate-pulse mb-2'></div>
+                <div className='h-4 w-24 bg-gray-200 rounded animate-pulse'></div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -60,6 +78,9 @@ function DashboardContent() {
             Here&apos;s an overview of your credit card portfolio
           </p>
         </div>
+
+        {/* Credit Utilization Alert */}
+        <UtilizationAlert cards={cards} className='mb-8' />
 
         {/* Stats Grid */}
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>

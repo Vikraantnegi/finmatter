@@ -145,12 +145,11 @@ All policies are already defined in migrations. Verify:
 
 ## 📱 PWA Installation
 
-### Mobile (iOS/Android)
+### Web-PWA
 
 1. Open `https://app.finmatter.com` in browser
-2. Tap "Share" (iOS) or menu (Android)
-3. Select "Add to Home Screen"
-4. App icon will appear on home screen
+2. Select "Add to Home Screen"
+3. App icon will appear on home screen
 
 ### Desktop (Chrome/Edge)
 

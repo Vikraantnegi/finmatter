@@ -135,7 +135,6 @@ finmatter/
 │   ├── web-pwa/         # Next.js PWA (main app)
 │   ├── api/             # Next.js API server
 │   ├── web/             # Next.js admin panel
-│   └── mobile/          # [DEPRECATED] React Native app
 ├── packages/
 │   ├── types/           # Shared TypeScript types
 │   ├── shared/          # Shared utilities

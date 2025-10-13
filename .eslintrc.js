@@ -31,7 +31,7 @@ module.exports = {
   overrides: [
     // React Native specific rules
     {
-      files: ['apps/mobile/**/*.{ts,tsx}'],
+      files: ['apps/web-pwa/**/*.{ts,tsx}'],
       extends: [
         'plugin:react/recommended',
         'plugin:react-hooks/recommended',

@@ -242,24 +242,6 @@ export const isNode = (): boolean => {
 };
 
 /**
- * Get device type from user agent
- */
-export const getDeviceType = (
-  userAgent?: string,
-): 'mobile' | 'tablet' | 'desktop' => {
-  const ua = userAgent || (isBrowser() ? navigator.userAgent : '');
-
-  if (/Mobile|Android|iPhone|iPad/.test(ua)) {
-    if (/iPad/.test(ua)) {
-      return 'tablet';
-    }
-    return 'mobile';
-  }
-
-  return 'desktop';
-};
-
-/**
  * Capitalize first letter of string
  */
 export const capitalize = (str: string): string => {

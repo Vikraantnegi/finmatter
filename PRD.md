@@ -8,7 +8,7 @@
 **Document Owner:** Product Team  
 **Status:** Draft
 
-FinMatter is a personal finance super app designed to help users optimize credit card usage, track spending, and receive AI-powered financial insights through an intuitive mobile experience.
+FinMatter is a personal finance super app designed to help users optimize credit card usage, track spending, and receive AI-powered financial insights through an intuitive application experience.
 
 ---
 
@@ -31,7 +31,7 @@ FinMatter is a smart personal finance assistant that helps users optimize credit
 - **Secondary:** Financially conscious individuals seeking to optimize their spending and rewards
 - **Characteristics:**
   - Own 2+ credit cards
-  - Tech-savvy mobile users
+  - Tech-savvy users
   - Interested in maximizing financial benefits
   - Struggle with tracking multiple accounts manually
 
@@ -392,9 +392,9 @@ No comprehensive solution exists in India that provides AI-driven guidance on cr
 
 **Frontend:**
 
-- Framework: React Native CLI (mobile-first)
-- Styling: Tailwind CSS for React Native
-- State Management: SWR for data fetching
+- Framework: Next.js 14 PWA (mobile-first)
+- Styling: Tailwind CSS
+- State Management: Zustand + SWR for data fetching
 - Navigation: React Navigation
 
 **Backend:**

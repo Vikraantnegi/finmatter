@@ -1720,7 +1720,6 @@ pnpm test:coverage
 #### E2E Tests (Planned)
 
 - Playwright for web PWA
-- Detox for mobile app
 
 #### API Testing
 
@@ -2228,7 +2227,7 @@ apiClient.interceptors.request.use(request => {
 - [ ] Business/Enterprise features
 - [ ] Advanced reporting
 - [ ] API for third-party integrations
-- [ ] Mobile app enhancements
+- [ ] PWA enhancements (offline mode, notifications)
 - [ ] International card support
 - [ ] Referral program
 

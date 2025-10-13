@@ -6,7 +6,7 @@
 Create a monorepo structure using Turborepo with the following:
 
 apps/
-  - mobile: React Native CLI project with TypeScript
+  - web-pwa: Web PWA project with TypeScript
   - api: Next.js 14 with App Router for API routes
 
 packages/
@@ -23,7 +23,7 @@ Setup:
 - Create .env.example files for each app
 
 Include scripts in root package.json:
-- dev:mobile, dev:api, dev:all
+- dev:pwa, dev:api, dev:all
 - build, lint, type-check
 ```
 
@@ -53,10 +53,10 @@ Setup Supabase for the project with PHONE AUTHENTICATION:
      - POST /api/auth/verify-otp (accepts phone_number, otp)
    - Add rate limiting (3 OTP per 10 mins per phone)
 
-5. In apps/mobile, setup Supabase:
+5. In apps/web-pwa, setup Supabase:
    - Install @supabase/supabase-js
-   - Create src/lib/supabase.ts with mobile client
-   - Setup secure storage for auth token using react-native-mmkv
+   - Create src/lib/supabase.ts with web client
+   - Setup secure storage for auth token using browser storage
 
 6. Add types for auth in packages/types/auth.ts
 ```
@@ -65,10 +65,10 @@ Setup Supabase for the project with PHONE AUTHENTICATION:
 
 ## Week 1-2: Feature 1 - Auth + Card Portfolio
 
-### Cursor Prompt 3: Mobile Auth Flow
+### Cursor Prompt 3: Web PWA Auth Flow
 
 ```
-Build authentication flow in React Native app using PHONE + OTP:
+Build authentication flow in Next.js PWA using PHONE + OTP:
 
 1. Create screens:
    - src/screens/auth/PhoneInputScreen.tsx
@@ -95,8 +95,8 @@ Build authentication flow in React Native app using PHONE + OTP:
 3. Flow:
    - User enters phone → API sends OTP via SMS
    - User enters OTP → API verifies → Create/login user
-   - Store auth token securely (react-native-mmkv)
-   - Setup biometric for future logins
+   - Store auth token securely (browser storage / cookies)
+   - Setup biometric for future logins (if supported)
 
 4. Biometric re-authentication:
    - After first login, always use biometric
@@ -152,7 +152,7 @@ card_benefits table:
 4. Create TypeScript types in packages/types/cards.ts
 ```
 
-### Cursor Prompt 5: Card Portfolio UI (Mobile)
+### Cursor Prompt 5: Card Portfolio UI (Web PWA)
 
 ```
 Build card portfolio screens in React Native:
@@ -281,10 +281,10 @@ Implement PDF upload and parsing in backend:
 5. Implement background job for parsing (use Supabase Edge Functions or simple queue)
 ```
 
-### Cursor Prompt 8: PDF Upload UI (Mobile)
+### Cursor Prompt 8: PDF Upload UI (Web PWA)
 
 ```
-Build PDF upload flow in mobile app:
+Build PDF upload flow in web app:
 
 1. Create screens:
    - src/screens/statements/UploadStatementScreen.tsx
@@ -379,10 +379,10 @@ Build transaction management APIs:
 4. Implement caching with Redis for stats queries
 ```
 
-### Cursor Prompt 11: Transaction List UI (Mobile)
+### Cursor Prompt 11: Transaction List UI (Web PWA)
 
 ```
-Build transaction viewing and management in mobile:
+Build transaction viewing and management in web app:
 
 1. Create screens:
    - src/screens/transactions/TransactionListScreen.tsx
@@ -500,7 +500,7 @@ Create card recommendation API:
    - Useful for analyzing past transactions
 ```
 
-### Cursor Prompt 14: Card Optimizer UI (Mobile) - THE HERO FEATURE
+### Cursor Prompt 14: Card Optimizer UI (Web PWA) - THE HERO FEATURE
 
 ```
 Build the card recommendation interface - the core value prop:
@@ -583,10 +583,10 @@ Implement AI assistant using OpenAI API:
 Use GPT-4o-mini for cost efficiency in MVP.
 ```
 
-### Cursor Prompt 16: AI Assistant UI (Mobile)
+### Cursor Prompt 16: AI Assistant UI (Web PWA)
 
 ```
-Build AI chat interface in mobile app:
+Build AI chat interface in web app:
 
 1. Create screen:
    - src/screens/ai/AIAssistantScreen.tsx
@@ -666,10 +666,10 @@ Build analytics endpoints for dashboard:
    - Update dashboard without refresh
 ```
 
-### Cursor Prompt 18: Dashboard UI (Mobile)
+### Cursor Prompt 18: Dashboard UI (Web PWA)
 
 ```
-Build dashboard/home screen in mobile app:
+Build dashboard/home screen in web app:
 
 1. Main screen:
    - src/screens/home/HomeScreen.tsx
@@ -739,10 +739,10 @@ Build email transaction alert parser:
 6. Implement background job to sync emails daily
 ```
 
-### Cursor Prompt 20: Email Integration UI (Mobile)
+### Cursor Prompt 20: Email Integration UI (Web PWA)
 
 ```
-Build email connection flow in mobile:
+Build email connection flow in web app:
 
 1. Create screens:
    - src/screens/settings/EmailConnectionScreen.tsx
@@ -805,7 +805,7 @@ Implement financial goals and spending limits:
    - Trigger notification if needed
 ```
 
-### Cursor Prompt 22: Goals UI (Mobile)
+### Cursor Prompt 22: Goals UI (Web PWA)
 
 ```
 Build goals and limits interface:
@@ -875,10 +875,10 @@ Integrate Account Aggregator framework:
 This is complex - may need 2-3 iterations to get right.
 ```
 
-### Cursor Prompt 24: Account Aggregator UI (Mobile)
+### Cursor Prompt 24: Account Aggregator UI (Web PWA)
 
 ```
-Build AA consent flow in mobile:
+Build AA consent flow in web app:
 
 1. Create screens:
    - src/screens/aa/AAOnboardingScreen.tsx
@@ -948,7 +948,7 @@ Build card comparison feature in web-pwa:
 
 5. Responsive design:
    - Desktop: Full table view
-   - Mobile: Swipeable cards or accordion
+   - Mobile/Tablet: Swipeable cards or accordion
 
 Use react-to-pdf for PDF export.
 ```
@@ -1077,9 +1077,9 @@ For MVP: Calculate due dates, show reminders. Push notifications can be added in
 ```
 Implement comprehensive error handling across the app:
 
-1. Global error boundary in mobile app
+1. Global error boundary in web app
 2. Retry logic for failed API calls
-3. Offline mode handling:
+3. Offline mode handling (PWA):
    - Queue failed requests
    - Retry when back online
    - Show offline indicator
@@ -1130,9 +1130,9 @@ Create smooth onboarding experience:
 ```
 Optimize app performance:
 
-1. Mobile app:
-   - Implement lazy loading for screens
-   - Image optimization
+1. Web PWA:
+   - Implement lazy loading for pages/components
+   - Image optimization (Next.js Image)
    - Reduce bundle size (code splitting)
    - Optimize re-renders (React.memo, useMemo)
    - Profile with Flipper
@@ -1168,7 +1168,7 @@ Setup analytics and monitoring:
    - Goal created
 
 2. Use PostHog or Mixpanel:
-   - Install SDK in mobile app
+   - Install SDK in web app
    - Track key user actions
    - Setup funnels (signup → add card → first recommendation)
    - Track retention cohorts
@@ -1190,9 +1190,9 @@ Setup analytics and monitoring:
 ```
 Final security review and hardening:
 
-1. Mobile app:
-   - Implement certificate pinning
-   - Encrypt sensitive data at rest
+1. Web PWA:
+   - Implement HTTPS everywhere
+   - Encrypt sensitive data at rest (IndexedDB)
    - Secure WebView configurations
    - Remove console.logs in production
 

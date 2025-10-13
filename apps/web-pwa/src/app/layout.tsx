@@ -1,14 +1,19 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import React from 'react';
 import { Inter } from 'next/font/google';
-import { SWRConfig } from 'swr';
 import './globals.css';
 import { Providers } from '@/components/providers/Providers';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { swrConfig } from '@/lib/swr';
+import { SWRProvider } from '@/components/providers/SWRProvider';
 
 const inter = Inter({ subsets: ['latin'] });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#3b82f6',
+};
 
 export const metadata: Metadata = {
   title: 'FinMatter - Smart Credit Card Management',
@@ -21,8 +26,6 @@ export const metadata: Metadata = {
     'rewards optimization',
   ],
   authors: [{ name: 'FinMatter Team' }],
-  viewport: 'width=device-width, initial-scale=1',
-  themeColor: '#3b82f6',
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.ico',
@@ -59,11 +62,11 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ErrorBoundary>
-          <SWRConfig value={swrConfig}>
+          <SWRProvider>
             <Providers>
               <AuthProvider>{children}</AuthProvider>
             </Providers>
-          </SWRConfig>
+          </SWRProvider>
         </ErrorBoundary>
       </body>
     </html>

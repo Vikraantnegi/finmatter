@@ -8,12 +8,13 @@ import { CardVisual } from '@/components/cards/CardVisual';
 import { Modal } from '@/components/ui/Modal';
 import { useCardStore } from '@/stores/cardStore';
 import { cardSearchService } from '@finmatter/cc-engine';
+import { cardService } from '@/services/cardService';
+import type { CardBenefitResponse, CardMetadataResponse } from '@finmatter/types';
 import { Card } from '@finmatter/types';
 import {
   ArrowLeft,
   Edit,
   Trash2,
-  Plus,
   Gift,
   TrendingUp,
   Calendar,
@@ -30,6 +31,9 @@ export default function CardDetailPage() {
   const [card, setCard] = useState<Card | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [benefits, setBenefits] = useState<CardBenefitResponse[]>([]);
+  const [benefitsLoading, setBenefitsLoading] = useState(false);
+  const [cardMetadata, setCardMetadata] = useState<CardMetadataResponse | null>(null);
 
   // Fetch card details
   useEffect(() => {
@@ -40,6 +44,56 @@ export default function CardDetailPage() {
       setCard(foundCard || null);
     }
   }, [cardId, cards, fetchCards]);
+
+  // Fetch benefits from database
+  useEffect(() => {
+    const fetchBenefits = async () => {
+      if (!card) return;
+
+      setBenefitsLoading(true);
+      try {
+        // Fetch benefits and metadata from database API
+        const { benefits: dbBenefits, metadata } = await cardService.getCardBenefitsWithMetadata(card.id);
+        
+        if (dbBenefits.length > 0) {
+          setBenefits(dbBenefits);
+          setCardMetadata(metadata || null);
+        } else {
+          // Fallback to CC Engine if no database benefits found
+          const metadata = card.cardMetadataId
+            ? cardSearchService.getCardById(card.cardMetadataId)
+            : null;
+
+          if (metadata?.benefits) {
+            const transformedBenefits = metadata.benefits.map(
+              (benefit, index) => ({
+                id: `benefit-${index}`,
+                description: benefit,
+                category: 'general',
+                value: benefit.split(' - ')[0] || benefit,
+                rewardRate: 0,
+                rewardType: 'none',
+                rewardCap: null,
+                capPeriod: null,
+                conditions: [],
+                isActive: true,
+              }),
+            );
+            setBenefits(transformedBenefits);
+          } else {
+            setBenefits([]);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching benefits:', error);
+        setBenefits([]);
+      } finally {
+        setBenefitsLoading(false);
+      }
+    };
+
+    fetchBenefits();
+  }, [card]);
 
   // Get card metadata
   const metadata = card?.cardMetadataId
@@ -63,14 +117,6 @@ export default function CardDetailPage() {
       setDeleting(false);
       setShowDeleteModal(false);
     }
-  };
-
-  const handleAddBenefit = () => {
-    router.push(`/cards/${cardId}/benefits/add`);
-  };
-
-  const handleEditBenefit = (benefitId: string) => {
-    router.push(`/cards/${cardId}/benefits/${benefitId}/edit`);
   };
 
   if (loading || !card) {
@@ -206,6 +252,67 @@ export default function CardDetailPage() {
           </div>
         </div>
 
+        {/* Card Metadata Information */}
+        {cardMetadata && (
+          <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
+            <h2 className='text-lg font-semibold text-gray-900 mb-4'>Card Details</h2>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-500'>Card Type</label>
+                <p className='text-gray-900 capitalize'>{cardMetadata.cardType}</p>
+              </div>
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-500'>Network</label>
+                <p className='text-gray-900 capitalize'>{cardMetadata.network}</p>
+              </div>
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-500'>Reward Type</label>
+                <p className='text-gray-900 capitalize'>{cardMetadata.rewardType}</p>
+              </div>
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-500'>Annual Fee</label>
+                <p className='text-gray-900'>₹{cardMetadata.annualFee.toLocaleString()}</p>
+              </div>
+              {cardMetadata.primaryColor && (
+                <div className='space-y-2'>
+                  <label className='text-sm font-medium text-gray-500'>Card Colors</label>
+                  <div className='flex items-center space-x-2'>
+                    <div 
+                      className='w-6 h-6 rounded border border-gray-300'
+                      style={{ backgroundColor: cardMetadata.primaryColor }}
+                    />
+                    {cardMetadata.secondaryColor && (
+                      <div 
+                        className='w-6 h-6 rounded border border-gray-300'
+                        style={{ backgroundColor: cardMetadata.secondaryColor }}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+              {cardMetadata.description && (
+                <div className='space-y-2 md:col-span-2 lg:col-span-3'>
+                  <label className='text-sm font-medium text-gray-500'>Description</label>
+                  <p className='text-gray-900'>{cardMetadata.description}</p>
+                </div>
+              )}
+              {cardMetadata.rewardRules && Object.keys(cardMetadata.rewardRules).length > 0 && (
+                <div className='space-y-2 md:col-span-2 lg:col-span-3'>
+                  <label className='text-sm font-medium text-gray-500'>Reward Rules</label>
+                  <div className='space-y-2'>
+                    {Object.entries(cardMetadata.rewardRules).map(([key, value]) => (
+                      <div key={key} className='flex justify-between text-sm'>
+                        <span className='text-gray-600 capitalize'>{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                        <span className='text-gray-900'>{String(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Reward Structure (from metadata) */}
         {metadata &&
           metadata.rewardRules &&
@@ -288,53 +395,74 @@ export default function CardDetailPage() {
         <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
           <div className='flex items-center justify-between mb-4'>
             <h2 className='text-lg font-semibold text-gray-900'>
-              Custom Benefits
+              Card Benefits
             </h2>
-            <Button
-              size='sm'
-              onClick={handleAddBenefit}
-              className='flex items-center space-x-2'
-            >
-              <Plus className='w-4 h-4' />
-              <span>Add Benefit</span>
-            </Button>
+            <div className='flex items-center space-x-2'>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={() =>
+                  toast.info('Statement upload feature coming soon!')
+                }
+                className='flex items-center space-x-2'
+              >
+                <CreditCardIcon className='w-4 h-4' />
+                <span>Upload Statement</span>
+              </Button>
+            </div>
           </div>
 
-          {card.benefits && card.benefits.length > 0 ? (
+          {benefitsLoading ? (
+            <div className='text-center py-8'>
+              <LoadingSpinner size='md' />
+              <p className='text-gray-500 mt-2'>Loading benefits...</p>
+            </div>
+          ) : benefits && benefits.length > 0 ? (
             <div className='space-y-3'>
-              {card.benefits.map(benefit => (
+              {benefits.map((benefit, index) => (
                 <div
-                  key={benefit.id}
-                  className='flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors'
+                  key={benefit.id || index}
+                  className='flex items-start p-4 border border-gray-200 rounded-lg bg-gray-50'
                 >
+                  <Gift className='w-5 h-5 text-primary-500 mt-0.5 mr-3 flex-shrink-0' />
                   <div className='flex-1'>
-                    <div className='font-medium text-gray-900 capitalize'>
-                      {benefit.category}
-                    </div>
-                    <div className='text-sm text-gray-600 mt-1'>
+                    <div className='text-sm text-gray-900'>
                       {benefit.description}
                     </div>
-                    {benefit.value && (
-                      <div className='text-sm text-primary-600 mt-1 font-medium'>
-                        {benefit.value}
+                    <div className='flex items-center gap-2 mt-1'>
+                      {benefit.rewardRate > 0 && (
+                        <span className='text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full'>
+                          {benefit.rewardRate}% {benefit.rewardType}
+                        </span>
+                      )}
+                      {benefit.rewardCap && (
+                        <span className='text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full'>
+                          Up to ₹{benefit.rewardCap.toLocaleString()}
+                          {benefit.capPeriod && `/${benefit.capPeriod}`}
+                        </span>
+                      )}
+                      {benefit.value &&
+                        benefit.value !== benefit.description && (
+                          <span className='text-xs text-primary-600 font-medium'>
+                            {benefit.value}
+                          </span>
+                        )}
+                    </div>
+                    {benefit.conditions.length > 0 && (
+                      <div className='text-xs text-gray-500 mt-1'>
+                        {benefit.conditions.join(', ')}
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleEditBenefit(benefit.id)}
-                    className='ml-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors'
-                  >
-                    <Edit className='w-4 h-4' />
-                  </button>
                 </div>
               ))}
             </div>
           ) : (
             <div className='text-center py-8 text-gray-500'>
               <Gift className='w-12 h-12 mx-auto mb-3 text-gray-300' />
-              <p>No custom benefits added yet</p>
+              <p>No benefits available</p>
               <p className='text-sm mt-1'>
-                Add benefits to track special offers and perks
+                Benefits are automatically loaded from card database
               </p>
             </div>
           )}

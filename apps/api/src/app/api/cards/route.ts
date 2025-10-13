@@ -14,6 +14,16 @@ import { dbCardsToApiCards, dbCardToApiCard } from '@/lib/dataTransform';
 import { sanitizeCardName, sanitizeLastFourDigits, sanitizeCreditAmount } from '@/lib/sanitize';
 import { withRateLimit, CARD_CREATE_LIMIT } from '@/lib/rateLimit';
 
+// Helper function to parse MM/YY format to proper date
+function parseMMYYToDate(mmYyString: string): Date {
+  const [month, year] = mmYyString.split('/');
+  const monthNum = parseInt(month, 10) - 1; // JavaScript months are 0-indexed
+  const yearNum = parseInt(`20${year}`, 10); // Convert YY to 20YY
+  
+  // Return the last day of the month
+  return new Date(yearNum, monthNum + 1, 0);
+}
+
 // Request validation schemas
 const CreateCardSchema = z.object({
   bankName: z.string().min(1, 'Bank name is required').max(100),
@@ -299,7 +309,7 @@ export async function POST(request: NextRequest) {
       status: 'active' as const,
       issue_date: cardData.issueDate ? new Date(cardData.issueDate) : undefined,
       expiry_date: cardData.expiryDate
-        ? new Date(cardData.expiryDate)
+        ? parseMMYYToDate(cardData.expiryDate)
         : undefined,
       credit_limit: cardData.creditLimit ? sanitizeCreditAmount(cardData.creditLimit) : undefined,
       available_credit: cardData.availableCredit ? sanitizeCreditAmount(cardData.availableCredit) : undefined,

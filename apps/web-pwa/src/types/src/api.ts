@@ -134,7 +134,19 @@ export type CreateCardRequest = {
   network: string;
   rewardType: string;
   annualFee: number;
-  benefits: Array<{
+  currency?: string;
+  expiryDate?: string; // MM/YY format
+  // Optional fields that will be populated from statements later
+  creditLimit?: number;
+  availableCredit?: number;
+  billingDay?: number;
+  // Metadata fields (optional)
+  cardMetadataId?: string;
+  bankId?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  isCustom?: boolean;
+  benefits?: Array<{
     category: string;
     rewardRate: number;
     rewardType: string;
@@ -330,7 +342,7 @@ export type BatchOptimizerResponse = ApiResponse<{
 export type AIChatRequest = {
   message: string;
   conversationId?: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 };
 
 export type AIChatResponse = ApiResponse<{

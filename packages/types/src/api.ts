@@ -134,24 +134,36 @@ export type DeleteCardResponse = ApiResponse<{
 // CARD BENEFITS API RESPONSES
 // ============================================
 
-export type GetBenefitsResponse = ApiResponse<{ 
-  benefits: CardBenefit[];
-}>;
+export type CardBenefitResponse = {
+  id: string;
+  category: string;
+  description: string;
+  value: string;
+  rewardRate: number;
+  rewardType: string;
+  rewardCap?: number | null;
+  capPeriod?: string | null;
+  conditions: string[];
+  isActive: boolean;
+};
 
-export type GetBenefitResponse = ApiResponse<{ 
-  benefit: CardBenefit;
-}>;
+export type CardMetadataResponse = {
+  cardType: string;
+  network: string;
+  rewardType: string;
+  annualFee: number;
+  primaryColor?: string;
+  secondaryColor?: string;
+  description?: string;
+  rewardRules?: Record<string, any>;
+};
 
-export type CreateBenefitResponse = ApiResponse<{ 
-  benefit: CardBenefit;
-}>;
-
-export type UpdateBenefitResponse = ApiResponse<{ 
-  benefit: CardBenefit;
-}>;
-
-export type DeleteBenefitResponse = ApiResponse<{ 
-  message: string;
+export type GetCardBenefitsResponse = ApiResponse<{
+  cardId: string;
+  cardName: string;
+  bankName: string;
+  benefits: CardBenefitResponse[];
+  metadata?: CardMetadataResponse;
 }>;
 
 // ============================================

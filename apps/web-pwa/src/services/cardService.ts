@@ -1,14 +1,13 @@
 import { apiClient } from '@/lib/apiClient';
 import type {
   Card,
-  CardBenefit,
   GetCardsResponse,
   GetCardResponse,
   CreateCardResponse,
   UpdateCardResponse,
   DeleteCardResponse,
-  GetBenefitsResponse,
-  CreateBenefitResponse,
+  CardBenefitResponse,
+  GetCardBenefitsResponse,
 } from '@finmatter/types';
 
 export class CardService {
@@ -86,9 +85,9 @@ export class CardService {
     }
   }
 
-  async getCardBenefits(cardId: string): Promise<CardBenefit[]> {
+  async getCardBenefits(cardId: string): Promise<CardBenefitResponse[]> {
     try {
-      const response = await apiClient.get<GetBenefitsResponse>(
+      const response = await apiClient.get<GetCardBenefitsResponse>(
         `/api/cards/${cardId}/benefits`,
       );
       if (response.success && response.data?.benefits) {
@@ -101,21 +100,27 @@ export class CardService {
     }
   }
 
-  async addCardBenefit(cardId: string, benefit: any): Promise<CardBenefit> {
+  async getCardBenefitsWithMetadata(cardId: string): Promise<{
+    benefits: CardBenefitResponse[];
+    metadata?: CardMetadataResponse;
+  }> {
     try {
-      const response = await apiClient.post<CreateBenefitResponse>(
+      const response = await apiClient.get<GetCardBenefitsResponse>(
         `/api/cards/${cardId}/benefits`,
-        benefit,
       );
-      if (response.success && response.data?.benefit) {
-        return response.data.benefit;
+      if (response.success && response.data) {
+        return {
+          benefits: response.data.benefits || [],
+          metadata: response.data.metadata,
+        };
       }
-      throw new Error(response.error?.message || 'Failed to add benefit');
+      return { benefits: [] };
     } catch (error) {
-      console.error('Add benefit error:', error);
-      throw error;
+      console.error('Get card benefits with metadata error:', error);
+      return { benefits: [] };
     }
   }
+
 }
 
 export const cardService = new CardService();

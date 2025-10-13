@@ -97,6 +97,17 @@ export type CreateCardRequest = {
   rewardType: RewardType;
   annualFee: number;
   currency?: Currency;
+  expiryDate?: string;
+  // Optional fields that will be populated from statements later
+  creditLimit?: number;
+  availableCredit?: number;
+  billingDay?: number;
+  // Metadata fields (optional)
+  cardMetadataId?: string;
+  bankId?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  isCustom?: boolean;
   benefits?: Partial<CardBenefit>[];
 };
 

@@ -12,6 +12,20 @@ import toast from 'react-hot-toast';
 
 type SelectionStep = 'bank' | 'card' | 'form';
 
+interface FormData {
+  cardHolderName: string;
+  lastFourDigits: string;
+  expiryDate: string;
+  bankName: string;
+}
+
+interface FormErrors {
+  cardHolderName?: string;
+  lastFourDigits?: string;
+  expiryDate?: string;
+  submit?: string;
+}
+
 export default function AddCardPage() {
   const router = useRouter();
 
@@ -24,18 +38,15 @@ export default function AddCardPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Form data
-  const [formData, setFormData] = useState({
-    cardName: '',
+  const [formData, setFormData] = useState<FormData>({
+    cardHolderName: '',
     lastFourDigits: '',
-    creditLimit: '',
-    availableCredit: '',
-    billingDay: '',
     expiryDate: '',
     bankName: '',
   });
 
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   // Get banks
   const banks = cardSearchService.getAllBanks();
@@ -69,7 +80,7 @@ export default function AddCardPage() {
     setSelectedCard(card);
     setFormData(prev => ({
       ...prev,
-      cardName: card.cardName,
+      cardHolderName: '', // Reset to empty for user input
       bankName: selectedBank?.name || '',
     }));
     setStep('form');
@@ -84,25 +95,25 @@ export default function AddCardPage() {
     setStep('form');
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
     // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev: any) => ({
+    if (errors[field as keyof FormErrors]) {
+      setErrors((prev: FormErrors) => ({
         ...prev,
-        [field]: '',
+        [field as keyof FormErrors]: undefined,
       }));
     }
   };
 
   const validateForm = () => {
-    const newErrors: any = {};
+    const newErrors: FormErrors = {};
 
-    if (!formData.cardName.trim()) {
-      newErrors.cardName = 'Card name is required';
+    if (!formData.cardHolderName.trim()) {
+      newErrors.cardHolderName = 'Card holder name is required';
     }
 
     if (!formData.lastFourDigits.trim()) {
@@ -111,31 +122,9 @@ export default function AddCardPage() {
       newErrors.lastFourDigits = 'Must be exactly 4 digits';
     }
 
-    if (!formData.creditLimit.trim()) {
-      newErrors.creditLimit = 'Credit limit is required';
-    } else if (
-      isNaN(Number(formData.creditLimit)) ||
-      Number(formData.creditLimit) <= 0
-    ) {
-      newErrors.creditLimit = 'Must be a valid positive number';
-    }
-
-    if (!formData.availableCredit.trim()) {
-      newErrors.availableCredit = 'Available credit is required';
-    } else if (
-      isNaN(Number(formData.availableCredit)) ||
-      Number(formData.availableCredit) < 0
-    ) {
-      newErrors.availableCredit = 'Must be a valid non-negative number';
-    }
-
-    if (
-      formData.billingDay &&
-      (isNaN(Number(formData.billingDay)) ||
-        Number(formData.billingDay) < 1 ||
-        Number(formData.billingDay) > 31)
-    ) {
-      newErrors.billingDay = 'Must be a valid day (1-31)';
+    // Validate expiry date format (MM/YY)
+    if (formData.expiryDate && !/^\d{2}\/\d{2}$/.test(formData.expiryDate)) {
+      newErrors.expiryDate = 'Must be in MM/YY format';
     }
 
     setErrors(newErrors);
@@ -149,7 +138,7 @@ export default function AddCardPage() {
     try {
       // Create card object with proper type mapping
       const newCardData = {
-        cardName: formData.cardName,
+        cardName: formData.cardHolderName, // Map cardHolderName to cardName for API
         lastFourDigits: formData.lastFourDigits,
         cardType: 'credit' as const,
         network: (selectedCard?.network || 'visa') as
@@ -166,9 +155,16 @@ export default function AddCardPage() {
         bankName: formData.bankName,
         annualFee: selectedCard?.annualFee || 0,
         currency: 'INR',
-        creditLimit: Number(formData.creditLimit),
-        availableCredit: Number(formData.availableCredit),
+        // These will be fetched from statements, so set default values
+        creditLimit: 0,
+        availableCredit: 0,
         expiryDate: formData.expiryDate || undefined,
+        // Include metadata from selected card
+        cardMetadataId: selectedCard?.id,
+        bankId: selectedCard?.bankId,
+        primaryColor: selectedCard?.primaryColor,
+        secondaryColor: selectedCard?.secondaryColor,
+        isCustom: !selectedCard, // Custom if no card selected
       };
 
       // Call API to create card
@@ -195,11 +191,13 @@ export default function AddCardPage() {
         // Validation errors - map to form fields
         const details = errorData.details;
         if (Array.isArray(details)) {
-          const fieldErrors: any = {};
-          details.forEach((err: any) => {
+          const fieldErrors: FormErrors = {};
+          details.forEach((err: { path?: string[]; message?: string }) => {
             if (err.path && err.path.length > 0) {
-              const fieldName = err.path[0];
-              fieldErrors[fieldName] = err.message;
+              const fieldName = err.path[0] as keyof FormErrors;
+              if (fieldName in fieldErrors || fieldName === 'submit') {
+                (fieldErrors as any)[fieldName] = err.message;
+              }
             }
           });
           setErrors(fieldErrors);
@@ -371,19 +369,19 @@ export default function AddCardPage() {
       <div className='space-y-4'>
         <div>
           <label className='block text-sm font-medium text-gray-700 mb-1'>
-            Card Name *
+            Card Holder Name *
           </label>
           <input
             type='text'
-            value={formData.cardName}
-            onChange={e => handleInputChange('cardName', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-              errors.cardName ? 'border-red-300' : 'border-gray-300'
+            value={formData.cardHolderName}
+            onChange={e => handleInputChange('cardHolderName', e.target.value)}
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 ${
+              errors.cardHolderName ? 'border-red-300' : 'border-gray-300'
             }`}
-            placeholder='e.g., HDFC Millennia Credit Card'
+            placeholder='e.g., John Doe'
           />
-          {errors.cardName && (
-            <p className='text-red-500 text-sm mt-1'>{errors.cardName}</p>
+          {errors.cardHolderName && (
+            <p className='text-red-500 text-sm mt-1'>{errors.cardHolderName}</p>
           )}
         </div>
 
@@ -400,7 +398,7 @@ export default function AddCardPage() {
                 e.target.value.replace(/\D/g, '').slice(0, 4),
               )
             }
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 ${
               errors.lastFourDigits ? 'border-red-300' : 'border-gray-300'
             }`}
             placeholder='1234'
@@ -410,98 +408,38 @@ export default function AddCardPage() {
           )}
         </div>
 
-        <div className='grid grid-cols-2 gap-4'>
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              Credit Limit *
-            </label>
-            <input
-              type='text'
-              value={formData.creditLimit}
-              onChange={e =>
-                handleInputChange(
-                  'creditLimit',
-                  e.target.value.replace(/\D/g, ''),
-                )
-              }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                errors.creditLimit ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder='100000'
-            />
-            {errors.creditLimit && (
-              <p className='text-red-500 text-sm mt-1'>{errors.creditLimit}</p>
-            )}
-          </div>
-
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              Available Credit *
-            </label>
-            <input
-              type='text'
-              value={formData.availableCredit}
-              onChange={e =>
-                handleInputChange(
-                  'availableCredit',
-                  e.target.value.replace(/\D/g, ''),
-                )
-              }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                errors.availableCredit ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder='75000'
-            />
-            {errors.availableCredit && (
-              <p className='text-red-500 text-sm mt-1'>
-                {errors.availableCredit}
-              </p>
-            )}
-          </div>
+        <div>
+          <label className='block text-sm font-medium text-gray-700 mb-1'>
+            Expiry Date
+          </label>
+          <input
+            type='text'
+            value={formData.expiryDate}
+            onChange={e => {
+              const value = e.target.value.replace(/\D/g, '');
+              const formatted =
+                value.length >= 2
+                  ? `${value.slice(0, 2)}/${value.slice(2, 4)}`
+                  : value;
+              handleInputChange('expiryDate', formatted);
+            }}
+            className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900'
+            placeholder='MM/YY'
+            maxLength={5}
+          />
+          {errors.expiryDate && (
+            <p className='text-red-500 text-sm mt-1'>{errors.expiryDate}</p>
+          )}
         </div>
 
-        <div className='grid grid-cols-2 gap-4'>
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              Billing Day
-              <span className='ml-1 text-xs font-normal text-gray-500'>
-                (Optional)
-              </span>
-            </label>
-            <input
-              type='text'
-              value={formData.billingDay}
-              onChange={e =>
-                handleInputChange(
-                  'billingDay',
-                  e.target.value.replace(/\D/g, '').slice(0, 2),
-                )
-              }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                errors.billingDay ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder='15 (optional)'
-            />
-            <p className='text-xs text-gray-500 mt-1 flex items-center gap-1'>
-              <span>💡</span>
-              <span>We'll fetch this from your statement</span>
-            </p>
-            {errors.billingDay && (
-              <p className='text-red-500 text-sm mt-1'>{errors.billingDay}</p>
-            )}
-          </div>
-
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              Expiry Date
-            </label>
-            <input
-              type='date'
-              value={formData.expiryDate}
-              onChange={e => handleInputChange('expiryDate', e.target.value)}
-              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent'
-            />
-          </div>
+        <div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
+          <p className='text-blue-800 text-sm flex items-center gap-2'>
+            <span>💡</span>
+            <span>
+              Credit limit, available credit, and billing day will be
+              automatically fetched from your statements.
+            </span>
+          </p>
         </div>
 
         {errors.submit && (

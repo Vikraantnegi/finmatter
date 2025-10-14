@@ -18,14 +18,17 @@ interface RateLimitStore {
 const store: RateLimitStore = {};
 
 // Clean up old entries every 5 minutes to prevent memory leaks
-setInterval(() => {
-  const now = Date.now();
-  Object.keys(store).forEach(key => {
-    if (store[key].resetTime < now) {
-      delete store[key];
-    }
-  });
-}, 5 * 60 * 1000);
+setInterval(
+  () => {
+    const now = Date.now();
+    Object.keys(store).forEach(key => {
+      if (store[key].resetTime < now) {
+        delete store[key];
+      }
+    });
+  },
+  5 * 60 * 1000,
+);
 
 export interface RateLimitOptions {
   windowMs: number; // Time window in milliseconds
@@ -88,9 +91,7 @@ export function checkRateLimit(
 /**
  * Get user ID from request (for authenticated rate limiting)
  */
-async function getUserIdFromRequest(
-  req: NextRequest,
-): Promise<string | null> {
+async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -244,4 +245,3 @@ export const UPLOAD_LIMIT: RateLimitOptions = {
   message: 'Upload limit reached. Please try again later.',
   keyPrefix: 'upload',
 };
-

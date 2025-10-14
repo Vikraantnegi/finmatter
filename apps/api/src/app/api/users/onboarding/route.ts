@@ -75,7 +75,10 @@ export async function PUT(request: NextRequest) {
               : 'Unknown parsing error',
         },
       );
-      return createCorsResponse(errorResponse, { status: 400, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: 400,
+        origin: origin || undefined,
+      });
     }
 
     const validation = CompleteOnboardingSchema.safeParse(body);
@@ -85,7 +88,10 @@ export async function PUT(request: NextRequest) {
         'Invalid request data',
         validation.error.errors,
       );
-      return createCorsResponse(errorResponse, { status: 400, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: 400,
+        origin: origin || undefined,
+      });
     }
 
     const { firstName, lastName, notificationsEnabled } = validation.data;
@@ -120,28 +126,34 @@ export async function PUT(request: NextRequest) {
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: appError.statusCode,
+        origin: origin || undefined,
+      });
     }
 
     // If already onboarded, return success with current data (idempotent)
     if (currentUser?.onboarding_completed) {
-      return createCorsResponse({
-        success: true,
-        message: 'Onboarding already completed',
-        data: {
-          user: {
-            id: userId,
-            phoneNumber: currentUser.phone_number,
-            firstName: currentUser.profile_data?.firstName || '',
-            lastName: currentUser.profile_data?.lastName || '',
-            onboardingCompleted: true,
-            isVerified: currentUser.is_verified,
-            biometricEnabled: currentUser.biometric_enabled,
-            createdAt: currentUser.created_at,
-            updatedAt: currentUser.updated_at,
+      return createCorsResponse(
+        {
+          success: true,
+          message: 'Onboarding already completed',
+          data: {
+            user: {
+              id: userId,
+              phoneNumber: currentUser.phone_number,
+              firstName: currentUser.profile_data?.firstName || '',
+              lastName: currentUser.profile_data?.lastName || '',
+              onboardingCompleted: true,
+              isVerified: currentUser.is_verified,
+              biometricEnabled: currentUser.biometric_enabled,
+              createdAt: currentUser.created_at,
+              updatedAt: currentUser.updated_at,
+            },
           },
         },
-      }, { origin: origin || undefined });
+        { origin: origin || undefined },
+      );
     }
 
     // Update user record (first time onboarding)
@@ -183,25 +195,31 @@ export async function PUT(request: NextRequest) {
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: appError.statusCode,
+        origin: origin || undefined,
+      });
     }
 
-    return createCorsResponse({
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          phoneNumber: user.phone_number,
-          firstName: user.profile_data?.firstName || '',
-          lastName: user.profile_data?.lastName || '',
-          onboardingCompleted: user.onboarding_completed,
-          isVerified: user.is_verified,
-          biometricEnabled: user.biometric_enabled,
-          createdAt: user.created_at,
-          updatedAt: user.updated_at,
+    return createCorsResponse(
+      {
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            phoneNumber: user.phone_number,
+            firstName: user.profile_data?.firstName || '',
+            lastName: user.profile_data?.lastName || '',
+            onboardingCompleted: user.onboarding_completed,
+            isVerified: user.is_verified,
+            biometricEnabled: user.biometric_enabled,
+            createdAt: user.created_at,
+            updatedAt: user.updated_at,
+          },
         },
       },
-    }, { origin: origin || undefined });
+      { origin: origin || undefined },
+    );
   } catch (error) {
     // Handle specific error types
     if (error instanceof Error) {
@@ -212,7 +230,10 @@ export async function PUT(request: NextRequest) {
           { message: 'Please login to continue' },
           { statusCode: 401 },
         );
-        return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
+        return createCorsResponse(errorResponse, {
+          status: 401,
+          origin: origin || undefined,
+        });
       }
 
       if (error.message === 'Invalid token') {
@@ -222,7 +243,10 @@ export async function PUT(request: NextRequest) {
           { message: 'Please login again' },
           { statusCode: 401 },
         );
-        return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
+        return createCorsResponse(errorResponse, {
+          status: 401,
+          origin: origin || undefined,
+        });
       }
     }
 
@@ -241,6 +265,9 @@ export async function PUT(request: NextRequest) {
       { retryable: true },
     );
 
-    return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
+    return createCorsResponse(errorResponse, {
+      status: 500,
+      origin: origin || undefined,
+    });
   }
 }

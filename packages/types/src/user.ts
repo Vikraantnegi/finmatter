@@ -143,6 +143,14 @@ export type UserProfile = Pick<
   | 'lastLogin'
 >;
 
+// Extended user type for API responses that include onboarding status
+export type UserWithOnboarding = User & {
+  onboardingCompleted?: boolean;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+};
+
 export type CreateUserRequest = {
   phoneNumber: string;
   profileData?: Partial<UserProfileData>;

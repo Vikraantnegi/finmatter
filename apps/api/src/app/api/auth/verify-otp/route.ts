@@ -70,7 +70,10 @@ export async function POST(request: NextRequest) {
         'Invalid request data',
         validation.error.errors,
       );
-      return createCorsResponse(errorResponse, { status: 400, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: 400,
+        origin: origin || undefined,
+      });
     }
 
     const { phoneNumber, otp } = validation.data;
@@ -103,7 +106,10 @@ export async function POST(request: NextRequest) {
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: appError.statusCode,
+        origin: origin || undefined,
+      });
     }
 
     if (!data.user || !data.session) {
@@ -113,7 +119,10 @@ export async function POST(request: NextRequest) {
         { userId: data.user?.id },
         { retryable: true },
       );
-      return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: 500,
+        origin: origin || undefined,
+      });
     }
 
     // Get or create user in our custom users table
@@ -139,7 +148,10 @@ export async function POST(request: NextRequest) {
         { originalError: userError.message },
         { retryable: true },
       );
-      return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: 500,
+        origin: origin || undefined,
+      });
     }
 
     if (existingUser) {
@@ -196,32 +208,38 @@ export async function POST(request: NextRequest) {
           { originalError: createError.message },
           { retryable: true },
         );
-        return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
+        return createCorsResponse(errorResponse, {
+          status: 500,
+          origin: origin || undefined,
+        });
       }
 
       userRecord = newUser;
     }
 
     // Return success response with user and session, and set auth cookies
-    const response = createCorsResponse({
-      success: true,
-      data: {
-        user: {
-          id: userRecord.id,
-          phoneNumber: userRecord.phone_number,
-          isVerified: userRecord.is_verified,
-          biometricEnabled: userRecord.biometric_enabled,
-          createdAt: userRecord.created_at,
-          lastLogin: userRecord.last_login,
-          onboardingCompleted: userRecord.onboarding_completed || false,
-        },
-        session: {
-          token: data.session.access_token,
-          refreshToken: data.session.refresh_token,
-          expiresAt: new Date(data.session.expires_at! * 1000).toISOString(),
+    const response = createCorsResponse(
+      {
+        success: true,
+        data: {
+          user: {
+            id: userRecord.id,
+            phoneNumber: userRecord.phone_number,
+            isVerified: userRecord.is_verified,
+            biometricEnabled: userRecord.biometric_enabled,
+            createdAt: userRecord.created_at,
+            lastLogin: userRecord.last_login,
+            onboardingCompleted: userRecord.onboarding_completed || false,
+          },
+          session: {
+            token: data.session.access_token,
+            refreshToken: data.session.refresh_token,
+            expiresAt: new Date(data.session.expires_at! * 1000).toISOString(),
+          },
         },
       },
-    }, { origin: origin || undefined });
+      { origin: origin || undefined },
+    );
 
     // Set authentication cookies with proper security
     const accessTokenOptions = {
@@ -264,6 +282,9 @@ export async function POST(request: NextRequest) {
       { retryable: true },
     );
 
-    return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
+    return createCorsResponse(errorResponse, {
+      status: 500,
+      origin: origin || undefined,
+    });
   }
 }

@@ -84,7 +84,7 @@ export function EmptyState({
         <div className='mt-8 max-w-md w-full'>
           <div className='bg-blue-50 border border-blue-200 rounded-lg p-4'>
             <p className='text-sm font-semibold text-blue-900 mb-3'>
-              What you'll get:
+              What you&apos;ll get:
             </p>
             <ul className='text-sm text-blue-800 space-y-2 text-left'>
               <li className='flex items-start gap-2'>

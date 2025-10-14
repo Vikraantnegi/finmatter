@@ -73,8 +73,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
             {/* Description */}
             <p className='text-gray-600 mb-6 text-center'>
-              Don't worry, your data is safe. Try refreshing the page or go back
-              to the dashboard.
+              Don&apos;t worry, your data is safe. Try refreshing the page or go
+              back to the dashboard.
             </p>
 
             {/* Error details in development */}
@@ -133,7 +133,7 @@ export class ErrorBoundary extends Component<Props, State> {
 export function CardErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary
-      onError={(error, errorInfo) => {
+      onError={error => {
         console.error('[Card Section Error]:', error);
         // TODO: Log to analytics or error tracking
       }}
@@ -149,7 +149,7 @@ export function CardErrorBoundary({ children }: { children: ReactNode }) {
 export function DashboardErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary
-      onError={(error, errorInfo) => {
+      onError={error => {
         console.error('[Dashboard Error]:', error);
       }}
     >

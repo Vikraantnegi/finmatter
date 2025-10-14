@@ -48,7 +48,7 @@ export const BANK_COLORS: Record<
     primary: '#004C8F',
     secondary: '#003366',
   },
-  'sbi': {
+  sbi: {
     primary: '#1C4A93',
     secondary: '#0F2D5C',
   },
@@ -100,11 +100,11 @@ export const BANK_COLORS: Record<
     primary: '#0F6CB6',
     secondary: '#0B5089',
   },
-  'hsbc': {
+  hsbc: {
     primary: '#DB0011',
     secondary: '#A5000D',
   },
-  'citibank': {
+  citibank: {
     primary: '#003D7A',
     secondary: '#002C5A',
   },
@@ -226,4 +226,3 @@ export function getCardStatusInfo(card: {
   // Active - no badge needed
   return null;
 }
-

@@ -3,14 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CardVisual } from '@/components/cards/CardVisual';
 import { FilterModal } from '@/components/cards/FilterModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { UtilizationAlert } from '@/components/cards/UtilizationAlert';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useCardStore } from '@/stores/cardStore';
-// import { Card } from '@finmatter/types';
 import { Plus, Filter, Search } from 'lucide-react';
 
 type SortBy = 'name' | 'limit' | 'utilization';

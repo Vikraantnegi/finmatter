@@ -1,6 +1,13 @@
 /**
  * Card Benefits API Endpoint
  * GET /api/cards/[id]/benefits - Get benefits for a specific card
+ *
+ * This endpoint fetches complete card information from cards_metadata table:
+ * - Structured benefits with rates, caps, conditions
+ * - Card metadata (colors, rules, descriptions, annual fee)
+ * - Single source of truth for card information
+ *
+ * The card_benefits table is preserved for future analytics and recommendations
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -27,7 +34,10 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
   }
 
   const token = authHeader.split(' ')[1];
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  const {
+    data: { user },
+    error,
+  } = await supabaseAdmin.auth.getUser(token);
 
   if (error || !user) {
     throw new FinMatterError('Invalid token', 'INVALID_TOKEN', 401);
@@ -42,7 +52,7 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const origin = request.headers.get('origin');
 
@@ -68,7 +78,7 @@ export async function GET(
             message: 'Card not found or access denied',
           },
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -91,24 +101,26 @@ export async function GET(
               message: 'Failed to fetch card metadata',
             },
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
       // Extract benefits from JSON and transform to API format
       const benefits = cardMetadata?.benefits || [];
-      const transformedBenefits = benefits.map((benefit: any, index: number) => ({
-        id: `${cardMetadata.id}-benefit-${index}`,
-        category: benefit.category,
-        description: benefit.description,
-        value: benefit.value,
-        rewardRate: benefit.rewardRate,
-        rewardType: benefit.rewardType,
-        rewardCap: benefit.rewardCap,
-        capPeriod: benefit.capPeriod,
-        conditions: benefit.conditions || [],
-        isActive: true,
-      }));
+      const transformedBenefits = benefits.map(
+        (benefit: any, index: number) => ({
+          id: `${cardMetadata.id}-benefit-${index}`,
+          category: benefit.category,
+          description: benefit.description,
+          value: benefit.value,
+          rewardRate: benefit.rewardRate,
+          rewardType: benefit.rewardType,
+          rewardCap: benefit.rewardCap,
+          capPeriod: benefit.capPeriod,
+          conditions: benefit.conditions || [],
+          isActive: true,
+        }),
+      );
 
       return NextResponse.json(
         {
@@ -134,7 +146,7 @@ export async function GET(
         {
           status: 200,
           headers: createCorsResponse(origin || undefined).headers,
-        }
+        },
       );
     }
 
@@ -152,9 +164,8 @@ export async function GET(
       {
         status: 200,
         headers: createCorsResponse(origin || undefined).headers,
-      }
+      },
     );
-
   } catch (error: any) {
     console.error('Get card benefits error:', error);
 
@@ -170,7 +181,7 @@ export async function GET(
         {
           status: error.statusCode,
           headers: createCorsResponse(origin || undefined).headers,
-        }
+        },
       );
     }
 
@@ -185,7 +196,7 @@ export async function GET(
       {
         status: 500,
         headers: createCorsResponse(origin || undefined).headers,
-      }
+      },
     );
   }
 }

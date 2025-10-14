@@ -7,16 +7,17 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CardVisual } from '@/components/cards/CardVisual';
 import { Modal } from '@/components/ui/Modal';
 import { useCardStore } from '@/stores/cardStore';
-import { cardSearchService } from '@finmatter/cc-engine';
 import { cardService } from '@/services/cardService';
-import type { CardBenefitResponse, CardMetadataResponse } from '@finmatter/types';
+import type {
+  CardBenefitResponse,
+  CardMetadataResponse,
+} from '@finmatter/types';
 import { Card } from '@finmatter/types';
 import {
   ArrowLeft,
   Edit,
   Trash2,
   Gift,
-  TrendingUp,
   Calendar,
   CreditCard as CreditCardIcon,
 } from 'lucide-react';
@@ -33,7 +34,9 @@ export default function CardDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [benefits, setBenefits] = useState<CardBenefitResponse[]>([]);
   const [benefitsLoading, setBenefitsLoading] = useState(false);
-  const [cardMetadata, setCardMetadata] = useState<CardMetadataResponse | null>(null);
+  const [cardMetadata, setCardMetadata] = useState<CardMetadataResponse | null>(
+    null,
+  );
 
   // Fetch card details
   useEffect(() => {
@@ -53,36 +56,15 @@ export default function CardDetailPage() {
       setBenefitsLoading(true);
       try {
         // Fetch benefits and metadata from database API
-        const { benefits: dbBenefits, metadata } = await cardService.getCardBenefitsWithMetadata(card.id);
-        
+        const { benefits: dbBenefits, metadata } =
+          await cardService.getCardBenefitsWithMetadata(card.id);
+
         if (dbBenefits.length > 0) {
           setBenefits(dbBenefits);
           setCardMetadata(metadata || null);
         } else {
-          // Fallback to CC Engine if no database benefits found
-          const metadata = card.cardMetadataId
-            ? cardSearchService.getCardById(card.cardMetadataId)
-            : null;
-
-          if (metadata?.benefits) {
-            const transformedBenefits = metadata.benefits.map(
-              (benefit, index) => ({
-                id: `benefit-${index}`,
-                description: benefit,
-                category: 'general',
-                value: benefit.split(' - ')[0] || benefit,
-                rewardRate: 0,
-                rewardType: 'none',
-                rewardCap: null,
-                capPeriod: null,
-                conditions: [],
-                isActive: true,
-              }),
-            );
-            setBenefits(transformedBenefits);
-          } else {
-            setBenefits([]);
-          }
+          // No benefits found in database
+          setBenefits([]);
         }
       } catch (error) {
         console.error('Error fetching benefits:', error);
@@ -94,11 +76,6 @@ export default function CardDetailPage() {
 
     fetchBenefits();
   }, [card]);
-
-  // Get card metadata
-  const metadata = card?.cardMetadataId
-    ? cardSearchService.getCardById(card.cardMetadataId)
-    : null;
 
   const handleEdit = () => {
     router.push(`/cards/${cardId}/edit`);
@@ -255,34 +232,54 @@ export default function CardDetailPage() {
         {/* Card Metadata Information */}
         {cardMetadata && (
           <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
-            <h2 className='text-lg font-semibold text-gray-900 mb-4'>Card Details</h2>
+            <h2 className='text-lg font-semibold text-gray-900 mb-4'>
+              Card Details
+            </h2>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
               <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-500'>Card Type</label>
-                <p className='text-gray-900 capitalize'>{cardMetadata.cardType}</p>
+                <label className='text-sm font-medium text-gray-500'>
+                  Card Type
+                </label>
+                <p className='text-gray-900 capitalize'>
+                  {cardMetadata.cardType}
+                </p>
               </div>
               <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-500'>Network</label>
-                <p className='text-gray-900 capitalize'>{cardMetadata.network}</p>
+                <label className='text-sm font-medium text-gray-500'>
+                  Network
+                </label>
+                <p className='text-gray-900 capitalize'>
+                  {cardMetadata.network}
+                </p>
               </div>
               <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-500'>Reward Type</label>
-                <p className='text-gray-900 capitalize'>{cardMetadata.rewardType}</p>
+                <label className='text-sm font-medium text-gray-500'>
+                  Reward Type
+                </label>
+                <p className='text-gray-900 capitalize'>
+                  {cardMetadata.rewardType}
+                </p>
               </div>
               <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-500'>Annual Fee</label>
-                <p className='text-gray-900'>₹{cardMetadata.annualFee.toLocaleString()}</p>
+                <label className='text-sm font-medium text-gray-500'>
+                  Annual Fee
+                </label>
+                <p className='text-gray-900'>
+                  ₹{cardMetadata.annualFee.toLocaleString()}
+                </p>
               </div>
               {cardMetadata.primaryColor && (
                 <div className='space-y-2'>
-                  <label className='text-sm font-medium text-gray-500'>Card Colors</label>
+                  <label className='text-sm font-medium text-gray-500'>
+                    Card Colors
+                  </label>
                   <div className='flex items-center space-x-2'>
-                    <div 
+                    <div
                       className='w-6 h-6 rounded border border-gray-300'
                       style={{ backgroundColor: cardMetadata.primaryColor }}
                     />
                     {cardMetadata.secondaryColor && (
-                      <div 
+                      <div
                         className='w-6 h-6 rounded border border-gray-300'
                         style={{ backgroundColor: cardMetadata.secondaryColor }}
                       />
@@ -292,101 +289,37 @@ export default function CardDetailPage() {
               )}
               {cardMetadata.description && (
                 <div className='space-y-2 md:col-span-2 lg:col-span-3'>
-                  <label className='text-sm font-medium text-gray-500'>Description</label>
+                  <label className='text-sm font-medium text-gray-500'>
+                    Description
+                  </label>
                   <p className='text-gray-900'>{cardMetadata.description}</p>
                 </div>
               )}
-              {cardMetadata.rewardRules && Object.keys(cardMetadata.rewardRules).length > 0 && (
-                <div className='space-y-2 md:col-span-2 lg:col-span-3'>
-                  <label className='text-sm font-medium text-gray-500'>Reward Rules</label>
-                  <div className='space-y-2'>
-                    {Object.entries(cardMetadata.rewardRules).map(([key, value]) => (
-                      <div key={key} className='flex justify-between text-sm'>
-                        <span className='text-gray-600 capitalize'>{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
-                        <span className='text-gray-900'>{String(value)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Reward Structure (from metadata) */}
-        {metadata &&
-          metadata.rewardRules &&
-          metadata.rewardRules.length > 0 && (
-            <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
-              <h2 className='text-lg font-semibold text-gray-900 mb-4 flex items-center'>
-                <TrendingUp className='w-5 h-5 mr-2 text-primary-500' />
-                Reward Structure
-              </h2>
-              <div className='space-y-3'>
-                {metadata.rewardRules.map((rule, index) => (
-                  <div
-                    key={index}
-                    className='flex items-start space-x-3 p-3 bg-gray-50 rounded-lg'
-                  >
-                    <div className='flex-shrink-0 w-2 h-2 mt-2 bg-primary-500 rounded-full'></div>
-                    <div className='flex-1'>
-                      <div className='font-medium text-gray-900 capitalize'>
-                        {rule.category}
-                      </div>
-                      <div className='text-sm text-gray-600 mt-1'>
-                        {rule.rewardRate}{' '}
-                        {rule.rewardUnit === 'percent'
-                          ? '% cashback'
-                          : rule.rewardUnit === 'points_per_100'
-                            ? 'points per ₹100'
-                            : 'miles per ₹100'}
-                        {rule.cap && ` (cap: ₹${rule.cap.toLocaleString()})`}
-                      </div>
-                      {rule.conditions && rule.conditions.length > 0 && (
-                        <div className='text-xs text-gray-500 mt-1'>
-                          {rule.conditions.join(' • ')}
-                        </div>
+              {cardMetadata.rewardRules &&
+                Object.keys(cardMetadata.rewardRules).length > 0 && (
+                  <div className='space-y-2 md:col-span-2 lg:col-span-3'>
+                    <label className='text-sm font-medium text-gray-500'>
+                      Reward Rules
+                    </label>
+                    <div className='space-y-2'>
+                      {Object.entries(cardMetadata.rewardRules).map(
+                        ([key, value]) => (
+                          <div
+                            key={key}
+                            className='flex justify-between text-sm'
+                          >
+                            <span className='text-gray-600 capitalize'>
+                              {key.replace(/([A-Z])/g, ' $1').trim()}:
+                            </span>
+                            <span className='text-gray-900'>
+                              {String(value)}
+                            </span>
+                          </div>
+                        ),
                       )}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-        {/* Key Benefits (from metadata) */}
-        {metadata && metadata.benefits && metadata.benefits.length > 0 && (
-          <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
-            <h2 className='text-lg font-semibold text-gray-900 mb-4 flex items-center'>
-              <Gift className='w-5 h-5 mr-2 text-primary-500' />
-              Key Benefits
-            </h2>
-            <div className='space-y-2'>
-              {metadata.benefits.map((benefit, index) => (
-                <div key={index} className='flex items-start space-x-3'>
-                  <div className='flex-shrink-0 w-2 h-2 mt-2 bg-green-500 rounded-full'></div>
-                  <div className='text-sm text-gray-700'>{benefit}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Annual Fee Info (from metadata) */}
-        {metadata && (
-          <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
-            <h2 className='text-lg font-semibold text-gray-900 mb-4'>
-              Annual Fee
-            </h2>
-            <div className='space-y-3'>
-              <div className='flex items-center justify-between'>
-                <span className='text-gray-600'>Fee Amount</span>
-                <span className='font-bold text-gray-900'>
-                  {metadata.annualFee === 0
-                    ? 'FREE'
-                    : `₹${metadata.annualFee.toLocaleString()}`}
-                </span>
-              </div>
+                )}
             </div>
           </div>
         )}
@@ -402,7 +335,7 @@ export default function CardDetailPage() {
                 size='sm'
                 variant='outline'
                 onClick={() =>
-                  toast.info('Statement upload feature coming soon!')
+                  toast('Statement upload feature coming soon!', { icon: 'ℹ️' })
                 }
                 className='flex items-center space-x-2'
               >

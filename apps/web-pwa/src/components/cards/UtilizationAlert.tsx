@@ -184,8 +184,8 @@ export function UtilizationAlert({
               Excellent! Utilization: {utilization.toFixed(1)}%
             </h4>
             <p className='text-sm text-green-700'>
-              You're maintaining a healthy credit utilization ratio. This is
-              great for your credit score! 🎉
+              You&apos;re maintaining a healthy credit utilization ratio. This
+              is great for your credit score! 🎉
             </p>
           </div>
         </div>

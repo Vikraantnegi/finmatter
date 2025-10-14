@@ -4,7 +4,6 @@ import { useCallback, useEffect } from 'react';
 import { useCardStore } from '@/stores/cardStore';
 import { cardService } from '@/services/cardService';
 import toast from 'react-hot-toast';
-import { CardBenefit } from '@finmatter/types';
 
 export function useCards() {
   const {
@@ -132,34 +131,6 @@ export function useCards() {
     [setError],
   );
 
-  const addCardBenefit = useCallback(
-    async (cardId: string, benefit: Omit<CardBenefit, 'id'>) => {
-      try {
-        setLoading(true);
-        const newBenefit = await cardService.addCardBenefit(cardId, benefit);
-
-        // Update the card in the store with the new benefit
-        const card = cards.find(c => c.id === cardId);
-        if (card) {
-          const updatedCard = {
-            ...card,
-            benefits: [...(card.benefits || []), newBenefit],
-          };
-          updateCard(cardId, updatedCard);
-        }
-        toast.success('Benefit added successfully!');
-        return { success: true, benefit: newBenefit };
-      } catch (error) {
-        // Error handled by toast
-        toast.error('Failed to add benefit. Please try again.');
-        return { success: false, error };
-      } finally {
-        setLoading(false);
-      }
-    },
-    [cards, updateCard, setLoading],
-  );
-
   // Computed values
   const totalCards = cards.length;
   const totalCreditLimit = cards.reduce(
@@ -199,7 +170,6 @@ export function useCards() {
     deleteCard,
     getCardById,
     getCardBenefits,
-    addCardBenefit,
     clearCards,
 
     // Computed values

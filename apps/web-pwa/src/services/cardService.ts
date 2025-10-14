@@ -8,6 +8,7 @@ import type {
   DeleteCardResponse,
   CardBenefitResponse,
   GetCardBenefitsResponse,
+  CardMetadataResponse,
 } from '@finmatter/types';
 
 export class CardService {
@@ -120,7 +121,6 @@ export class CardService {
       return { benefits: [] };
     }
   }
-
 }
 
 export const cardService = new CardService();

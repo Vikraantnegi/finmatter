@@ -1,7 +1,7 @@
 'use client';
 
 import { Card } from '@finmatter/types';
-import { CreditCard, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { getNetworkLogo } from '@/components/icons/CardNetworks';
 import { getCardColors, getCardStatusInfo } from '@/lib/cardColors';
 

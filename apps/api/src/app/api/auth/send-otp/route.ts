@@ -106,7 +106,10 @@ export async function POST(request: NextRequest) {
         'Invalid phone number format',
         validation.error.errors,
       );
-      return createCorsResponse(errorResponse, { status: 400, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: 400,
+        origin: origin || undefined,
+      });
     }
 
     const { phoneNumber } = validation.data;
@@ -137,7 +140,10 @@ export async function POST(request: NextRequest) {
         },
       };
 
-      return createCorsResponse(response, { status: 429, origin: origin || undefined });
+      return createCorsResponse(response, {
+        status: 429,
+        origin: origin || undefined,
+      });
     }
 
     // Send OTP using Supabase Auth with Twilio
@@ -166,18 +172,24 @@ export async function POST(request: NextRequest) {
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: appError.statusCode,
+        origin: origin || undefined,
+      });
     }
 
     // Return success response
-    return createCorsResponse({
-      success: true,
-      data: {
+    return createCorsResponse(
+      {
         success: true,
-        message: 'OTP sent successfully',
-        expiresIn: 300, // 5 minutes in seconds
+        data: {
+          success: true,
+          message: 'OTP sent successfully',
+          expiresIn: 300, // 5 minutes in seconds
+        },
       },
-    }, { origin: origin || undefined });
+      { origin: origin || undefined },
+    );
   } catch (error) {
     logError(error as Error, {
       endpoint: '/api/auth/send-otp',
@@ -191,6 +203,9 @@ export async function POST(request: NextRequest) {
       { retryable: true },
     );
 
-    return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
+    return createCorsResponse(errorResponse, {
+      status: 500,
+      origin: origin || undefined,
+    });
   }
 }

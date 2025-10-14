@@ -5,30 +5,31 @@ const getAllowedOrigins = () => {
   const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
     'http://localhost:3001',
   ];
-  
+
   // Add production origins if in production
   if (process.env.NODE_ENV === 'production') {
     allowedOrigins.push(
       'https://finmatter.vercel.app',
-      'https://www.finmatter.vercel.app'
+      'https://www.finmatter.vercel.app',
     );
   }
-  
+
   return allowedOrigins;
 };
 
 export function createCorsResponse(
   data: any,
-  options: { 
-    status?: number; 
+  options: {
+    status?: number;
     headers?: Record<string, string>;
     origin?: string;
   } = {},
 ) {
   const allowedOrigins = getAllowedOrigins();
-  const allowedOrigin = options.origin && allowedOrigins.includes(options.origin) 
-    ? options.origin 
-    : allowedOrigins[0];
+  const allowedOrigin =
+    options.origin && allowedOrigins.includes(options.origin)
+      ? options.origin
+      : allowedOrigins[0];
 
   const response = NextResponse.json(data, {
     status: options.status || 200,
@@ -46,9 +47,8 @@ export function createCorsResponse(
 
 export function handleCorsPreflight(origin?: string) {
   const allowedOrigins = getAllowedOrigins();
-  const allowedOrigin = origin && allowedOrigins.includes(origin) 
-    ? origin 
-    : allowedOrigins[0];
+  const allowedOrigin =
+    origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
 
   return new NextResponse(null, {
     status: 200,

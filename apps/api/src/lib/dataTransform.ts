@@ -33,9 +33,9 @@ export function dbCardToApiCard(dbCard: any, dbBenefits?: any[]): Card {
     secondaryColor: dbCard.secondary_color,
     isCustom: dbCard.is_custom,
     // Transform joined benefits
-    benefits: dbBenefits 
+    benefits: dbBenefits
       ? dbBenefits.map(dbBenefitToApiBenefit)
-      : (dbCard.card_benefits?.map(dbBenefitToApiBenefit) || []),
+      : dbCard.card_benefits?.map(dbBenefitToApiBenefit) || [],
     createdAt: new Date(dbCard.created_at),
     updatedAt: new Date(dbCard.updated_at),
   };
@@ -54,8 +54,12 @@ export function dbBenefitToApiBenefit(dbBenefit: any): CardBenefit {
     rewardCap: dbBenefit.reward_cap,
     conditions: dbBenefit.conditions,
     isActive: dbBenefit.is_active,
-    validFrom: dbBenefit.valid_from ? new Date(dbBenefit.valid_from) : undefined,
-    validUntil: dbBenefit.valid_until ? new Date(dbBenefit.valid_until) : undefined,
+    validFrom: dbBenefit.valid_from
+      ? new Date(dbBenefit.valid_from)
+      : undefined,
+    validUntil: dbBenefit.valid_until
+      ? new Date(dbBenefit.valid_until)
+      : undefined,
     description: dbBenefit.description,
     value: dbBenefit.value,
   };
@@ -70,7 +74,8 @@ export function apiCardToDbCard(card: Partial<Card>): Partial<DatabaseCard> {
   if (card.userId !== undefined) dbCard.user_id = card.userId;
   if (card.bankName !== undefined) dbCard.bank_name = card.bankName;
   if (card.cardName !== undefined) dbCard.card_name = card.cardName;
-  if (card.lastFourDigits !== undefined) dbCard.last_four_digits = card.lastFourDigits;
+  if (card.lastFourDigits !== undefined)
+    dbCard.last_four_digits = card.lastFourDigits;
   if (card.cardType !== undefined) dbCard.card_type = card.cardType;
   if (card.network !== undefined) dbCard.network = card.network;
   if (card.rewardType !== undefined) dbCard.reward_type = card.rewardType;
@@ -80,12 +85,15 @@ export function apiCardToDbCard(card: Partial<Card>): Partial<DatabaseCard> {
   if (card.issueDate !== undefined) dbCard.issue_date = card.issueDate;
   if (card.expiryDate !== undefined) dbCard.expiry_date = card.expiryDate;
   if (card.creditLimit !== undefined) dbCard.credit_limit = card.creditLimit;
-  if (card.availableCredit !== undefined) dbCard.available_credit = card.availableCredit;
+  if (card.availableCredit !== undefined)
+    dbCard.available_credit = card.availableCredit;
   if (card.billingDay !== undefined) dbCard.billing_day = card.billingDay;
-  if (card.cardMetadataId !== undefined) dbCard.card_metadata_id = card.cardMetadataId;
+  if (card.cardMetadataId !== undefined)
+    dbCard.card_metadata_id = card.cardMetadataId;
   if (card.bankId !== undefined) dbCard.bank_id = card.bankId;
   if (card.primaryColor !== undefined) dbCard.primary_color = card.primaryColor;
-  if (card.secondaryColor !== undefined) dbCard.secondary_color = card.secondaryColor;
+  if (card.secondaryColor !== undefined)
+    dbCard.secondary_color = card.secondaryColor;
   if (card.isCustom !== undefined) dbCard.is_custom = card.isCustom;
 
   return dbCard;
@@ -94,19 +102,26 @@ export function apiCardToDbCard(card: Partial<Card>): Partial<DatabaseCard> {
 /**
  * Convert API benefit data (camelCase) to database format (snake_case) for INSERT/UPDATE
  */
-export function apiBenefitToDbBenefit(benefit: Partial<CardBenefit>): Partial<DatabaseCardBenefit> {
+export function apiBenefitToDbBenefit(
+  benefit: Partial<CardBenefit>,
+): Partial<DatabaseCardBenefit> {
   const dbBenefit: any = {};
 
   if (benefit.cardId !== undefined) dbBenefit.card_id = benefit.cardId;
   if (benefit.category !== undefined) dbBenefit.category = benefit.category;
-  if (benefit.rewardRate !== undefined) dbBenefit.reward_rate = benefit.rewardRate;
-  if (benefit.rewardType !== undefined) dbBenefit.reward_type = benefit.rewardType;
+  if (benefit.rewardRate !== undefined)
+    dbBenefit.reward_rate = benefit.rewardRate;
+  if (benefit.rewardType !== undefined)
+    dbBenefit.reward_type = benefit.rewardType;
   if (benefit.rewardCap !== undefined) dbBenefit.reward_cap = benefit.rewardCap;
-  if (benefit.conditions !== undefined) dbBenefit.conditions = benefit.conditions;
+  if (benefit.conditions !== undefined)
+    dbBenefit.conditions = benefit.conditions;
   if (benefit.isActive !== undefined) dbBenefit.is_active = benefit.isActive;
   if (benefit.validFrom !== undefined) dbBenefit.valid_from = benefit.validFrom;
-  if (benefit.validUntil !== undefined) dbBenefit.valid_until = benefit.validUntil;
-  if (benefit.description !== undefined) dbBenefit.description = benefit.description;
+  if (benefit.validUntil !== undefined)
+    dbBenefit.valid_until = benefit.validUntil;
+  if (benefit.description !== undefined)
+    dbBenefit.description = benefit.description;
   if (benefit.value !== undefined) dbBenefit.value = benefit.value;
 
   return dbBenefit;
@@ -125,4 +140,3 @@ export function dbCardsToApiCards(dbCards: any[]): Card[] {
 export function dbBenefitsToApiBenefits(dbBenefits: any[]): CardBenefit[] {
   return dbBenefits.map(dbBenefitToApiBenefit);
 }
-

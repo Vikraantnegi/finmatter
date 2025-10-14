@@ -4,7 +4,7 @@
  */
 
 import type { User, UserWithOnboarding } from './user';
-import type { Card, CardBenefit } from './card';
+import type { Card } from './card';
 
 /**
  * Generic API response wrapper
@@ -87,15 +87,15 @@ export type RefreshTokenResponse = ApiResponse<{
 // USER API RESPONSES
 // ============================================
 
-export type GetUserResponse = ApiResponse<{ 
+export type GetUserResponse = ApiResponse<{
   user: UserWithOnboarding;
 }>;
 
-export type UpdateUserResponse = ApiResponse<{ 
+export type UpdateUserResponse = ApiResponse<{
   user: UserWithOnboarding;
 }>;
 
-export type CompleteOnboardingResponse = ApiResponse<{ 
+export type CompleteOnboardingResponse = ApiResponse<{
   user: UserWithOnboarding;
 }>;
 
@@ -113,19 +113,19 @@ export type GetCardsResponse = ApiResponse<{
   };
 }>;
 
-export type GetCardResponse = ApiResponse<{ 
+export type GetCardResponse = ApiResponse<{
   card: Card;
 }>;
 
-export type CreateCardResponse = ApiResponse<{ 
+export type CreateCardResponse = ApiResponse<{
   card: Card;
 }>;
 
-export type UpdateCardResponse = ApiResponse<{ 
+export type UpdateCardResponse = ApiResponse<{
   card: Card;
 }>;
 
-export type DeleteCardResponse = ApiResponse<{ 
+export type DeleteCardResponse = ApiResponse<{
   message: string;
   card: Card;
 }>;
@@ -174,7 +174,7 @@ export type GetCardBenefitsResponse = ApiResponse<{
  * Type guard to check if response is successful
  */
 export function isSuccessResponse<T>(
-  response: ApiResponse<T>
+  response: ApiResponse<T>,
 ): response is ApiResponse<T> & { success: true; data: T } {
   return response.success === true && response.data !== undefined;
 }
@@ -183,7 +183,7 @@ export function isSuccessResponse<T>(
  * Type guard to check if response is an error
  */
 export function isErrorResponse(
-  response: ApiResponse<any>
+  response: ApiResponse<any>,
 ): response is ApiResponse<any> & { success: false; error: ApiError } {
   return response.success === false && response.error !== undefined;
 }
@@ -199,36 +199,37 @@ export const API_ERROR_CODES = {
   INVALID_OTP: 'INVALID_OTP',
   OTP_EXPIRED: 'OTP_EXPIRED',
   TOO_MANY_ATTEMPTS: 'TOO_MANY_ATTEMPTS',
-  
+
   // Validation errors
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   INVALID_INPUT: 'INVALID_INPUT',
   MISSING_FIELD: 'MISSING_FIELD',
-  
+
   // Resource errors
   NOT_FOUND: 'NOT_FOUND',
   CARD_NOT_FOUND: 'CARD_NOT_FOUND',
   USER_NOT_FOUND: 'USER_NOT_FOUND',
   BENEFIT_NOT_FOUND: 'BENEFIT_NOT_FOUND',
-  
+
   // Conflict errors
   ALREADY_EXISTS: 'ALREADY_EXISTS',
   CARD_ALREADY_EXISTS: 'CARD_ALREADY_EXISTS',
   DUPLICATE_CARD: 'DUPLICATE_CARD',
-  
+
   // Database errors
   DB_QUERY_FAILED: 'DB_QUERY_FAILED',
   DB_INSERT_FAILED: 'DB_INSERT_FAILED',
   DB_UPDATE_FAILED: 'DB_UPDATE_FAILED',
   DB_DELETE_FAILED: 'DB_DELETE_FAILED',
-  
+
   // Rate limiting
   RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
-  
+
   // Generic errors
   INTERNAL_ERROR: 'INTERNAL_ERROR',
   NETWORK_ERROR: 'NETWORK_ERROR',
   UNKNOWN_ERROR: 'UNKNOWN_ERROR',
 } as const;
 
-export type ApiErrorCode = typeof API_ERROR_CODES[keyof typeof API_ERROR_CODES];
+export type ApiErrorCode =
+  (typeof API_ERROR_CODES)[keyof typeof API_ERROR_CODES];

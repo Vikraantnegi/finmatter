@@ -9,56 +9,63 @@ import { supabaseAdmin } from '@/lib/supabase/client';
 import { FinMatterError } from '@finmatter/shared';
 import { createCorsResponse, handleCorsPreflight } from '@/lib/cors';
 import { z } from 'zod';
-import { DatabaseCard } from '@finmatter/types';
 import { dbCardsToApiCards, dbCardToApiCard } from '@/lib/dataTransform';
-import { sanitizeCardName, sanitizeLastFourDigits, sanitizeCreditAmount } from '@/lib/sanitize';
-import { withRateLimit, CARD_CREATE_LIMIT } from '@/lib/rateLimit';
+import {
+  sanitizeCardName,
+  sanitizeLastFourDigits,
+  sanitizeCreditAmount,
+} from '@/lib/sanitize';
 
 // Helper function to parse MM/YY format to proper date
 function parseMMYYToDate(mmYyString: string): Date {
   const [month, year] = mmYyString.split('/');
   const monthNum = parseInt(month, 10) - 1; // JavaScript months are 0-indexed
   const yearNum = parseInt(`20${year}`, 10); // Convert YY to 20YY
-  
+
   // Return the last day of the month
   return new Date(yearNum, monthNum + 1, 0);
 }
 
 // Request validation schemas
-const CreateCardSchema = z.object({
-  bankName: z.string().min(1, 'Bank name is required').max(100),
-  cardName: z.string().min(1, 'Card name is required').max(100),
-  lastFourDigits: z
-    .string()
-    .regex(/^\d{4}$/, 'Last four digits must be exactly 4 digits'),
-  cardType: z.enum(['credit', 'debit', 'prepaid']),
-  network: z.enum(['visa', 'mastercard', 'rupay', 'amex', 'discover']),
-  rewardType: z.enum(['cashback', 'points', 'miles', 'none']),
-  annualFee: z.number().min(0).default(0),
-  currency: z.string().default('INR'),
-  issueDate: z.string().optional(),
-  expiryDate: z.string().optional(),
-  creditLimit: z.number().min(0).optional(),
-  availableCredit: z.number().min(0).optional(),
-  billingDay: z.number().min(1).max(31).optional(), // Optional - can be extracted from statements later
-  cardMetadataId: z.string().optional(),
-  bankId: z.string().optional(),
-  primaryColor: z.string().optional(),
-  secondaryColor: z.string().optional(),
-  isCustom: z.boolean().optional(),
-}).refine(
-  (data) => {
-    // Validate availableCredit <= creditLimit
-    if (data.availableCredit !== undefined && data.creditLimit !== undefined) {
-      return data.availableCredit <= data.creditLimit;
-    }
-    return true;
-  },
-  {
-    message: 'Available credit cannot exceed credit limit',
-    path: ['availableCredit'],
-  }
-);
+const CreateCardSchema = z
+  .object({
+    bankName: z.string().min(1, 'Bank name is required').max(100),
+    cardName: z.string().min(1, 'Card name is required').max(100),
+    lastFourDigits: z
+      .string()
+      .regex(/^\d{4}$/, 'Last four digits must be exactly 4 digits'),
+    cardType: z.enum(['credit', 'debit', 'prepaid']),
+    network: z.enum(['visa', 'mastercard', 'rupay', 'amex', 'discover']),
+    rewardType: z.enum(['cashback', 'points', 'miles', 'none']),
+    annualFee: z.number().min(0).default(0),
+    currency: z.string().default('INR'),
+    issueDate: z.string().optional(),
+    expiryDate: z.string().optional(),
+    creditLimit: z.number().min(0).optional(),
+    availableCredit: z.number().min(0).optional(),
+    billingDay: z.number().min(1).max(31).optional(), // Optional - can be extracted from statements later
+    cardMetadataId: z.string().optional(),
+    bankId: z.string().optional(),
+    primaryColor: z.string().optional(),
+    secondaryColor: z.string().optional(),
+    isCustom: z.boolean().optional(),
+  })
+  .refine(
+    data => {
+      // Validate availableCredit <= creditLimit
+      if (
+        data.availableCredit !== undefined &&
+        data.creditLimit !== undefined
+      ) {
+        return data.availableCredit <= data.creditLimit;
+      }
+      return true;
+    },
+    {
+      message: 'Available credit cannot exceed credit limit',
+      path: ['availableCredit'],
+    },
+  );
 
 const GetCardsSchema = z.object({
   status: z.enum(['active', 'inactive', 'blocked', 'expired']).optional(),
@@ -199,7 +206,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      { origin: origin || undefined }
+      { origin: origin || undefined },
     );
   } catch (error) {
     if (error instanceof FinMatterError) {
@@ -236,9 +243,10 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin');
-  
+
   // Apply rate limiting
-  const { checkRateLimit, getClientIdentifier } = await import('@/lib/rateLimit');
+  const { checkRateLimit, getClientIdentifier, CARD_CREATE_LIMIT } =
+    await import('@/lib/rateLimit');
   const identifier = await getClientIdentifier(request);
   const rateLimit = checkRateLimit(identifier, CARD_CREATE_LIMIT);
 
@@ -311,8 +319,12 @@ export async function POST(request: NextRequest) {
       expiry_date: cardData.expiryDate
         ? parseMMYYToDate(cardData.expiryDate)
         : undefined,
-      credit_limit: cardData.creditLimit ? sanitizeCreditAmount(cardData.creditLimit) : undefined,
-      available_credit: cardData.availableCredit ? sanitizeCreditAmount(cardData.availableCredit) : undefined,
+      credit_limit: cardData.creditLimit
+        ? sanitizeCreditAmount(cardData.creditLimit)
+        : undefined,
+      available_credit: cardData.availableCredit
+        ? sanitizeCreditAmount(cardData.availableCredit)
+        : undefined,
       billing_day: cardData.billingDay || undefined,
       card_metadata_id: cardData.cardMetadataId || undefined,
       bank_id: cardData.bankId || undefined,
@@ -347,7 +359,8 @@ export async function POST(request: NextRequest) {
                 bankName: cardData.bankName,
                 lastFourDigits: cardData.lastFourDigits,
               },
-              suggestion: 'Check your cards list or try different card details.',
+              suggestion:
+                'Check your cards list or try different card details.',
             },
           },
           { status: 409, origin: origin || undefined },

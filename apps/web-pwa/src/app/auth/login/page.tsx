@@ -52,7 +52,7 @@ export default function LoginPage() {
           router.replace('/auth/verify-otp');
         }, 100);
       } else {
-        toast.error(response.error || 'Failed to send OTP');
+        toast.error(response.error?.message || 'Failed to send OTP');
       }
     } catch (error) {
       // Error message is already user-friendly from authService

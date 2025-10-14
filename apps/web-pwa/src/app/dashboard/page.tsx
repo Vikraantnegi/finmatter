@@ -3,7 +3,6 @@
 // import { useEffect } from 'react'; // Removed since we're not using useEffect anymore
 import { useRouter } from 'next/navigation';
 import { useAuth, useCards } from '@/hooks';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
 import { CardVisual } from '@/components/cards/CardVisual';
 import { UtilizationAlert } from '@/components/cards/UtilizationAlert';
@@ -21,22 +20,12 @@ function DashboardContent() {
   const {
     cards,
     isLoading: loading,
-    // error: cardsError, // Removed since we're not using it anymore
-    // loadCards, // Removed since we're not using it anymore
     totalCards,
     totalCreditLimit,
     totalUtilizedAmount,
     averageUtilization,
     highUtilizationCards,
   } = useCards();
-
-  // Remove this useEffect - cards are already loaded by useCards hook
-  // useEffect(() => {
-  //   // Only load cards once, and don't retry if there's an error or empty result
-  //   if (!loading && cards.length === 0 && !cardsError) {
-  //     loadCards();
-  //   }
-  // }, [loadCards, loading, cards.length, cardsError]);
 
   // Calculate derived stats
   const totalAvailable = totalCreditLimit - totalUtilizedAmount;

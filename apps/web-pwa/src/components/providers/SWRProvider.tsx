@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { SWRConfig, SWRConfiguration } from 'swr';
 import { apiClient } from '@/lib/apiClient';
 

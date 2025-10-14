@@ -42,7 +42,10 @@ export async function POST(request: NextRequest) {
         undefined,
         { retryable: false },
       );
-      return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: 401,
+        origin: origin || undefined,
+      });
     }
 
     // Refresh the session using Supabase
@@ -67,7 +70,10 @@ export async function POST(request: NextRequest) {
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: appError.statusCode,
+        origin: origin || undefined,
+      });
     }
 
     if (!data.session) {
@@ -77,21 +83,27 @@ export async function POST(request: NextRequest) {
         undefined,
         { retryable: false },
       );
-      return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: 401,
+        origin: origin || undefined,
+      });
     }
 
     // Return success response with new session and update cookies
-    const response = createCorsResponse({
-      success: true,
-      data: {
-        session: {
-          token: data.session.access_token,
-          refreshToken: data.session.refresh_token,
-          expiresAt: new Date(data.session.expires_at! * 1000).toISOString(),
+    const response = createCorsResponse(
+      {
+        success: true,
+        data: {
+          session: {
+            token: data.session.access_token,
+            refreshToken: data.session.refresh_token,
+            expiresAt: new Date(data.session.expires_at! * 1000).toISOString(),
+          },
+          message: 'Session refreshed successfully',
         },
-        message: 'Session refreshed successfully',
       },
-    }, { origin: origin || undefined });
+      { origin: origin || undefined },
+    );
 
     // Update authentication cookies with new tokens and proper security
     const accessTokenOptions = {
@@ -135,6 +147,9 @@ export async function POST(request: NextRequest) {
       { retryable: true },
     );
 
-    return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
+    return createCorsResponse(errorResponse, {
+      status: 500,
+      origin: origin || undefined,
+    });
   }
 }

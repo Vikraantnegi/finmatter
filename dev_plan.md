@@ -955,7 +955,7 @@ Use react-to-pdf for PDF export.
 
 ### Cursor Prompt 26: Card Analytics Dashboard
 
-```
+````
 Build analytics dashboard for card portfolio:
 
 1. Create analytics page:
@@ -967,7 +967,7 @@ Build analytics dashboard for card portfolio:
    - Create reusable chart components
 
 3. Analytics sections:
-   
+
    a) Overview Stats (Top Row):
       - Total rewards earned this month
       - Best performing card
@@ -1003,48 +1003,50 @@ Build analytics dashboard for card portfolio:
    optimizationScore = (
      actualRewards / potentialOptimalRewards
    ) * 100
-   
+
    // Factors:
    // - Using best card for each category
    // - Maximizing reward caps
    // - Avoiding annual fees on unused cards
    // - Maintaining healthy utilization
-   ```
+````
 
 Note: For MVP, use mock transaction data. Replace with real data once transactions feature is built.
+
 ```
 
 ### Cursor Prompt 27: Payment Reminders System
 
 ```
+
 Build payment reminder system:
 
 1. Database migration:
    - Add payment_reminders table:
-     * id, user_id, card_id
-     * due_date (calculated or manual)
-     * amount_due, minimum_payment
-     * status (pending, paid, overdue)
-     * reminder_sent (boolean)
-     * paid_at (timestamp)
+     - id, user_id, card_id
+     - due_date (calculated or manual)
+     - amount_due, minimum_payment
+     - status (pending, paid, overdue)
+     - reminder_sent (boolean)
+     - paid_at (timestamp)
 
 2. Due date calculation utility:
    - apps/web-pwa/src/lib/paymentUtils.ts
    - Function: calculateDueDate(billingDay: number): Date
    - Logic: billing_day + 15 days (default)
    - Support bank-specific rules:
-     * HDFC: billing day + 20 days
-     * SBI: billing day + 15 days
-     * ICICI: billing day + 18 days
+     - HDFC: billing day + 20 days
+     - SBI: billing day + 15 days
+     - ICICI: billing day + 18 days
 
 3. Create reminder component:
    - apps/web-pwa/src/components/cards/PaymentReminder.tsx
    - Show on card detail page
    - Show "Due in X days" badge
    - Color coding:
-     * Green: >7 days
-     * Yellow: 3-7 days
-     * Red: <3 days or overdue
+     - Green: >7 days
+     - Yellow: 3-7 days
+     - Red: <3 days or overdue
 
 4. Dashboard widget:
    - apps/web-pwa/src/components/dashboard/UpcomingPayments.tsx
@@ -1055,10 +1057,10 @@ Build payment reminder system:
 5. Notification system:
    - API endpoint: POST /api/reminders/schedule
    - Schedule push notifications:
-     * 7 days before due date
-     * 3 days before due date
-     * 1 day before due date
-     * On due date (if not paid)
+     - 7 days before due date
+     - 3 days before due date
+     - 1 day before due date
+     - On due date (if not paid)
    - Use Supabase Edge Functions or cron job
 
 6. Payment tracking:
@@ -1068,6 +1070,7 @@ Build payment reminder system:
    - Show payment history
 
 For MVP: Calculate due dates, show reminders. Push notifications can be added in Phase 2.
+
 ```
 
 ## Week 11: Polish, Testing, & Beta Prep
@@ -1075,6 +1078,7 @@ For MVP: Calculate due dates, show reminders. Push notifications can be added in
 ### Cursor Prompt 28: Error Handling & Edge Cases
 
 ```
+
 Implement comprehensive error handling across the app:
 
 1. Global error boundary in web app
@@ -1099,11 +1103,13 @@ Implement comprehensive error handling across the app:
    - No cards added yet
    - No transactions
    - AI rate limit reached
+
 ```
 
 ### Cursor Prompt 26: Onboarding Flow
 
 ```
+
 Create smooth onboarding experience:
 
 1. Screens:
@@ -1123,11 +1129,13 @@ Create smooth onboarding experience:
    - "Next time" option
 
 5. Store onboarding completion status
+
 ```
 
 ### Cursor Prompt 27: Performance Optimization
 
 ```
+
 Optimize app performance:
 
 1. Web PWA:
@@ -1149,6 +1157,7 @@ Optimize app performance:
    - Optimistic updates
 
 4. Test on low-end Android devices
+
 ```
 
 ---
@@ -1158,6 +1167,7 @@ Optimize app performance:
 ### Cursor Prompt 28: Analytics & Monitoring
 
 ```
+
 Setup analytics and monitoring:
 
 1. Implement event tracking:
@@ -1183,11 +1193,13 @@ Setup analytics and monitoring:
    - Daily active users
    - Feature usage stats
    - Top errors
+
 ```
 
 ### Cursor Prompt 29: Security Hardening
 
 ```
+
 Final security review and hardening:
 
 1. Web PWA:
@@ -1213,11 +1225,13 @@ Final security review and hardening:
    - Test auth flows
    - Try SQL injection
    - Test file upload vulnerabilities
+
 ```
 
 ### Cursor Prompt 30: Beta Testing Setup
 
 ```
+
 Prepare for beta launch:
 
 1. Create beta testing group:
@@ -1250,6 +1264,7 @@ Prepare for beta launch:
    - Week 3-4: Fix critical bugs, gather feedback
    - Month 2: 100-200 users
    - Iterate based on feedback
+
 ```
 
 ---
@@ -1286,28 +1301,36 @@ Prepare for beta launch:
 ### Unit Tests (Week 6+)
 
 ```
-packages/cc-engine/**/*.test.ts
+
+packages/cc-engine/\*_/_.test.ts
+
 - Test reward calculations
 - Test card optimizer logic
 - Test categorization
 
-apps/api/**/*.test.ts
+apps/api/\*_/_.test.ts
+
 - Test API endpoints
 - Test database queries
+
 ```
 
 ### Integration Tests (Week 8+)
 
 ```
+
 Test full user flows:
+
 - Signup → Add card → Upload statement → Get recommendation
 - Test PDF parsing end-to-end
 - Test AI assistant with real queries
+
 ```
 
 ### Manual Testing Checklist (Weekly)
 
 ```
+
 □ Fresh install and signup
 □ Add 3 different bank cards
 □ Upload PDF from each bank
@@ -1318,6 +1341,7 @@ Test full user flows:
 □ Test on both iOS and Android
 □ Test offline behavior
 □ Test with slow network
+
 ```
 
 ---
@@ -1441,3 +1465,4 @@ Your first 100 users are 3 months away.
 The clock is ticking. CRED doesn't have this feature yet.
 
 Go build. 🚀
+```

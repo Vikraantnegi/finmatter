@@ -105,7 +105,10 @@ export async function GET(
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: appError.statusCode,
+        origin: origin || undefined,
+      });
     }
 
     if (!user) {
@@ -115,32 +118,38 @@ export async function GET(
         { userId },
         { statusCode: 404 },
       );
-      return createCorsResponse(errorResponse, { status: 404, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: 404,
+        origin: origin || undefined,
+      });
     }
 
     // Return complete user profile data
-    return createCorsResponse({
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          phoneNumber: user.phone_number,
-          firstName: user.profile_data?.firstName || '',
-          lastName: user.profile_data?.lastName || '',
-          onboardingCompleted: user.onboarding_completed || false,
-          isVerified: user.is_verified,
-          biometricEnabled: user.biometric_enabled,
-          notificationsEnabled: user.notifications_enabled || false,
-          createdAt: user.created_at,
-          updatedAt: user.updated_at,
-          lastLogin: user.last_login,
-          profileData: {
+    return createCorsResponse(
+      {
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            phoneNumber: user.phone_number,
             firstName: user.profile_data?.firstName || '',
             lastName: user.profile_data?.lastName || '',
+            onboardingCompleted: user.onboarding_completed || false,
+            isVerified: user.is_verified,
+            biometricEnabled: user.biometric_enabled,
+            notificationsEnabled: user.notifications_enabled || false,
+            createdAt: user.created_at,
+            updatedAt: user.updated_at,
+            lastLogin: user.last_login,
+            profileData: {
+              firstName: user.profile_data?.firstName || '',
+              lastName: user.profile_data?.lastName || '',
+            },
           },
         },
       },
-    }, { origin: origin || undefined });
+      { origin: origin || undefined },
+    );
   } catch (error) {
     // Handle specific error types
     if (error instanceof Error) {
@@ -151,7 +160,10 @@ export async function GET(
           { message: 'Please login to continue' },
           { statusCode: 401 },
         );
-        return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
+        return createCorsResponse(errorResponse, {
+          status: 401,
+          origin: origin || undefined,
+        });
       }
 
       if (error.message === 'Invalid token') {
@@ -161,7 +173,10 @@ export async function GET(
           { message: 'Please login again' },
           { statusCode: 401 },
         );
-        return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
+        return createCorsResponse(errorResponse, {
+          status: 401,
+          origin: origin || undefined,
+        });
       }
 
       if (error.message === 'Forbidden: Cannot access other user data') {
@@ -171,7 +186,10 @@ export async function GET(
           { message: 'Cannot access other user data' },
           { statusCode: 403 },
         );
-        return createCorsResponse(errorResponse, { status: 403, origin: origin || undefined });
+        return createCorsResponse(errorResponse, {
+          status: 403,
+          origin: origin || undefined,
+        });
       }
     }
 
@@ -192,7 +210,10 @@ export async function GET(
       { retryable: true },
     );
 
-    return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
+    return createCorsResponse(errorResponse, {
+      status: 500,
+      origin: origin || undefined,
+    });
   }
 }
 
@@ -226,7 +247,10 @@ export async function PUT(
               : 'Unknown parsing error',
         },
       );
-      return createCorsResponse(errorResponse, { status: 400, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: 400,
+        origin: origin || undefined,
+      });
     }
 
     const validation = UpdateUserSchema.safeParse(body);
@@ -236,7 +260,10 @@ export async function PUT(
         'Invalid request data',
         validation.error.errors,
       );
-      return createCorsResponse(errorResponse, { status: 400, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: 400,
+        origin: origin || undefined,
+      });
     }
 
     const updateData = validation.data;
@@ -299,31 +326,37 @@ export async function PUT(
         },
       );
 
-      return createCorsResponse(errorResponse, { status: appError.statusCode, origin: origin || undefined });
+      return createCorsResponse(errorResponse, {
+        status: appError.statusCode,
+        origin: origin || undefined,
+      });
     }
 
-    return createCorsResponse({
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          phoneNumber: user.phone_number,
-          firstName: user.profile_data?.firstName || '',
-          lastName: user.profile_data?.lastName || '',
-          onboardingCompleted: user.onboarding_completed,
-          isVerified: user.is_verified,
-          biometricEnabled: user.biometric_enabled,
-          notificationsEnabled: user.notifications_enabled,
-          createdAt: user.created_at,
-          updatedAt: user.updated_at,
-          lastLogin: user.last_login,
-          profileData: {
+    return createCorsResponse(
+      {
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            phoneNumber: user.phone_number,
             firstName: user.profile_data?.firstName || '',
             lastName: user.profile_data?.lastName || '',
+            onboardingCompleted: user.onboarding_completed,
+            isVerified: user.is_verified,
+            biometricEnabled: user.biometric_enabled,
+            notificationsEnabled: user.notifications_enabled,
+            createdAt: user.created_at,
+            updatedAt: user.updated_at,
+            lastLogin: user.last_login,
+            profileData: {
+              firstName: user.profile_data?.firstName || '',
+              lastName: user.profile_data?.lastName || '',
+            },
           },
         },
       },
-    }, { origin: origin || undefined });
+      { origin: origin || undefined },
+    );
   } catch (error) {
     // Handle specific error types
     if (error instanceof Error) {
@@ -334,7 +367,10 @@ export async function PUT(
           { message: 'Please login to continue' },
           { statusCode: 401 },
         );
-        return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
+        return createCorsResponse(errorResponse, {
+          status: 401,
+          origin: origin || undefined,
+        });
       }
 
       if (error.message === 'Invalid token') {
@@ -344,7 +380,10 @@ export async function PUT(
           { message: 'Please login again' },
           { statusCode: 401 },
         );
-        return createCorsResponse(errorResponse, { status: 401, origin: origin || undefined });
+        return createCorsResponse(errorResponse, {
+          status: 401,
+          origin: origin || undefined,
+        });
       }
 
       if (error.message === 'Forbidden: Cannot access other user data') {
@@ -354,7 +393,10 @@ export async function PUT(
           { message: 'Cannot access other user data' },
           { statusCode: 403 },
         );
-        return createCorsResponse(errorResponse, { status: 403, origin: origin || undefined });
+        return createCorsResponse(errorResponse, {
+          status: 403,
+          origin: origin || undefined,
+        });
       }
     }
 
@@ -375,6 +417,9 @@ export async function PUT(
       { retryable: true },
     );
 
-    return createCorsResponse(errorResponse, { status: 500, origin: origin || undefined });
+    return createCorsResponse(errorResponse, {
+      status: 500,
+      origin: origin || undefined,
+    });
   }
 }

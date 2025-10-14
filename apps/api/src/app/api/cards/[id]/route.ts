@@ -14,44 +14,49 @@ import { DatabaseCard } from '@finmatter/types';
 import { dbCardToApiCard } from '@/lib/dataTransform';
 
 // Request validation schemas
-const UpdateCardSchema = z.object({
-  bankName: z.string().min(1).max(100).optional(),
-  cardName: z.string().min(1).max(100).optional(),
-  lastFourDigits: z
-    .string()
-    .regex(/^\d{4}$/, 'Last four digits must be exactly 4 digits')
-    .optional(),
-  cardType: z.enum(['credit', 'debit', 'prepaid']).optional(),
-  network: z
-    .enum(['visa', 'mastercard', 'rupay', 'amex', 'discover'])
-    .optional(),
-  rewardType: z.enum(['cashback', 'points', 'miles', 'none']).optional(),
-  annualFee: z.number().min(0).optional(),
-  currency: z.string().optional(),
-  status: z.enum(['active', 'inactive', 'blocked', 'expired']).optional(),
-  issueDate: z.string().optional(),
-  expiryDate: z.string().optional(),
-  creditLimit: z.number().min(0).optional(),
-  availableCredit: z.number().min(0).optional(),
-  billingDay: z.number().min(1).max(31).optional(),
-  cardMetadataId: z.string().optional(),
-  bankId: z.string().optional(),
-  primaryColor: z.string().optional(),
-  secondaryColor: z.string().optional(),
-  isCustom: z.boolean().optional(),
-}).refine(
-  (data) => {
-    // Validate availableCredit <= creditLimit if both are provided
-    if (data.availableCredit !== undefined && data.creditLimit !== undefined) {
-      return data.availableCredit <= data.creditLimit;
-    }
-    return true;
-  },
-  {
-    message: 'Available credit cannot exceed credit limit',
-    path: ['availableCredit'],
-  }
-);
+const UpdateCardSchema = z
+  .object({
+    bankName: z.string().min(1).max(100).optional(),
+    cardName: z.string().min(1).max(100).optional(),
+    lastFourDigits: z
+      .string()
+      .regex(/^\d{4}$/, 'Last four digits must be exactly 4 digits')
+      .optional(),
+    cardType: z.enum(['credit', 'debit', 'prepaid']).optional(),
+    network: z
+      .enum(['visa', 'mastercard', 'rupay', 'amex', 'discover'])
+      .optional(),
+    rewardType: z.enum(['cashback', 'points', 'miles', 'none']).optional(),
+    annualFee: z.number().min(0).optional(),
+    currency: z.string().optional(),
+    status: z.enum(['active', 'inactive', 'blocked', 'expired']).optional(),
+    issueDate: z.string().optional(),
+    expiryDate: z.string().optional(),
+    creditLimit: z.number().min(0).optional(),
+    availableCredit: z.number().min(0).optional(),
+    billingDay: z.number().min(1).max(31).optional(),
+    cardMetadataId: z.string().optional(),
+    bankId: z.string().optional(),
+    primaryColor: z.string().optional(),
+    secondaryColor: z.string().optional(),
+    isCustom: z.boolean().optional(),
+  })
+  .refine(
+    data => {
+      // Validate availableCredit <= creditLimit if both are provided
+      if (
+        data.availableCredit !== undefined &&
+        data.creditLimit !== undefined
+      ) {
+        return data.availableCredit <= data.creditLimit;
+      }
+      return true;
+    },
+    {
+      message: 'Available credit cannot exceed credit limit',
+      path: ['availableCredit'],
+    },
+  );
 
 /**
  * Handle CORS preflight requests
@@ -393,9 +398,9 @@ export async function DELETE(
     // Soft delete by setting deleted_at timestamp
     const { data: card, error } = await supabaseAdmin
       .from('cards')
-      .update({ 
+      .update({
         deleted_at: new Date().toISOString(),
-        status: 'inactive' // Also mark as inactive for extra safety
+        status: 'inactive', // Also mark as inactive for extra safety
       })
       .eq('id', cardId)
       .eq('user_id', userId)

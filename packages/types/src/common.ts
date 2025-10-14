@@ -16,31 +16,8 @@ export type PaginationParams = {
   sortOrder?: SortOrder;
 };
 
-export type PaginatedResponse<T> = {
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-};
-
-export type ApiResponse<T = any> = {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
-  timestamp: string;
-};
-
-export type ApiError = {
-  code: string;
-  message: string;
-  details?: Record<string, any>;
-};
+// Note: ApiResponse, ApiError, and PaginatedResponse are defined in api.ts
+// This file contains only common utility types
 
 export type DateRange = {
   startDate: Date;

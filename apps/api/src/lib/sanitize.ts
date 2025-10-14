@@ -47,7 +47,7 @@ export function sanitizeCategory(input: string): string {
     .trim()
     .toLowerCase()
     .replace(/[<>'"]/g, '')
-    .replace(/[^\w\s\-]/g, '')
+    .replace(/[^\w\s-]/g, '')
     .substring(0, 50); // Max 50 chars for categories
 }
 
@@ -67,7 +67,7 @@ export function sanitizeDescription(input: string): string {
 export function sanitizePhoneNumber(input: string): string {
   // Remove all non-digits
   const digits = input.replace(/\D/g, '');
-  
+
   // For Indian numbers, expect 10 digits after country code
   if (digits.length === 10) {
     return digits;
@@ -75,7 +75,7 @@ export function sanitizePhoneNumber(input: string): string {
   if (digits.length === 12 && digits.startsWith('91')) {
     return digits.substring(2); // Remove +91
   }
-  
+
   return digits;
 }
 
@@ -97,7 +97,7 @@ export function sanitizeJSON(input: any): any {
       return {};
     }
   }
-  
+
   if (typeof input === 'object' && input !== null) {
     // Remove any potentially harmful keys
     const sanitized: any = {};
@@ -110,14 +110,13 @@ export function sanitizeJSON(input: any): any {
       } else if (typeof value === 'boolean') {
         sanitized[safeKey] = value;
       } else if (Array.isArray(value)) {
-        sanitized[safeKey] = value.map(v => 
-          typeof v === 'string' ? sanitizeText(v) : v
+        sanitized[safeKey] = value.map(v =>
+          typeof v === 'string' ? sanitizeText(v) : v,
         );
       }
     }
     return sanitized;
   }
-  
+
   return {};
 }
-

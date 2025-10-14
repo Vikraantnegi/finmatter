@@ -3,7 +3,7 @@
  * Phone-based authentication system
  */
 
-import type { ApiResponse } from './common';
+// Note: Auth response types are defined in api.ts to avoid duplication
 
 // Phone Authentication Types
 export type PhoneAuthRequest = {
@@ -12,53 +12,29 @@ export type PhoneAuthRequest = {
 
 export type SendOTPRequest = PhoneAuthRequest;
 
-export type SendOTPResponse = ApiResponse<{
-  success: boolean;
-  message: string;
-  expiresIn: number; // seconds
-}>;
+// SendOTPResponse is defined in api.ts
 
 export type VerifyOTPRequest = {
   phoneNumber: string;
   otp: string;
 };
 
-export type VerifyOTPResponse = ApiResponse<{
-  user: {
-    id: string;
-    phoneNumber: string;
-    isVerified: boolean;
-    biometricEnabled: boolean;
-    createdAt: string;
-    lastLogin?: string;
-  };
-  session: {
-    token: string;
-    refreshToken: string;
-    expiresAt: string;
-  };
-}>;
+// VerifyOTPResponse is defined in api.ts
 
 export type RefreshTokenRequest = {
   refreshToken: string;
 };
 
-export type RefreshTokenResponse = ApiResponse<{
-  session: {
-    token: string;
-    refreshToken: string;
-    expiresAt: string;
-  };
-}>;
+// RefreshTokenResponse is defined in api.ts
 
 export type LogoutRequest = {
   token: string;
 };
 
-export type LogoutResponse = ApiResponse<{
+export type LogoutResponse = {
   success: boolean;
   message: string;
-}>;
+};
 
 // Auth-specific User Profile Types (aligned with database schema)
 export type AuthUserProfile = {
@@ -102,9 +78,9 @@ export type UpdateProfileRequest = {
   biometricEnabled?: boolean;
 };
 
-export type UpdateProfileResponse = ApiResponse<{
+export type UpdateProfileResponse = {
   user: AuthUserProfile;
-}>;
+};
 
 // Auth Session Types
 export type AuthUserSession = {

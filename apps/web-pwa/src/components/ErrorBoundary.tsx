@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Component, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
 
@@ -103,14 +104,23 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className='flex gap-3'>
               <Button
                 variant='outline'
-                onClick={() => (window.location.href = '/dashboard')}
+                onClick={() => {
+                  // Use router for CSR navigation
+                  const router = useRouter();
+                  router.push('/dashboard');
+                  router.refresh();
+                }}
                 className='flex-1 flex items-center justify-center gap-2'
               >
                 <Home className='w-4 h-4' />
                 Dashboard
               </Button>
               <Button
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  // Use router for refresh
+                  const router = useRouter();
+                  router.refresh();
+                }}
                 className='flex-1 flex items-center justify-center gap-2'
               >
                 <RefreshCw className='w-4 h-4' />

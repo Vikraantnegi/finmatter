@@ -101,7 +101,13 @@ export function AuthGuard({
   }
 
   // Show loading spinner if onboarding requirements not met
-  if (requireOnboarding && isAuthenticated && !onboardingCompleted) {
+  // BUT only if we're not already on the onboarding page
+  if (
+    requireOnboarding &&
+    isAuthenticated &&
+    !onboardingCompleted &&
+    pathname !== '/onboarding'
+  ) {
     return (
       <div className='min-h-screen flex items-center justify-center gradient-bg'>
         <LoadingSpinner size='lg' />

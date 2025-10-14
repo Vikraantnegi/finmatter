@@ -9,11 +9,12 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { UtilizationAlert } from '@/components/cards/UtilizationAlert';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useCardStore } from '@/stores/cardStore';
+import { CardErrorBoundary } from '@/components/ErrorBoundary';
 import { Plus, Filter, Search } from 'lucide-react';
 
 type SortBy = 'name' | 'limit' | 'utilization';
 
-export default function CardsPage() {
+function CardsContent() {
   const router = useRouter();
   const { cards, isLoading: loading, fetchCards } = useCardStore();
 
@@ -259,5 +260,13 @@ export default function CardsPage() {
         onSortChange={setSortBy}
       />
     </div>
+  );
+}
+
+export default function CardsPage() {
+  return (
+    <CardErrorBoundary>
+      <CardsContent />
+    </CardErrorBoundary>
   );
 }

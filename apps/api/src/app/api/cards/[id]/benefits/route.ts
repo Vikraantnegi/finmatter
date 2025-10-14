@@ -66,7 +66,7 @@ export async function GET(
       .select('id, card_metadata_id, bank_name, card_name')
       .eq('id', cardId)
       .eq('user_id', userId)
-      .eq('deleted_at', null)
+      .is('deleted_at', null)
       .single();
 
     if (cardError || !card) {

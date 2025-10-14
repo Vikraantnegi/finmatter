@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { cardSearchService } from '@finmatter/cc-engine';
 import type { CardMetadata, BankMetadata } from '@finmatter/cc-engine';
-import { ArrowLeft, Search, CreditCard, Building2, Plus } from 'lucide-react';
+import { ArrowLeft, Search, CreditCard, Building2 } from 'lucide-react';
 import { cardService } from '@/services/cardService';
 import toast from 'react-hot-toast';
 
@@ -81,15 +81,6 @@ export default function AddCardPage() {
     setFormData(prev => ({
       ...prev,
       cardHolderName: '', // Reset to empty for user input
-      bankName: selectedBank?.name || '',
-    }));
-    setStep('form');
-  };
-
-  const handleManualEntry = () => {
-    setSelectedCard(null);
-    setFormData(prev => ({
-      ...prev,
       bankName: selectedBank?.name || '',
     }));
     setStep('form');
@@ -340,16 +331,6 @@ export default function AddCardPage() {
             </div>
           </button>
         ))}
-
-        <button
-          onClick={handleManualEntry}
-          className='flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-colors text-gray-600'
-        >
-          <div className='flex items-center space-x-2'>
-            <Plus className='w-5 h-5' />
-            <span className='font-medium'>Add Card Manually</span>
-          </div>
-        </button>
       </div>
     </div>
   );

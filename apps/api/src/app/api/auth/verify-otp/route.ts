@@ -242,31 +242,28 @@ export async function POST(request: NextRequest) {
     );
 
     // Set authentication cookies with proper security
-    const accessTokenOptions = {
+    const cookieOptions = {
       maxAge: 7 * 24 * 60 * 60, // 7 days
-      httpOnly: false, // Need client-side access for API calls
+      httpOnly: true, // Both tokens should be httpOnly for security
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
       sameSite: 'lax' as const,
       path: '/',
     };
 
-    const refreshTokenOptions = {
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      httpOnly: true, // More secure for refresh tokens
-      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-      sameSite: 'lax' as const,
-      path: '/',
-    };
+    // Set access token cookie (httpOnly)
+    let accessTokenCookie = `finmatter-auth-token=${data.session.access_token}; Max-Age=${cookieOptions.maxAge}; Path=${cookieOptions.path}; SameSite=${cookieOptions.sameSite}; HttpOnly`;
+    if (cookieOptions.secure) accessTokenCookie += '; Secure';
+    response.headers.append('Set-Cookie', accessTokenCookie);
 
-    // Set access token cookie
-    let accessTokenCookie = `finmatter-auth-token=${data.session.access_token}; Max-Age=${accessTokenOptions.maxAge}; Path=${accessTokenOptions.path}; SameSite=${accessTokenOptions.sameSite}`;
-    if (accessTokenOptions.secure) accessTokenCookie += '; Secure';
-    response.headers.set('Set-Cookie', accessTokenCookie);
+    // Set refresh token cookie (httpOnly)
+    let refreshTokenCookie = `finmatter-refresh-token=${data.session.refresh_token}; Max-Age=${cookieOptions.maxAge}; Path=${cookieOptions.path}; SameSite=${cookieOptions.sameSite}; HttpOnly`;
+    if (cookieOptions.secure) refreshTokenCookie += '; Secure';
+    response.headers.append('Set-Cookie', refreshTokenCookie);
 
-    // Set refresh token cookie
-    let refreshTokenCookie = `finmatter-refresh-token=${data.session.refresh_token}; Max-Age=${refreshTokenOptions.maxAge}; Path=${refreshTokenOptions.path}; SameSite=${refreshTokenOptions.sameSite}; HttpOnly`;
-    if (refreshTokenOptions.secure) refreshTokenCookie += '; Secure';
-    response.headers.set('Set-Cookie', refreshTokenCookie);
+    // Set a non-httpOnly cookie with just the token expiry for client-side checks
+    let tokenExpiryInfo = `finmatter-token-expiry=${data.session.expires_at}; Max-Age=${cookieOptions.maxAge}; Path=${cookieOptions.path}; SameSite=${cookieOptions.sameSite}`;
+    if (cookieOptions.secure) tokenExpiryInfo += '; Secure';
+    response.headers.append('Set-Cookie', tokenExpiryInfo);
 
     return response;
   } catch (error) {

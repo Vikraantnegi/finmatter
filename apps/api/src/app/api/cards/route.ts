@@ -44,7 +44,7 @@ const CreateCardSchema = z
     creditLimit: z.number().min(0).optional(),
     availableCredit: z.number().min(0).optional(),
     billingDay: z.number().min(1).max(31).optional(), // Optional - can be extracted from statements later
-    cardMetadataId: z.string().optional(),
+    cardMetadataId: z.string().min(1, 'Card metadata ID is required'),
     bankId: z.string().optional(),
     primaryColor: z.string().optional(),
     secondaryColor: z.string().optional(),
@@ -147,7 +147,8 @@ export async function GET(request: NextRequest) {
       .select(
         `
         *,
-        card_benefits (*)
+        card_benefits (*),
+        statements:card_statements (count)
       `,
       )
       .eq('user_id', userId)

@@ -1,6 +1,6 @@
 'use client';
 
-import { Card } from '@finmatter/types';
+import { Card } from '@/types/card';
 import { Eye } from 'lucide-react';
 import { getNetworkLogo } from '@/components/icons/CardNetworks';
 import { getCardColors, getCardStatusInfo } from '@/lib/cardColors';
@@ -53,7 +53,7 @@ export function CardVisual({
     >
       {/* Card Visual */}
       <div
-        className={`relative h-48 p-6 text-white transition-all duration-300 hover:shadow-xl ${
+        className={`relative p-6 text-white transition-all duration-300 hover:shadow-xl ${
           isInactive ? 'opacity-60 grayscale' : ''
         }`}
         style={gradientStyle}
@@ -70,34 +70,28 @@ export function CardVisual({
         )}
 
         {/* Bank Name & Network Logo */}
-        <div className='flex justify-between items-start mb-4'>
+        <div className='flex justify-between items-start mb-6'>
           <div>
-            <div className='text-xs opacity-75 mb-1'>{card.bankName}</div>
-            <NetworkLogo className='w-12 h-8' />
-          </div>
-          <div className='text-right'>
-            <div className='text-xs opacity-75'>AVAILABLE</div>
-            <div className='font-bold text-lg'>
-              ₹{card.availableCredit?.toLocaleString() || '0'}
+            <div className='text-xs opacity-75 mb-2'>{card.bankName}</div>
+            <div className='bg-white bg-opacity-95 rounded-md p-1.5 shadow-sm backdrop-blur-sm'>
+              <NetworkLogo className='w-14 h-9' />
             </div>
           </div>
         </div>
 
         {/* Card Details */}
         <div className='mt-auto'>
-          <div className='text-sm opacity-75 mb-1'>CARD HOLDER</div>
-          <div className='font-medium text-lg mb-4'>{card.cardName}</div>
+          <div className='font-medium text-lg mb-6'>{card.cardName}</div>
           <div className='flex justify-between items-end'>
             <div>
-              <div className='text-xs opacity-75'>CARD NUMBER</div>
-              <div className='font-mono text-lg'>
+              <div className='font-mono text-lg tracking-wider'>
                 •••• •••• •••• {card.lastFourDigits || '••••'}
               </div>
             </div>
             {card.expiryDate && (
               <div className='text-right'>
                 <div className='text-xs opacity-75'>EXPIRES</div>
-                <div className='font-medium'>
+                <div className='font-medium tracking-wide'>
                   {new Date(card.expiryDate).toLocaleDateString('en-GB', {
                     month: '2-digit',
                     year: '2-digit',
@@ -129,57 +123,60 @@ export function CardVisual({
       {/* Card Info */}
       {showDetails && (
         <div className='p-4 space-y-3'>
-          <div className='flex justify-between items-center'>
-            <span className='text-sm text-gray-600'>Credit Limit</span>
-            <span className='font-medium'>
-              ₹{card.creditLimit?.toLocaleString() || '0'}
-            </span>
-          </div>
+          {/* Only show credit info if statement is uploaded */}
+          {card.hasStatement && (
+            <>
+              <div className='flex justify-between items-center'>
+                <span className='text-sm text-gray-600'>Credit Limit</span>
+                <span className='font-medium'>
+                  ₹{card.creditLimit?.toLocaleString() || '0'}
+                </span>
+              </div>
 
-          <div className='flex justify-between items-center'>
-            <span className='text-sm text-gray-600'>Used</span>
-            <span className='font-medium text-red-600'>
-              ₹
-              {card.creditLimit && card.availableCredit
-                ? (card.creditLimit - card.availableCredit).toLocaleString()
-                : '0'}
-            </span>
-          </div>
+              <div className='flex justify-between items-center'>
+                <span className='text-sm text-gray-600'>Used</span>
+                <span className='font-medium text-red-600'>
+                  ₹
+                  {card.creditLimit && card.availableCredit
+                    ? (card.creditLimit - card.availableCredit).toLocaleString()
+                    : '0'}
+                </span>
+              </div>
 
-          <div className='space-y-2'>
-            <div className='flex justify-between items-center'>
-              <span className='text-sm text-gray-600'>Utilization</span>
-              <span
-                className={`font-medium ${utilization > 80 ? 'text-red-600' : utilization > 50 ? 'text-yellow-600' : 'text-green-600'}`}
-              >
-                {utilization.toFixed(1)}%
-              </span>
-            </div>
-            <div className='w-full bg-gray-200 rounded-full h-2'>
-              <div
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  utilization > 80
-                    ? 'bg-red-500'
-                    : utilization > 50
-                      ? 'bg-yellow-500'
-                      : 'bg-green-500'
-                }`}
-                style={{ width: `${Math.min(utilization, 100)}%` }}
-              />
-            </div>
-          </div>
-
-          {card.bankName && (
-            <div className='flex justify-between items-center'>
-              <span className='text-sm text-gray-600'>Bank</span>
-              <span className='font-medium'>{card.bankName}</span>
-            </div>
+              <div className='space-y-2'>
+                <div className='flex justify-between items-center'>
+                  <span className='text-sm text-gray-600'>Utilization</span>
+                  <span
+                    className={`font-medium ${utilization > 80 ? 'text-red-600' : utilization > 50 ? 'text-yellow-600' : 'text-green-600'}`}
+                  >
+                    {utilization.toFixed(1)}%
+                  </span>
+                </div>
+                <div className='w-full bg-gray-200 rounded-full h-2'>
+                  <div
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      utilization > 80
+                        ? 'bg-red-500'
+                        : utilization > 50
+                          ? 'bg-yellow-500'
+                          : 'bg-green-500'
+                    }`}
+                    style={{ width: `${Math.min(utilization, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </>
           )}
 
-          {card.rewardType && (
-            <div className='flex justify-between items-center'>
-              <span className='text-sm text-gray-600'>Rewards</span>
-              <span className='font-medium capitalize'>{card.rewardType}</span>
+          {/* Upload Statement CTA */}
+          {!card.hasStatement && (
+            <div className='bg-primary-50 rounded-lg p-4 text-center'>
+              <p className='text-sm text-primary-700 mb-2'>
+                Upload your first statement to see credit limit and utilization
+              </p>
+              <button className='w-full flex items-center justify-center space-x-2 py-2 px-4 bg-primary-100 hover:bg-primary-200 text-primary-700 rounded-lg transition-colors'>
+                <span className='text-sm font-medium'>Upload Statement</span>
+              </button>
             </div>
           )}
 

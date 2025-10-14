@@ -13,6 +13,7 @@ import {
   logError,
   ErrorCodes,
 } from '@/lib/errorHandler';
+import { dbUserToApiUser } from '@/lib/dataTransform';
 import { z } from 'zod';
 
 // Request validation schema for updates
@@ -124,28 +125,12 @@ export async function GET(
       });
     }
 
-    // Return complete user profile data
+    // Return complete user profile data using consistent transformation
     return createCorsResponse(
       {
         success: true,
         data: {
-          user: {
-            id: user.id,
-            phoneNumber: user.phone_number,
-            firstName: user.profile_data?.firstName || '',
-            lastName: user.profile_data?.lastName || '',
-            onboardingCompleted: user.onboarding_completed || false,
-            isVerified: user.is_verified,
-            biometricEnabled: user.biometric_enabled,
-            notificationsEnabled: user.notifications_enabled || false,
-            createdAt: user.created_at,
-            updatedAt: user.updated_at,
-            lastLogin: user.last_login,
-            profileData: {
-              firstName: user.profile_data?.firstName || '',
-              lastName: user.profile_data?.lastName || '',
-            },
-          },
+          user: dbUserToApiUser(user),
         },
       },
       { origin: origin || undefined },
@@ -336,23 +321,7 @@ export async function PUT(
       {
         success: true,
         data: {
-          user: {
-            id: user.id,
-            phoneNumber: user.phone_number,
-            firstName: user.profile_data?.firstName || '',
-            lastName: user.profile_data?.lastName || '',
-            onboardingCompleted: user.onboarding_completed,
-            isVerified: user.is_verified,
-            biometricEnabled: user.biometric_enabled,
-            notificationsEnabled: user.notifications_enabled,
-            createdAt: user.created_at,
-            updatedAt: user.updated_at,
-            lastLogin: user.last_login,
-            profileData: {
-              firstName: user.profile_data?.firstName || '',
-              lastName: user.profile_data?.lastName || '',
-            },
-          },
+          user: dbUserToApiUser(user),
         },
       },
       { origin: origin || undefined },

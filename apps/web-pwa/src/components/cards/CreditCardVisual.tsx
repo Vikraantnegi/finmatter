@@ -50,7 +50,7 @@ export function CreditCardVisual({ card, className }: CreditCardVisualProps) {
   return (
     <div
       className={cn(
-        'relative h-48 rounded-2xl shadow-lg overflow-hidden cursor-pointer transition-transform hover:scale-105',
+        'relative rounded-2xl shadow-lg overflow-hidden cursor-pointer transition-transform hover:scale-105',
         className,
       )}
       style={gradientStyle}

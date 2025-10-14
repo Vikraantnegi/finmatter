@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CardVisual } from '@/components/cards/CardVisual';
+import { UploadStatementWidget } from '@/components/cards/UploadStatementWidget';
 import { Modal } from '@/components/ui/Modal';
 import { useCardStore } from '@/stores/cardStore';
 import { cardService } from '@/services/cardService';
@@ -13,14 +14,7 @@ import type {
   CardMetadataResponse,
 } from '@finmatter/types';
 import { Card } from '@finmatter/types';
-import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Gift,
-  Calendar,
-  CreditCard as CreditCardIcon,
-} from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Gift, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function CardDetailPage() {
@@ -148,87 +142,81 @@ export default function CardDetailPage() {
         {/* Card Visual */}
         <CardVisual card={card} showDetails={false} />
 
+        {/* Upload Statement Widget */}
+        <UploadStatementWidget
+          onUpload={() =>
+            toast('Statement upload feature coming soon!', { icon: 'ℹ️' })
+          }
+        />
+
         {/* Card Stats */}
-        <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
-          <h2 className='text-lg font-semibold text-gray-900 mb-4'>
-            Card Information
-          </h2>
-          <div className='grid grid-cols-2 gap-4'>
-            <div>
-              <div className='text-sm text-gray-600 mb-1'>Credit Limit</div>
-              <div className='text-xl font-bold text-gray-900'>
-                ₹{card.creditLimit?.toLocaleString() || '0'}
+        {card.hasStatement && (
+          <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
+            <h2 className='text-lg font-semibold text-gray-900 mb-4'>
+              Card Information
+            </h2>
+            <div className='grid grid-cols-2 gap-4'>
+              <div>
+                <div className='text-sm text-gray-600 mb-1'>Credit Limit</div>
+                <div className='text-xl font-bold text-gray-900'>
+                  ₹{card.creditLimit?.toLocaleString() || '0'}
+                </div>
               </div>
-            </div>
-            <div>
-              <div className='text-sm text-gray-600 mb-1'>Available Credit</div>
-              <div className='text-xl font-bold text-green-600'>
-                ₹{card.availableCredit?.toLocaleString() || '0'}
+              <div>
+                <div className='text-sm text-gray-600 mb-1'>
+                  Available Credit
+                </div>
+                <div className='text-xl font-bold text-green-600'>
+                  ₹{card.availableCredit?.toLocaleString() || '0'}
+                </div>
               </div>
-            </div>
-            <div>
-              <div className='text-sm text-gray-600 mb-1'>Used Credit</div>
-              <div className='text-xl font-bold text-red-600'>
-                ₹
-                {card.creditLimit && card.availableCredit
-                  ? (card.creditLimit - card.availableCredit).toLocaleString()
-                  : '0'}
+              <div>
+                <div className='text-sm text-gray-600 mb-1'>Used Credit</div>
+                <div className='text-xl font-bold text-red-600'>
+                  ₹
+                  {card.creditLimit && card.availableCredit
+                    ? (card.creditLimit - card.availableCredit).toLocaleString()
+                    : '0'}
+                </div>
               </div>
-            </div>
-            <div>
-              <div className='text-sm text-gray-600 mb-1'>Utilization</div>
-              <div className='text-xl font-bold text-gray-900'>
-                {card.creditLimit && card.availableCredit
-                  ? (
-                      ((card.creditLimit - card.availableCredit) /
-                        card.creditLimit) *
-                      100
-                    ).toFixed(1)
-                  : '0'}
-                %
+              <div>
+                <div className='text-sm text-gray-600 mb-1'>Utilization</div>
+                <div className='text-xl font-bold text-gray-900'>
+                  {card.creditLimit && card.availableCredit
+                    ? (
+                        ((card.creditLimit - card.availableCredit) /
+                          card.creditLimit) *
+                        100
+                      ).toFixed(1)
+                    : '0'}
+                  %
+                </div>
               </div>
             </div>
           </div>
+        )}
 
-          {/* Additional Info */}
-          <div className='mt-6 pt-6 border-t border-gray-200 space-y-3'>
-            {card.billingDay && (
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center space-x-2 text-gray-600'>
-                  <Calendar className='w-4 h-4' />
-                  <span className='text-sm'>Billing Day</span>
-                </div>
-                <span className='font-medium'>{card.billingDay}</span>
+        {/* Additional Info */}
+        <div className='mt-6 border-t border-gray-200 space-y-3'>
+          {card.billingDay && (
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center space-x-2 text-gray-600'>
+                <Calendar className='w-4 h-4' />
+                <span className='text-sm'>Billing Day</span>
               </div>
-            )}
-            {card.expiryDate && (
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center space-x-2 text-gray-600'>
-                  <CreditCardIcon className='w-4 h-4' />
-                  <span className='text-sm'>Expiry Date</span>
-                </div>
-                <span className='font-medium'>
-                  {new Date(card.expiryDate).toLocaleDateString('en-GB', {
-                    month: 'short',
-                    year: 'numeric',
-                  })}
-                </span>
+              <span className='font-medium'>{card.billingDay}</span>
+            </div>
+          )}
+          {/* {card.rewardType && (
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center space-x-2 text-gray-600'>
+                <Gift className='w-4 h-4' />
+                <span className='text-sm'>Reward Type</span>
               </div>
-            )}
-            {card.rewardType && (
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center space-x-2 text-gray-600'>
-                  <Gift className='w-4 h-4' />
-                  <span className='text-sm'>Reward Type</span>
-                </div>
-                <span className='font-medium capitalize'>
-                  {card.rewardType}
-                </span>
-              </div>
-            )}
-          </div>
+              <span className='font-medium capitalize'>{card.rewardType}</span>
+            </div>
+          )} */}
         </div>
-
         {/* Card Metadata Information */}
         {cardMetadata && (
           <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
@@ -325,29 +313,16 @@ export default function CardDetailPage() {
         )}
 
         {/* Custom Benefits */}
-        <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
+        <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6'>
           <div className='flex items-center justify-between mb-4'>
             <h2 className='text-lg font-semibold text-gray-900'>
               Card Benefits
             </h2>
-            <div className='flex items-center space-x-2'>
-              <Button
-                size='sm'
-                variant='outline'
-                onClick={() =>
-                  toast('Statement upload feature coming soon!', { icon: 'ℹ️' })
-                }
-                className='flex items-center space-x-2'
-              >
-                <CreditCardIcon className='w-4 h-4' />
-                <span>Upload Statement</span>
-              </Button>
-            </div>
           </div>
 
           {benefitsLoading ? (
-            <div className='text-center py-8'>
-              <LoadingSpinner size='md' />
+            <div className='text-center flex-col items-center justify-center py-8 w-full'>
+              <LoadingSpinner size='md' className='mx-auto' />
               <p className='text-gray-500 mt-2'>Loading benefits...</p>
             </div>
           ) : benefits && benefits.length > 0 ? (
@@ -355,31 +330,35 @@ export default function CardDetailPage() {
               {benefits.map((benefit, index) => (
                 <div
                   key={benefit.id || index}
-                  className='flex items-start p-4 border border-gray-200 rounded-lg bg-gray-50'
+                  className='flex items-start p-4 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors'
                 >
                   <Gift className='w-5 h-5 text-primary-500 mt-0.5 mr-3 flex-shrink-0' />
                   <div className='flex-1'>
                     <div className='text-sm text-gray-900'>
                       {benefit.description}
                     </div>
-                    <div className='flex items-center gap-2 mt-1'>
-                      {benefit.rewardRate > 0 && (
-                        <span className='text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full'>
-                          {benefit.rewardRate}% {benefit.rewardType}
-                        </span>
-                      )}
-                      {benefit.rewardCap && (
-                        <span className='text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full'>
-                          Up to ₹{benefit.rewardCap.toLocaleString()}
-                          {benefit.capPeriod && `/${benefit.capPeriod}`}
-                        </span>
-                      )}
-                      {benefit.value &&
-                        benefit.value !== benefit.description && (
-                          <span className='text-xs text-primary-600 font-medium'>
-                            {benefit.value}
+                    <div className='flex flex-wrap items-center gap-2 mt-1'>
+                      {benefit.rewardRate > 0 &&
+                        benefit.rewardType !== 'none' && (
+                          <span className='text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full'>
+                            {benefit.rewardRate}% {benefit.rewardType}
                           </span>
                         )}
+                      {benefit.rewardCap && (
+                        <span className='text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full'>
+                          {benefit.rewardType === 'none' ? (
+                            <>
+                              Up to {benefit.rewardCap} visits
+                              {benefit.capPeriod && `/${benefit.capPeriod}`}
+                            </>
+                          ) : (
+                            <>
+                              Up to ₹{benefit.rewardCap.toLocaleString()}
+                              {benefit.capPeriod && `/${benefit.capPeriod}`}
+                            </>
+                          )}
+                        </span>
+                      )}
                     </div>
                     {benefit.conditions.length > 0 && (
                       <div className='text-xs text-gray-500 mt-1'>
@@ -400,45 +379,45 @@ export default function CardDetailPage() {
             </div>
           )}
         </div>
+        {showDeleteModal && (
+          <Modal
+            isOpen={true}
+            onClose={() => setShowDeleteModal(false)}
+            title='Delete Card'
+          >
+            <div className='space-y-4'>
+              <p className='text-gray-600'>
+                Are you sure you want to delete <strong>{card.cardName}</strong>
+                ? This action cannot be undone.
+              </p>
+              <div className='flex space-x-3'>
+                <Button
+                  variant='outline'
+                  onClick={() => setShowDeleteModal(false)}
+                  className='flex-1'
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className='flex-1 bg-red-600 hover:bg-red-700'
+                >
+                  {deleting ? (
+                    <div className='flex items-center justify-center gap-2'>
+                      <LoadingSpinner size='sm' />
+                      <span>Deleting...</span>
+                    </div>
+                  ) : (
+                    'Delete'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
       </div>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title='Delete Card'
-      >
-        <div className='space-y-4'>
-          <p className='text-gray-600'>
-            Are you sure you want to delete <strong>{card.cardName}</strong>?
-            This action cannot be undone.
-          </p>
-          <div className='flex space-x-3'>
-            <Button
-              variant='outline'
-              onClick={() => setShowDeleteModal(false)}
-              className='flex-1'
-              disabled={deleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleDelete}
-              disabled={deleting}
-              className='flex-1 bg-red-600 hover:bg-red-700'
-            >
-              {deleting ? (
-                <div className='flex items-center justify-center gap-2'>
-                  <LoadingSpinner size='sm' />
-                  <span>Deleting...</span>
-                </div>
-              ) : (
-                'Delete'
-              )}
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }

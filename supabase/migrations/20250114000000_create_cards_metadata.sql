@@ -100,23 +100,13 @@ INSERT INTO public.cards_metadata (
   'Perfect for online shopping and dining with 5% cashback rewards',
   '[
     {
-      "category": "shopping",
-      "description": "5% cashback on shopping and dining",
+      "category": "shopping_dining",
+      "description": "5% cashback on online shopping and dining",
       "rewardRate": 5.00,
       "rewardType": "cashback",
       "rewardCap": 1000.00,
       "capPeriod": "monthly",
       "conditions": ["Online purchases only", "Minimum ₹1000 per transaction"],
-      "value": "5% cashback"
-    },
-    {
-      "category": "dining",
-      "description": "5% cashback on shopping and dining",
-      "rewardRate": 5.00,
-      "rewardType": "cashback",
-      "rewardCap": 1000.00,
-      "capPeriod": "monthly",
-      "conditions": [],
       "value": "5% cashback"
     },
     {
@@ -131,13 +121,13 @@ INSERT INTO public.cards_metadata (
     },
     {
       "category": "lounge",
-      "description": "4 complimentary airport lounge visits per year",
+      "description": "Complimentary airport lounge access",
       "rewardRate": 0.00,
       "rewardType": "none",
-      "rewardCap": 4.00,
+      "rewardCap": 4,
       "capPeriod": "yearly",
-      "conditions": ["Complimentary access"],
-      "value": "4 visits"
+      "conditions": ["4 visits per year", "International lounges only"],
+      "value": "4 visits/year"
     },
     {
       "category": "fuel",
@@ -177,7 +167,7 @@ INSERT INTO public.cards_metadata (
   '[
     {
       "category": "travel",
-      "description": "4 reward points per ₹150 spent",
+      "description": "4 reward points per ₹150 on travel spends",
       "rewardRate": 4.00,
       "rewardType": "points",
       "rewardCap": null,
@@ -187,7 +177,7 @@ INSERT INTO public.cards_metadata (
     },
     {
       "category": "dining",
-      "description": "4 reward points per ₹150 spent",
+      "description": "4 reward points per ₹150 on dining spends",
       "rewardRate": 4.00,
       "rewardType": "points",
       "rewardCap": null,
@@ -197,7 +187,7 @@ INSERT INTO public.cards_metadata (
     },
     {
       "category": "default",
-      "description": "4 reward points per ₹150 spent",
+      "description": "4 reward points per ₹150 on all other spends",
       "rewardRate": 4.00,
       "rewardType": "points",
       "rewardCap": null,
@@ -207,23 +197,23 @@ INSERT INTO public.cards_metadata (
     },
     {
       "category": "lounge",
-      "description": "Unlimited domestic airport lounge access",
+      "description": "Domestic airport lounge access",
       "rewardRate": 0.00,
       "rewardType": "none",
       "rewardCap": null,
       "capPeriod": null,
-      "conditions": ["Unlimited domestic access"],
+      "conditions": ["Unlimited domestic lounge visits", "Cardholder only"],
       "value": "Unlimited"
     },
     {
       "category": "lounge",
-      "description": "6 international lounge visits per year",
+      "description": "International airport lounge access",
       "rewardRate": 0.00,
       "rewardType": "none",
-      "rewardCap": 6.00,
+      "rewardCap": 6,
       "capPeriod": "yearly",
-      "conditions": ["International access"],
-      "value": "6 visits"
+      "conditions": ["6 visits per year", "Priority Pass lounges"],
+      "value": "6 visits/year"
     },
     {
       "category": "insurance",
@@ -330,7 +320,7 @@ INSERT INTO public.cards_metadata (
   '[
     {
       "category": "dining",
-      "description": "10X reward points on dining and movies",
+      "description": "10X reward points on dining",
       "rewardRate": 10.00,
       "rewardType": "points",
       "rewardCap": null,
@@ -340,7 +330,7 @@ INSERT INTO public.cards_metadata (
     },
     {
       "category": "movies",
-      "description": "10X reward points on dining and movies",
+      "description": "10X reward points on movie tickets",
       "rewardRate": 10.00,
       "rewardType": "points",
       "rewardCap": null,
@@ -520,13 +510,13 @@ INSERT INTO public.cards_metadata (
     },
     {
       "category": "lounge",
-      "description": "8 complimentary airport lounge visits per year",
+      "description": "Airport lounge access",
       "rewardRate": 0.00,
       "rewardType": "none",
-      "rewardCap": 8.00,
+      "rewardCap": 8,
       "capPeriod": "yearly",
-      "conditions": ["Complimentary access"],
-      "value": "8 visits"
+      "conditions": ["8 visits per year", "Priority Pass and Domestic lounges"],
+      "value": "8 visits/year"
     },
     {
       "category": "membership",

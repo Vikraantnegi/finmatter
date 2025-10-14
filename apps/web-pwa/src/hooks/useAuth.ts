@@ -163,15 +163,19 @@ export function useAuth() {
         const response = await authService.completeOnboarding(userData);
 
         if (response.success && response.data?.user) {
+          // Update user and onboarding status first
           setUser(response.data.user);
           setOnboardingCompleted(true);
           toast.success('Onboarding completed!');
 
-          // Navigate immediately with push (not replace) to ensure clean transition
-          // This prevents Next.js from re-rendering the current page with stale state
-          window.location.href = '/dashboard';
+          // Keep loading state true until navigation completes
+          // This prevents flashing of onboarding screen
+          router.replace('/dashboard');
+          router.refresh();
 
-          return { success: true };
+          // Return success but don't clear loading state yet
+          // Loading state will be cleared by the component
+          return { success: true, keepLoading: true };
         } else {
           const errorMessage =
             response.error?.message || 'Failed to complete onboarding';

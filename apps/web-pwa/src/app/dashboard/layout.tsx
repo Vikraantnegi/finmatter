@@ -5,15 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useBlockScroll } from '@/hooks/useBlockScroll';
-import {
-  Home,
-  CreditCard,
-  FileText,
-  User,
-  LogOut,
-  Menu,
-  X,
-} from 'lucide-react';
+import { Home, CreditCard, LogOut, Menu, X } from 'lucide-react';
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -27,8 +19,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Cards', href: '/cards', icon: CreditCard },
-    { name: 'Statements', href: '/statements', icon: FileText },
-    { name: 'Profile', href: '/profile', icon: User },
+    // TODO: Uncomment when statements feature is implemented (Week 2-3 as per dev_plan.md)
+    // { name: 'Statements', href: '/statements', icon: FileText },
+    // TODO: Uncomment when profile page is implemented
+    // { name: 'Profile', href: '/profile', icon: User },
   ];
 
   const handleSignOut = async () => {

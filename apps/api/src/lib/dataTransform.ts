@@ -10,6 +10,9 @@ import type { Card, CardBenefit } from '@finmatter/types';
  * Convert database card (snake_case) to API card (camelCase)
  */
 export function dbCardToApiCard(dbCard: any, dbBenefits?: any[]): Card {
+  // Check if card has any statements
+  const hasStatement = dbCard.statements?.length > 0;
+
   return {
     id: dbCard.id,
     userId: dbCard.user_id,
@@ -32,6 +35,7 @@ export function dbCardToApiCard(dbCard: any, dbBenefits?: any[]): Card {
     primaryColor: dbCard.primary_color,
     secondaryColor: dbCard.secondary_color,
     isCustom: dbCard.is_custom,
+    hasStatement,
     // Transform joined benefits
     benefits: dbBenefits
       ? dbBenefits.map(dbBenefitToApiBenefit)
@@ -139,4 +143,29 @@ export function dbCardsToApiCards(dbCards: any[]): Card[] {
  */
 export function dbBenefitsToApiBenefits(dbBenefits: any[]): CardBenefit[] {
   return dbBenefits.map(dbBenefitToApiBenefit);
+}
+
+/**
+ * Convert database user (snake_case) to API user (camelCase)
+ * Ensures consistent user data transformation across all API responses
+ */
+export function dbUserToApiUser(dbUser: any) {
+  return {
+    id: dbUser.id,
+    phoneNumber: dbUser.phone_number,
+    firstName: dbUser.profile_data?.firstName || '',
+    lastName: dbUser.profile_data?.lastName || '',
+    onboardingCompleted: dbUser.onboarding_completed || false,
+    isVerified: dbUser.is_verified,
+    biometricEnabled: dbUser.biometric_enabled,
+    notificationsEnabled: dbUser.notifications_enabled || false,
+    createdAt: dbUser.created_at,
+    updatedAt: dbUser.updated_at,
+    lastLogin: dbUser.last_login,
+    // Also include profileData for backwards compatibility
+    profileData: {
+      firstName: dbUser.profile_data?.firstName || '',
+      lastName: dbUser.profile_data?.lastName || '',
+    },
+  };
 }

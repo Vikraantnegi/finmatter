@@ -66,8 +66,11 @@ export function useOnboarding() {
       });
 
       if (result.success) {
-        // Onboarding completed successfully - navigation handled by completeOnboarding
-        // Keep loading state until navigation completes
+        // If keepLoading is true, don't clear loading state
+        // This prevents flashing during navigation
+        if (!result.keepLoading) {
+          setIsLoading(false);
+        }
         return;
       } else {
         toast.error('Failed to complete onboarding. Please try again.');

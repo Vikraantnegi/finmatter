@@ -4,6 +4,9 @@ import { NextResponse } from 'next/server';
 const getAllowedOrigins = () => {
   const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
     'http://localhost:3001',
+    'http://localhost:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:3000',
   ];
 
   // Add production origins if in production
@@ -36,8 +39,10 @@ export function createCorsResponse(
     headers: {
       'Access-Control-Allow-Origin': allowedOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers':
+        'Content-Type, Authorization, Origin, X-Requested-With, Accept',
       'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Max-Age': '86400',
       ...options.headers,
     },
   });
@@ -55,7 +60,8 @@ export function handleCorsPreflight(origin?: string) {
     headers: {
       'Access-Control-Allow-Origin': allowedOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers':
+        'Content-Type, Authorization, Origin, X-Requested-With, Accept',
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Max-Age': '86400',
     },

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useCardStore } from '@/stores/cardStore';
 import { Card } from '@finmatter/types';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function EditCardPage() {
@@ -20,15 +20,17 @@ export default function EditCardPage() {
 
   // Form data
   const [formData, setFormData] = useState({
-    cardName: '',
+    cardHolderName: '',
     lastFourDigits: '',
-    creditLimit: '',
-    availableCredit: '',
-    billingDay: '',
     expiryDate: '',
   });
 
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<{
+    cardHolderName?: string;
+    lastFourDigits?: string;
+    expiryDate?: string;
+    submit?: string;
+  }>({});
 
   // Fetch card details
   useEffect(() => {
@@ -39,38 +41,38 @@ export default function EditCardPage() {
       if (foundCard) {
         setCard(foundCard);
         setFormData({
-          cardName: foundCard.cardName,
+          cardHolderName: foundCard.cardName,
           lastFourDigits: foundCard.lastFourDigits || '',
-          creditLimit: foundCard.creditLimit?.toString() || '',
-          availableCredit: foundCard.availableCredit?.toString() || '',
-          billingDay: foundCard.billingDay?.toString() || '',
           expiryDate: foundCard.expiryDate
-            ? new Date(foundCard.expiryDate).toISOString().split('T')[0]
+            ? new Date(foundCard.expiryDate).toLocaleDateString('en-GB', {
+                month: '2-digit',
+                year: '2-digit',
+              })
             : '',
         });
       }
     }
   }, [cardId, cards, fetchCards]);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors((prev: any) => ({
+      setErrors(prev => ({
         ...prev,
-        [field]: '',
+        [field]: undefined,
       }));
     }
   };
 
   const validateForm = () => {
-    const newErrors: any = {};
+    const newErrors: typeof errors = {};
 
-    if (!formData.cardName.trim()) {
-      newErrors.cardName = 'Card name is required';
+    if (!formData.cardHolderName.trim()) {
+      newErrors.cardHolderName = 'Card holder name is required';
     }
 
     if (!formData.lastFourDigits.trim()) {
@@ -79,31 +81,9 @@ export default function EditCardPage() {
       newErrors.lastFourDigits = 'Must be exactly 4 digits';
     }
 
-    if (!formData.creditLimit.trim()) {
-      newErrors.creditLimit = 'Credit limit is required';
-    } else if (
-      isNaN(Number(formData.creditLimit)) ||
-      Number(formData.creditLimit) <= 0
-    ) {
-      newErrors.creditLimit = 'Must be a valid positive number';
-    }
-
-    if (!formData.availableCredit.trim()) {
-      newErrors.availableCredit = 'Available credit is required';
-    } else if (
-      isNaN(Number(formData.availableCredit)) ||
-      Number(formData.availableCredit) < 0
-    ) {
-      newErrors.availableCredit = 'Must be a valid non-negative number';
-    }
-
-    if (
-      formData.billingDay &&
-      (isNaN(Number(formData.billingDay)) ||
-        Number(formData.billingDay) < 1 ||
-        Number(formData.billingDay) > 31)
-    ) {
-      newErrors.billingDay = 'Must be a valid day (1-31)';
+    // Validate expiry date format (MM/YY)
+    if (formData.expiryDate && !/^\d{2}\/\d{2}$/.test(formData.expiryDate)) {
+      newErrors.expiryDate = 'Must be in MM/YY format';
     }
 
     setErrors(newErrors);
@@ -117,23 +97,65 @@ export default function EditCardPage() {
     try {
       const updatedCard: Partial<Card> = {
         ...card,
-        cardName: formData.cardName,
+        cardName: formData.cardHolderName,
         lastFourDigits: formData.lastFourDigits,
-        creditLimit: Number(formData.creditLimit),
-        availableCredit: Number(formData.availableCredit),
-        billingDay: formData.billingDay
-          ? Number(formData.billingDay)
+        expiryDate: formData.expiryDate
+          ? new Date(
+              2000 + parseInt(formData.expiryDate.split('/')[1]),
+              parseInt(formData.expiryDate.split('/')[0]) - 1,
+            ).toISOString()
           : undefined,
-        expiryDate: formData.expiryDate || undefined,
       };
 
       await updateCard(cardId, updatedCard);
       toast.success('Card updated successfully');
       router.push(`/cards/${cardId}`);
-    } catch (error) {
-      // Error handled by toast
-      toast.error('Failed to update card');
-      setErrors({ submit: 'Failed to update card. Please try again.' });
+    } catch (error: any) {
+      console.error('Failed to update card:', error);
+
+      // Check for specific error codes from API
+      const errorData = error.response?.data?.error || error.error;
+
+      if (errorData?.code === 'CARD_ALREADY_EXISTS') {
+        // Duplicate card error
+        setErrors({
+          lastFourDigits: errorData.message,
+          submit: errorData.suggestion || 'This card already exists.',
+        });
+        toast.error(errorData.message);
+      } else if (errorData?.code === 'VALIDATION_ERROR') {
+        // Validation errors - map to form fields
+        const details = errorData.details;
+        if (Array.isArray(details)) {
+          const fieldErrors: typeof errors = {};
+          details.forEach((err: { path?: string[]; message?: string }) => {
+            if (err.path && err.path.length > 0) {
+              const fieldName = err.path[0] as keyof typeof errors;
+              if (fieldName in fieldErrors || fieldName === 'submit') {
+                (fieldErrors as any)[fieldName] = err.message;
+              }
+            }
+          });
+          setErrors(fieldErrors);
+          toast.error('Please check your input and try again.');
+        } else {
+          setErrors({ submit: errorData.message });
+          toast.error(errorData.message);
+        }
+      } else if (errorData?.code === 'USER_NOT_FOUND') {
+        // Session expired
+        toast.error(errorData.message);
+        // Redirect to login after a delay
+        setTimeout(() => {
+          window.location.href = '/auth/login';
+        }, 2000);
+      } else {
+        // Generic error
+        const errorMessage =
+          errorData?.message || 'Failed to update card. Please try again.';
+        setErrors({ submit: errorMessage });
+        toast.error(errorMessage);
+      }
     } finally {
       setSaving(false);
     }
@@ -166,123 +188,60 @@ export default function EditCardPage() {
 
       {/* Content */}
       <div className='max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
-        <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6'>
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              Card Name *
-            </label>
-            <input
-              type='text'
-              value={formData.cardName}
-              onChange={e => handleInputChange('cardName', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                errors.cardName ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder='e.g., HDFC Millennia Credit Card'
-            />
-            {errors.cardName && (
-              <p className='text-red-500 text-sm mt-1'>{errors.cardName}</p>
-            )}
+        <div className='space-y-6'>
+          <div className='text-center'>
+            <CreditCard className='w-12 h-12 text-primary-500 mx-auto mb-4' />
+            <h2 className='text-xl font-bold text-gray-900 mb-2'>
+              Card Details
+            </h2>
+            <p className='text-gray-600'>Update your card information</p>
           </div>
 
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              Last 4 Digits *
-            </label>
-            <input
-              type='text'
-              value={formData.lastFourDigits}
-              onChange={e =>
-                handleInputChange(
-                  'lastFourDigits',
-                  e.target.value.replace(/\D/g, '').slice(0, 4),
-                )
-              }
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                errors.lastFourDigits ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder='1234'
-            />
-            {errors.lastFourDigits && (
-              <p className='text-red-500 text-sm mt-1'>
-                {errors.lastFourDigits}
-              </p>
-            )}
-          </div>
-
-          <div className='grid grid-cols-2 gap-4'>
+          <div className='space-y-4'>
             <div>
               <label className='block text-sm font-medium text-gray-700 mb-1'>
-                Credit Limit *
+                Card Holder Name *
               </label>
               <input
                 type='text'
-                value={formData.creditLimit}
+                value={formData.cardHolderName}
                 onChange={e =>
-                  handleInputChange(
-                    'creditLimit',
-                    e.target.value.replace(/\D/g, ''),
-                  )
+                  handleInputChange('cardHolderName', e.target.value)
                 }
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                  errors.creditLimit ? 'border-red-300' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 ${
+                  errors.cardHolderName ? 'border-red-300' : 'border-gray-300'
                 }`}
-                placeholder='100000'
+                placeholder='e.g., John Doe'
               />
-              {errors.creditLimit && (
+              {errors.cardHolderName && (
                 <p className='text-red-500 text-sm mt-1'>
-                  {errors.creditLimit}
+                  {errors.cardHolderName}
                 </p>
               )}
             </div>
 
             <div>
               <label className='block text-sm font-medium text-gray-700 mb-1'>
-                Available Credit *
+                Last 4 Digits *
               </label>
               <input
                 type='text'
-                value={formData.availableCredit}
+                value={formData.lastFourDigits}
                 onChange={e =>
                   handleInputChange(
-                    'availableCredit',
-                    e.target.value.replace(/\D/g, ''),
+                    'lastFourDigits',
+                    e.target.value.replace(/\D/g, '').slice(0, 4),
                   )
                 }
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                  errors.availableCredit ? 'border-red-300' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 ${
+                  errors.lastFourDigits ? 'border-red-300' : 'border-gray-300'
                 }`}
-                placeholder='75000'
+                placeholder='1234'
               />
-              {errors.availableCredit && (
+              {errors.lastFourDigits && (
                 <p className='text-red-500 text-sm mt-1'>
-                  {errors.availableCredit}
+                  {errors.lastFourDigits}
                 </p>
-              )}
-            </div>
-          </div>
-
-          <div className='grid grid-cols-2 gap-4'>
-            <div>
-              <label className='block text-sm font-medium text-gray-700 mb-1'>
-                Billing Day
-              </label>
-              <input
-                type='text'
-                value={formData.billingDay}
-                onChange={e =>
-                  handleInputChange(
-                    'billingDay',
-                    e.target.value.replace(/\D/g, '').slice(0, 2),
-                  )
-                }
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                  errors.billingDay ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder='15'
-              />
-              {errors.billingDay && (
-                <p className='text-red-500 text-sm mt-1'>{errors.billingDay}</p>
               )}
             </div>
 
@@ -291,21 +250,43 @@ export default function EditCardPage() {
                 Expiry Date
               </label>
               <input
-                type='date'
+                type='text'
                 value={formData.expiryDate}
-                onChange={e => handleInputChange('expiryDate', e.target.value)}
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent'
+                onChange={e => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  const formatted =
+                    value.length >= 2
+                      ? `${value.slice(0, 2)}/${value.slice(2, 4)}`
+                      : value;
+                  handleInputChange('expiryDate', formatted);
+                }}
+                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900'
+                placeholder='MM/YY'
+                maxLength={5}
               />
+              {errors.expiryDate && (
+                <p className='text-red-500 text-sm mt-1'>{errors.expiryDate}</p>
+              )}
             </div>
+
+            <div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
+              <p className='text-blue-800 text-sm flex items-center gap-2'>
+                <span>💡</span>
+                <span>
+                  Credit limit, available credit, and billing day will be
+                  automatically fetched from your statements.
+                </span>
+              </p>
+            </div>
+
+            {errors.submit && (
+              <div className='p-3 bg-red-50 border border-red-200 rounded-lg'>
+                <p className='text-red-600 text-sm'>{errors.submit}</p>
+              </div>
+            )}
           </div>
 
-          {errors.submit && (
-            <div className='p-3 bg-red-50 border border-red-200 rounded-lg'>
-              <p className='text-red-600 text-sm'>{errors.submit}</p>
-            </div>
-          )}
-
-          <div className='flex space-x-3 pt-4'>
+          <div className='flex space-x-3'>
             <Button
               variant='outline'
               onClick={() => router.back()}
@@ -320,7 +301,10 @@ export default function EditCardPage() {
               className='flex-1 flex items-center justify-center space-x-2'
             >
               {saving ? (
-                <LoadingSpinner size='sm' />
+                <div className='flex items-center justify-center gap-2'>
+                  <LoadingSpinner size='sm' />
+                  <span>Saving...</span>
+                </div>
               ) : (
                 <>
                   <Save className='w-4 h-4' />

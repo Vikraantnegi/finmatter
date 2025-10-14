@@ -2,20 +2,12 @@ import { NextResponse } from 'next/server';
 
 // Get allowed origins from environment or default to localhost for development
 const getAllowedOrigins = () => {
-  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-    'http://localhost:3001',
+  const allowedOrigins = [
     'http://localhost:3000',
-    'http://127.0.0.1:3001',
     'http://127.0.0.1:3000',
+    'https://finmatter-web.vercel.app',
+    'https://staging-finmatter-web.vercel.app',
   ];
-
-  // Add production origins if in production
-  if (process.env.NODE_ENV === 'production') {
-    allowedOrigins.push(
-      'https://finmatter.vercel.app',
-      'https://www.finmatter.vercel.app',
-    );
-  }
 
   return allowedOrigins;
 };

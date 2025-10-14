@@ -33,7 +33,18 @@
     "changeset": "changeset",
     "changeset:version": "changeset version",
     "changeset:publish": "changeset publish",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:link:staging": "supabase link --project-ref gzjlausszwdrrpyzdjwl",
+    "db:link:prod": "supabase link --project-ref tpiemcfwrodnxbrvjsvx",
+    "db:push:staging": "pnpm db:link:staging && supabase db push",
+    "db:push:prod": "pnpm db:link:prod && supabase db push",
+    "db:reset:staging": "pnpm db:link:staging && supabase db reset",
+    "db:reset:prod": "pnpm db:link:prod && supabase db reset",
+    "db:diff": "supabase db diff",
+    "db:migration:new": "supabase migration new",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",

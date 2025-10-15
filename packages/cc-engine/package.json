@@ -4,6 +4,16 @@
   "description": "Credit card optimization engine for FinMatter",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

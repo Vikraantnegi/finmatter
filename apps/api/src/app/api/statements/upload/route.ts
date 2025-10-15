@@ -7,7 +7,7 @@ import { NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { FinMatterError } from '@finmatter/shared';
 import { createCorsResponse, handleCorsPreflight } from '@/lib/cors';
-import { parseStatement, type BankName } from '@finmatter/cc-engine';
+import { parseStatement, type BankName } from '@finmatter/cc-engine/server';
 import { z } from 'zod';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB

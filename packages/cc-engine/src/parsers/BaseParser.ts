@@ -191,4 +191,75 @@ export abstract class BaseParser {
 
     return true;
   }
+
+  /**
+   * Extract metadata from PDF text (common across banks)
+   * Can be overridden by specific parsers if needed
+   */
+  protected extractMetadata(pdfText: string): StatementMetadata {
+    const metadata: StatementMetadata = {};
+
+    const cardNumber = this.extractCardNumber(pdfText);
+    if (cardNumber) {
+      metadata.cardLastFourDigits = cardNumber;
+    }
+
+    const creditLimitPatterns = [
+      /credit\s+limit[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+)/i,
+      /limit[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+)/i,
+    ];
+
+    for (const pattern of creditLimitPatterns) {
+      const match = pdfText.match(pattern);
+      if (match && match[1]) {
+        metadata.creditLimit = parseFloat(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
+
+    const dueDatePatterns = [
+      /payment\s*due\s*date[:\s\n-]*?(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
+      /due\s*date[:\s\n-]*?(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
+      /pay\s*by[:\s\n-]*?(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
+    ];
+
+    for (const pattern of dueDatePatterns) {
+      const match = pdfText.match(pattern);
+      if (match && match[1]) {
+        const dueDate = this.parseDate(match[1]);
+        if (dueDate) {
+          metadata.dueDate = dueDate;
+          break;
+        }
+      }
+    }
+
+    const minPaymentPatterns = [
+      /minimum\s+(?:amount\s+)?due[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)/i,
+      /minimum\s+payment[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)/i,
+    ];
+
+    for (const pattern of minPaymentPatterns) {
+      const match = pdfText.match(pattern);
+      if (match && match[1]) {
+        metadata.minimumPayment = parseFloat(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
+
+    const availableCreditPatterns = [
+      /available\s+credit[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+)/i,
+      /credit\s+available[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+)/i,
+    ];
+
+    for (const pattern of availableCreditPatterns) {
+      const match = pdfText.match(pattern);
+      if (match && match[1]) {
+        metadata.availableCredit = parseFloat(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
+
+    return metadata;
+  }
 }

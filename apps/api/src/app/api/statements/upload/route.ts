@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null;
     const cardId = formData.get('cardId') as string | null;
     const bankName = formData.get('bankName') as string | null;
+    const password = formData.get('password') as string | null;
 
     if (!file || !cardId || !bankName) {
       return createCorsResponse(
@@ -244,6 +245,7 @@ export async function POST(request: NextRequest) {
       validation.data.bankName,
       userId,
       cardId,
+      password || undefined,
     ).catch(error => {
       console.error('Statement parsing failed:', error);
     });
@@ -301,10 +303,11 @@ async function parseStatementAsync(
   bankName: BankName,
   userId: string,
   cardId: string,
+  password?: string,
 ) {
   try {
     // Parse the PDF
-    const result = await parseStatement(fileBuffer, bankName);
+    const result = await parseStatement(fileBuffer, bankName, password);
 
     if (!result.success) {
       // Update statement with error

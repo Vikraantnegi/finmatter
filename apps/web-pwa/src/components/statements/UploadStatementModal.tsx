@@ -1,7 +1,15 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { X, Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import {
+  X,
+  Upload,
+  FileText,
+  AlertCircle,
+  CheckCircle,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { statementService, type BankName } from '@/services/statementService';
@@ -52,6 +60,8 @@ export function UploadStatementModal({
     if (normalizedBank.includes('hsbc')) return 'hsbc';
     return 'hdfc';
   });
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<
     'idle' | 'success' | 'error'
@@ -92,6 +102,7 @@ export function UploadStatementModal({
         selectedFile,
         cardId,
         bankName,
+        password || undefined,
       );
 
       if (response.success) {
@@ -105,8 +116,18 @@ export function UploadStatementModal({
         }, 1500);
       } else {
         setUploadStatus('error');
-        setErrorMessage(response.error?.message || 'Upload failed');
-        toast.error(response.error?.message || 'Failed to upload statement');
+        const errorMsg = response.error?.message || 'Upload failed';
+        setErrorMessage(errorMsg);
+
+        // Check if error is due to password
+        if (
+          errorMsg.toLowerCase().includes('password') ||
+          errorMsg.toLowerCase().includes('encrypted')
+        ) {
+          toast.error('PDF is password protected. Please enter the password.');
+        } else {
+          toast.error(errorMsg);
+        }
       }
     } catch (error) {
       setUploadStatus('error');
@@ -120,6 +141,8 @@ export function UploadStatementModal({
 
   const handleClose = () => {
     setSelectedFile(null);
+    setPassword('');
+    setShowPassword(false);
     setUploadStatus('idle');
     setErrorMessage('');
     if (fileInputRef.current) {
@@ -160,6 +183,39 @@ export function UploadStatementModal({
               </option>
             ))}
           </select>
+        </div>
+
+        {/* PDF Password (Optional) */}
+        <div>
+          <label className='block text-sm font-medium text-gray-700 mb-2'>
+            PDF Password <span className='text-gray-400'>(Optional)</span>
+          </label>
+          <div className='relative'>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder='Enter password if PDF is protected'
+              className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 pr-10'
+              disabled={isUploading}
+            />
+            <button
+              type='button'
+              onClick={() => setShowPassword(!showPassword)}
+              className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600'
+              disabled={isUploading}
+            >
+              {showPassword ? (
+                <EyeOff className='w-5 h-5' />
+              ) : (
+                <Eye className='w-5 h-5' />
+              )}
+            </button>
+          </div>
+          <p className='text-xs text-gray-500 mt-1.5'>
+            Common passwords: Last 4 digits of card, DOB (DDMMYYYY), or PAN last
+            4 chars
+          </p>
         </div>
 
         {/* File Upload */}

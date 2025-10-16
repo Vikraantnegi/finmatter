@@ -4,6 +4,7 @@
  */
 
 import pdf from 'pdf-parse';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { HDFCParser } from './HDFCParser';
 import { ICICIParser } from './ICICIParser';
 import { SBIParser } from './SBIParser';
@@ -15,6 +16,35 @@ export * from './types';
 export { BaseParser } from './BaseParser';
 
 /**
+ * Extract text from password-protected PDF using pdfjs-dist
+ */
+async function extractTextWithPassword(
+  pdfBuffer: Buffer,
+  password: string,
+): Promise<string> {
+  const uint8Array = new Uint8Array(pdfBuffer);
+  const loadingTask = pdfjsLib.getDocument({
+    data: uint8Array,
+    password,
+    useSystemFonts: true,
+    standardFontDataUrl: undefined,
+  });
+
+  const pdfDocument = await loadingTask.promise;
+  const numPages = pdfDocument.numPages;
+  let fullText = '';
+
+  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+    const page = await pdfDocument.getPage(pageNum);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map((item: any) => item.str).join(' ');
+    fullText += `${pageText}\n`;
+  }
+
+  return fullText;
+}
+
+/**
  * Main function to parse statement PDF
  * @param pdfBuffer - Buffer containing PDF file data
  * @param bankName - Name of the bank (hdfc, icici, sbi, axis, etc.)
@@ -23,10 +53,33 @@ export { BaseParser } from './BaseParser';
 export async function parseStatement(
   pdfBuffer: Buffer,
   bankName: BankName,
+  password?: string,
 ): Promise<ParseResult> {
   try {
-    const pdfData = await pdf(pdfBuffer);
-    const pdfText = pdfData.text;
+    // Extract text from PDF (with or without password)
+    let pdfText: string;
+    if (password) {
+      try {
+        pdfText = await extractTextWithPassword(pdfBuffer, password);
+      } catch (error: any) {
+        if (
+          error.name === 'PasswordException' ||
+          error.message?.includes('password')
+        ) {
+          return {
+            transactions: [],
+            metadata: {},
+            success: false,
+            errors: ['Incorrect password or PDF encryption not supported'],
+            warnings: [],
+          };
+        }
+        throw error;
+      }
+    } else {
+      const pdfData = await pdf(pdfBuffer);
+      pdfText = pdfData.text;
+    }
 
     if (!pdfText || pdfText.trim().length === 0) {
       return {

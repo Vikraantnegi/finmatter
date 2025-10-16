@@ -87,12 +87,16 @@ export class StatementService {
     file: File,
     cardId: string,
     bankName: BankName,
+    password?: string,
   ): Promise<UploadStatementResponse> {
     try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('cardId', cardId);
       formData.append('bankName', bankName);
+      if (password) {
+        formData.append('password', password);
+      }
 
       const response = await apiClient.post<UploadStatementResponse>(
         '/api/statements/upload',

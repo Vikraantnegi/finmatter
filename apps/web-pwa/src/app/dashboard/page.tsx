@@ -68,21 +68,8 @@ function DashboardContent() {
               <p className='text-sm text-gray-600 mt-1'>
                 {totalCards === 0
                   ? 'Add your first credit card to start tracking'
-                  : `You have ${totalCards} card${totalCards > 1 ? 's' : ''}`}
+                  : `You have ${totalCards} card${totalCards > 1 ? 's' : ''} in your portfolio`}
               </p>
-            </div>
-            <div className='flex items-center gap-3'>
-              <Button
-                variant='outline'
-                onClick={() => router.push('/cards')}
-                className='hidden sm:flex'
-              >
-                View All
-              </Button>
-              <Button onClick={() => router.push('/cards/add')}>
-                <Plus className='w-4 h-4 mr-2' />
-                Add Card
-              </Button>
             </div>
           </div>
 
@@ -112,6 +99,15 @@ function DashboardContent() {
                   <CardVisual card={card} />
                 </div>
               ))}
+              <div className='flex items-center gap-3 ml-auto'>
+                <Button variant='outline' onClick={() => router.push('/cards')}>
+                  View All
+                </Button>
+                <Button onClick={() => router.push('/cards/add')}>
+                  <Plus className='w-4 h-4 mr-2' />
+                  Add Card
+                </Button>
+              </div>
             </div>
           )}
         </div>

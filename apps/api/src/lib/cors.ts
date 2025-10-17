@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 // Get allowed origins from environment or default to localhost for development
 const getAllowedOrigins = () => {
   const allowedOrigins = [
-    'http://localhost:3000',
+    'http://localhost:3001',
     'http://127.0.0.1:3000',
     'https://finmatter-web.vercel.app',
     'https://staging-finmatter-web.vercel.app',

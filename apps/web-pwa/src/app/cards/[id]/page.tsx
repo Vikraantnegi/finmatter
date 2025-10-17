@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CardVisual } from '@/components/cards/CardVisual';
-import { UploadStatementWidget } from '@/components/cards/UploadStatementWidget';
+import { UploadStatementModal } from '@/components/statements/UploadStatementModal';
 import { Modal } from '@/components/ui/Modal';
 import { useCardStore } from '@/stores/cardStore';
 import { cardService } from '@/services/cardService';
@@ -14,7 +14,7 @@ import type {
   CardMetadataResponse,
 } from '@finmatter/types';
 import { Card } from '@finmatter/types';
-import { ArrowLeft, Edit, Trash2, Gift, Calendar } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Gift, Calendar, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function CardDetailPage() {
@@ -25,6 +25,7 @@ export default function CardDetailPage() {
   const { cards, isLoading: loading, fetchCards, deleteCard } = useCardStore();
   const [card, setCard] = useState<Card | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [benefits, setBenefits] = useState<CardBenefitResponse[]>([]);
   const [benefitsLoading, setBenefitsLoading] = useState(false);
@@ -143,11 +144,30 @@ export default function CardDetailPage() {
         <CardVisual card={card} showDetails={false} />
 
         {/* Upload Statement Widget */}
-        <UploadStatementWidget
-          onUpload={() =>
-            toast('Statement upload feature coming soon!', { icon: 'ℹ️' })
-          }
-        />
+        <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
+          <div className='flex items-center justify-center'>
+            <div className='text-center space-y-4'>
+              <div className='w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto'>
+                <Upload className='w-6 h-6 text-blue-600' />
+              </div>
+              <div>
+                <h3 className='text-lg font-semibold text-gray-900'>
+                  Upload Statement
+                </h3>
+                <p className='text-sm text-gray-600 mt-1'>
+                  Upload your statement to see credit limit and utilization
+                </p>
+              </div>
+              <Button
+                onClick={() => setShowUploadModal(true)}
+                className='flex items-center space-x-2 mx-auto'
+              >
+                <Upload className='w-4 h-4' />
+                <span>Upload Statement</span>
+              </Button>
+            </div>
+          </div>
+        </div>
 
         {/* Card Stats */}
         {card.hasStatement && (
@@ -379,6 +399,26 @@ export default function CardDetailPage() {
             </div>
           )}
         </div>
+        {/* Upload Statement Modal */}
+        {showUploadModal && (
+          <UploadStatementModal
+            isOpen={showUploadModal}
+            onClose={() => setShowUploadModal(false)}
+            cardId={card.id}
+            cardName={card.cardName}
+            bankName={card.bankName}
+            onSuccess={() => {
+              setShowUploadModal(false);
+              toast.success(
+                'Statement uploaded! Transactions will appear shortly.',
+              );
+              // Optionally refresh card data
+              fetchCards();
+            }}
+          />
+        )}
+
+        {/* Delete Modal */}
         {showDeleteModal && (
           <Modal
             isOpen={true}

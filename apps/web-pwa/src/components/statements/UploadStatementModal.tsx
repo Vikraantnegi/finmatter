@@ -11,7 +11,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { statementService, type BankName } from '@/services/statementService';
 import toast from 'react-hot-toast';
 
@@ -24,17 +24,6 @@ interface UploadStatementModalProps {
   onSuccess?: () => void;
 }
 
-const BANK_OPTIONS: { value: BankName; label: string }[] = [
-  { value: 'hdfc', label: 'HDFC Bank' },
-  { value: 'icici', label: 'ICICI Bank' },
-  { value: 'sbi', label: 'State Bank of India' },
-  { value: 'axis', label: 'Axis Bank' },
-  { value: 'kotak', label: 'Kotak Mahindra Bank' },
-  { value: 'citi', label: 'Citi Bank' },
-  { value: 'amex', label: 'American Express' },
-  { value: 'hsbc', label: 'HSBC' },
-];
-
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export function UploadStatementModal({
@@ -46,20 +35,6 @@ export function UploadStatementModal({
   onSuccess,
 }: UploadStatementModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [bankName, setBankName] = useState<BankName>(() => {
-    const normalizedBank = defaultBankName.toLowerCase().replace(/\s+/g, '');
-    if (normalizedBank.includes('hdfc')) return 'hdfc';
-    if (normalizedBank.includes('icici')) return 'icici';
-    if (normalizedBank.includes('sbi') || normalizedBank.includes('state'))
-      return 'sbi';
-    if (normalizedBank.includes('axis')) return 'axis';
-    if (normalizedBank.includes('kotak')) return 'kotak';
-    if (normalizedBank.includes('citi')) return 'citi';
-    if (normalizedBank.includes('amex') || normalizedBank.includes('american'))
-      return 'amex';
-    if (normalizedBank.includes('hsbc')) return 'hsbc';
-    return 'hdfc';
-  });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -97,11 +72,28 @@ export function UploadStatementModal({
     setUploadStatus('idle');
     setErrorMessage('');
 
+    // Normalize bank name to BankName type
+    const normalizedBank = defaultBankName.toLowerCase().replace(/\s+/g, '');
+    let bankNameValue: BankName = 'hdfc';
+    if (normalizedBank.includes('hdfc')) bankNameValue = 'hdfc';
+    else if (normalizedBank.includes('icici')) bankNameValue = 'icici';
+    else if (normalizedBank.includes('sbi') || normalizedBank.includes('state'))
+      bankNameValue = 'sbi';
+    else if (normalizedBank.includes('axis')) bankNameValue = 'axis';
+    else if (normalizedBank.includes('kotak')) bankNameValue = 'kotak';
+    else if (normalizedBank.includes('citi')) bankNameValue = 'citi';
+    else if (
+      normalizedBank.includes('amex') ||
+      normalizedBank.includes('american')
+    )
+      bankNameValue = 'amex';
+    else if (normalizedBank.includes('hsbc')) bankNameValue = 'hsbc';
+
     try {
       const response = await statementService.uploadStatement(
         selectedFile,
         cardId,
-        bankName,
+        bankNameValue,
         password || undefined,
       );
 
@@ -158,31 +150,12 @@ export function UploadStatementModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title='Upload Statement'>
-      <div className='space-y-6'>
+    <BottomSheet isOpen={isOpen} onClose={handleClose} title='Upload Statement'>
+      <div className='space-y-6 pb-6'>
         {/* Card Info */}
         <div className='bg-gray-50 rounded-lg p-4'>
           <p className='text-sm text-gray-600'>Uploading statement for</p>
           <p className='text-base font-semibold text-gray-900'>{cardName}</p>
-        </div>
-
-        {/* Bank Selection */}
-        <div>
-          <label className='block text-sm font-medium text-gray-700 mb-2'>
-            Select Bank
-          </label>
-          <select
-            value={bankName}
-            onChange={e => setBankName(e.target.value as BankName)}
-            className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-            disabled={isUploading}
-          >
-            {BANK_OPTIONS.map(bank => (
-              <option key={bank.value} value={bank.value}>
-                {bank.label}
-              </option>
-            ))}
-          </select>
         </div>
 
         {/* PDF Password (Optional) */}
@@ -336,11 +309,11 @@ export function UploadStatementModal({
             ) : uploadStatus === 'success' ? (
               'Uploaded!'
             ) : (
-              'Upload Statement'
+              'Upload'
             )}
           </Button>
         </div>
       </div>
-    </Modal>
+    </BottomSheet>
   );
 }

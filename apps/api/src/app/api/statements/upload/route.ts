@@ -25,6 +25,10 @@ const UploadStatementSchema = z.object({
     'amex',
     'hsbc',
   ]),
+  password: z
+    .string()
+    .optional()
+    .describe('Password for password-protected PDFs'),
 });
 
 /**
@@ -124,7 +128,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate request data
-    const validation = UploadStatementSchema.safeParse({ cardId, bankName });
+    const validation = UploadStatementSchema.safeParse({
+      cardId,
+      bankName,
+      password: password || undefined,
+    });
     if (!validation.success) {
       return createCorsResponse(
         {
@@ -323,21 +331,212 @@ async function parseStatementAsync(
       return;
     }
 
+    // Validate mandatory fields after parsing
+    const validationErrors: string[] = [];
+    const mandatoryFields = [
+      { field: 'cardLastFourDigits', name: 'Card Number' },
+      { field: 'statementDate', name: 'Statement Date' },
+      { field: 'totalDue', name: 'Total Amount Due' },
+      { field: 'minimumPayment', name: 'Minimum Payment' },
+      { field: 'creditLimit', name: 'Credit Limit' },
+      { field: 'availableCredit', name: 'Available Credit' },
+    ];
+
+    for (const { field, name } of mandatoryFields) {
+      if (!result.metadata[field as keyof typeof result.metadata]) {
+        validationErrors.push(`Missing mandatory field: ${name}`);
+      }
+    }
+
+    // Mathematical validation checks
+    const validationWarnings: string[] = [];
+
+    // Reward Points Equation: opening + earned - redeemed - expired = closing
+    if (result.metadata.rewardPoints) {
+      const { opening, earned, redeemed, expired, closing } =
+        result.metadata.rewardPoints;
+      if (
+        opening !== undefined &&
+        earned !== undefined &&
+        redeemed !== undefined &&
+        expired !== undefined &&
+        closing !== undefined
+      ) {
+        const calculatedClosing = opening + earned - redeemed - expired;
+        if (Math.abs(calculatedClosing - closing) > 1) {
+          // Allow 1 point difference for rounding
+          validationWarnings.push(
+            `Reward points equation mismatch: ${opening} + ${earned} - ${redeemed} - ${expired} = ${calculatedClosing}, but closing shows ${closing}`,
+          );
+        }
+      }
+    }
+
+    // Statement Balance Equation: previousBalance + purchases - payments = currentBalance
+    if (
+      result.metadata.previousBalance !== undefined &&
+      result.metadata.purchasesCharges !== undefined &&
+      result.metadata.paymentsCredits !== undefined &&
+      result.metadata.totalDue !== undefined
+    ) {
+      const calculatedBalance =
+        result.metadata.previousBalance +
+        result.metadata.purchasesCharges -
+        result.metadata.paymentsCredits;
+      if (Math.abs(calculatedBalance - result.metadata.totalDue) > 0.01) {
+        // Allow 1 paisa difference
+        validationWarnings.push(
+          `Statement balance equation mismatch: ${result.metadata.previousBalance} + ${result.metadata.purchasesCharges} - ${result.metadata.paymentsCredits} = ${calculatedBalance}, but total due shows ${result.metadata.totalDue}`,
+        );
+      }
+    }
+
+    // Credit Limit Equation: creditLimit - availableCredit = usedCredit
+    if (
+      result.metadata.creditLimit !== undefined &&
+      result.metadata.availableCredit !== undefined
+    ) {
+      const usedCredit =
+        result.metadata.creditLimit - result.metadata.availableCredit;
+      if (usedCredit < 0) {
+        validationWarnings.push(
+          `Credit limit validation failed: used credit (${usedCredit}) cannot be negative`,
+        );
+      }
+    }
+
+    // Spending Categories: sum of category percentages = 100%
+    if (result.metadata.spendsOverview?.categoryWiseSpends) {
+      const totalPercentage = Object.values(
+        result.metadata.spendsOverview.categoryWiseSpends,
+      ).reduce((sum, category) => sum + (category.percentage || 0), 0);
+      if (Math.abs(totalPercentage - 100) > 1) {
+        // Allow 1% difference
+        validationWarnings.push(
+          `Category spending percentages sum to ${totalPercentage}%, should be 100%`,
+        );
+      }
+    }
+
+    // Transaction count validation
+    if (
+      result.metadata.spendsOverview?.numberOfTransactions !== undefined &&
+      result.metadata.spendsOverview.numberOfTransactions !==
+        result.transactions.length
+    ) {
+      validationWarnings.push(
+        `Transaction count mismatch: metadata shows ${result.metadata.spendsOverview.numberOfTransactions}, but parsed ${result.transactions.length} transactions`,
+      );
+    }
+
+    // Log validation results
+    if (validationWarnings.length > 0) {
+      console.warn(
+        `Statement ${statementId} validation warnings:`,
+        validationWarnings,
+      );
+    }
+
+    // If critical fields are missing, mark as failed
+    if (validationErrors.length > 0) {
+      console.warn(
+        `Statement ${statementId} missing mandatory fields:`,
+        validationErrors,
+      );
+
+      await supabaseAdmin
+        .from('statements')
+        .update({
+          parsing_status: 'failed',
+          parsing_error: `Missing mandatory fields: ${validationErrors.join(', ')}`,
+          parsed_at: new Date().toISOString(),
+        })
+        .eq('id', statementId);
+
+      return;
+    }
+
+    // Prepare enhanced metadata
+    const updateData: any = {
+      parsing_status: 'success',
+      transaction_count: result.transactions.length,
+      parsed_at: new Date().toISOString(),
+
+      // Store validation warnings for review
+      validation_warnings:
+        validationWarnings.length > 0 ? validationWarnings.join('; ') : null,
+
+      // Basic fields
+      statement_date: result.metadata.statementDate,
+      statement_period_start: result.metadata.statementPeriodStart,
+      statement_period_end: result.metadata.statementPeriodEnd,
+      due_date: result.metadata.dueDate,
+      minimum_payment: result.metadata.minimumPayment,
+      total_amount_due: result.metadata.totalDue,
+      credit_limit: result.metadata.creditLimit,
+      available_credit: result.metadata.availableCredit,
+
+      // Billing cycle information
+      billing_day: result.metadata.billingDay,
+      statement_day: result.metadata.statementDay,
+
+      // Statement summary
+      previous_balance: result.metadata.previousBalance,
+      purchases_charges: result.metadata.purchasesCharges,
+      cash_advances: result.metadata.cashAdvances,
+      payments_credits: result.metadata.paymentsCredits,
+
+      // Enhanced fields
+      cash_advance_limit: result.metadata.cashAdvanceLimit,
+      late_payment_fee: result.metadata.latePaymentFee,
+      interest_charges: result.metadata.interestCharges,
+    };
+
+    // Reward points
+    if (result.metadata.rewardPoints) {
+      updateData.reward_points_opening = result.metadata.rewardPoints.opening;
+      updateData.reward_points_earned = result.metadata.rewardPoints.earned;
+      updateData.reward_points_redeemed = result.metadata.rewardPoints.redeemed;
+      updateData.reward_points_expired = result.metadata.rewardPoints.expired;
+      updateData.reward_points_closing = result.metadata.rewardPoints.closing;
+
+      if (result.metadata.rewardPoints.earnedByCategory) {
+        updateData.reward_points_by_category =
+          result.metadata.rewardPoints.earnedByCategory;
+      }
+    }
+
+    // Spends overview
+    if (result.metadata.spendsOverview) {
+      updateData.total_spends = result.metadata.spendsOverview.totalSpends;
+      updateData.domestic_spends =
+        result.metadata.spendsOverview.domesticSpends;
+      updateData.international_spends =
+        result.metadata.spendsOverview.internationalSpends;
+      updateData.atm_withdrawals =
+        result.metadata.spendsOverview.atmWithdrawals;
+      updateData.number_of_transactions =
+        result.metadata.spendsOverview.numberOfTransactions;
+
+      if (result.metadata.spendsOverview.categoryWiseSpends) {
+        updateData.category_wise_spends =
+          result.metadata.spendsOverview.categoryWiseSpends;
+      }
+    }
+
+    // EMI summary
+    if (result.metadata.emiSummary) {
+      updateData.emi_count = result.metadata.emiSummary.emiCount;
+      updateData.total_emi_amount = result.metadata.emiSummary.totalEMIAmount;
+    }
+
     // Update statement metadata
     await supabaseAdmin
       .from('statements')
-      .update({
-        parsing_status: 'success',
-        transaction_count: result.transactions.length,
-        due_date: result.metadata.dueDate,
-        minimum_payment: result.metadata.minimumPayment,
-        credit_limit: result.metadata.creditLimit,
-        available_credit: result.metadata.availableCredit,
-        parsed_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', statementId);
 
-    // Insert transactions
+    // Insert transactions with enhanced metadata
     const transactions = result.transactions.map(t => ({
       user_id: userId,
       card_id: cardId,
@@ -350,6 +549,14 @@ async function parseStatementAsync(
       category: t.category || 'others',
       source: 'pdf' as const,
       status: 'completed' as const,
+
+      // Enhanced fields
+      location: t.location,
+      reward_points: t.rewardPoints,
+      reference_number: t.referenceNumber,
+      is_emi: t.isEMI || false,
+      gst_amount: t.gstAmount,
+      emi_details: t.emiDetails ? t.emiDetails : null,
     }));
 
     if (transactions.length > 0) {
@@ -367,6 +574,32 @@ async function parseStatementAsync(
             parsing_error: 'Failed to insert transactions',
           })
           .eq('id', statementId);
+      }
+    }
+
+    // Insert EMI loans if present
+    if (
+      result.metadata.emiSummary &&
+      result.metadata.emiSummary.loans.length > 0
+    ) {
+      const emiLoans = result.metadata.emiSummary.loans.map(loan => ({
+        statement_id: statementId,
+        user_id: userId,
+        card_id: cardId,
+        loan_number: loan.loanNumber,
+        principal_amount: loan.principalAmount,
+        emi_amount: loan.emiAmount,
+        remaining_tenure: loan.remainingTenure,
+        interest_rate: loan.interestRate,
+      }));
+
+      const { error: emiError } = await supabaseAdmin
+        .from('statement_emi_loans')
+        .insert(emiLoans);
+
+      if (emiError) {
+        console.error('Failed to insert EMI loans:', emiError);
+        // Continue anyway - this is not critical
       }
     }
   } catch (error) {

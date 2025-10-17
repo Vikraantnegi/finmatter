@@ -5,7 +5,7 @@
  * DELETE /api/cards/[id] - Soft delete card
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { FinMatterError } from '@finmatter/shared';
 import { createCorsResponse, handleCorsPreflight } from '@/lib/cors';
@@ -215,7 +215,7 @@ export async function PUT(
     const cardId = params.id;
 
     if (!cardId) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -223,7 +223,7 @@ export async function PUT(
             message: 'Card ID is required',
           },
         },
-        { status: 400 },
+        { status: 400, origin: origin || undefined },
       );
     }
 
@@ -232,7 +232,7 @@ export async function PUT(
     const validation = UpdateCardSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -241,7 +241,7 @@ export async function PUT(
             details: validation.error.errors,
           },
         },
-        { status: 400 },
+        { status: 400, origin: origin || undefined },
       );
     }
 

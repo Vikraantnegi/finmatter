@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { statementService, type BankName } from '@/services/statementService';
+import { formatFileSize } from '@finmatter/shared';
 import toast from 'react-hot-toast';
 
 interface UploadStatementModalProps {
@@ -141,12 +142,6 @@ export function UploadStatementModal({
       fileInputRef.current.value = '';
     }
     onClose();
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (

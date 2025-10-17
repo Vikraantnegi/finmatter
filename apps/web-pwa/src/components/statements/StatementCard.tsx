@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
+import { formatFileSize } from '@finmatter/shared';
 import type { Statement } from '@/services/statementService';
 
 interface StatementCardProps {
@@ -57,12 +58,6 @@ export function StatementCard({ statement, onDelete }: StatementCardProps) {
       default:
         return 'text-gray-600 bg-gray-50';
     }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const handleDelete = async () => {

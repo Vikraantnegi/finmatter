@@ -52,7 +52,7 @@ export async function GET(
     const userId = await getAuthenticatedUserId(request);
     const statementId = params.id;
 
-    // Fetch statement with card info
+    // Fetch statement with card info and all rich metadata
     const { data: statement, error: statementError } = await supabaseAdmin
       .from('statements')
       .select(
@@ -96,6 +96,18 @@ export async function GET(
       console.error('Failed to fetch transactions:', transactionsError);
     }
 
+    // Fetch EMI loans for this statement
+    const { data: emiLoans, error: emiLoansError } = await supabaseAdmin
+      .from('statement_emi_loans')
+      .select('*')
+      .eq('statement_id', statementId)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (emiLoansError) {
+      console.error('Failed to fetch EMI loans:', emiLoansError);
+    }
+
     return createCorsResponse(
       {
         success: true,
@@ -103,6 +115,7 @@ export async function GET(
           statement: {
             ...statement,
             transactions: transactions || [],
+            emiLoans: emiLoans || [],
           },
         },
       },

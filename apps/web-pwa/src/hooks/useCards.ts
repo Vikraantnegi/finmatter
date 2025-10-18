@@ -43,6 +43,20 @@ export function useCards() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run once on mount
 
+  // Force refresh function that bypasses cache
+  const forceRefresh = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const freshCards = await cardService.getCards();
+      setCards(freshCards);
+    } catch (error) {
+      setError('Failed to refresh cards');
+    } finally {
+      setLoading(false);
+    }
+  }, [setCards, setLoading, setError]);
+
   const createCard = useCallback(
     async (cardData: any) => {
       try {
@@ -165,6 +179,7 @@ export function useCards() {
 
     // Actions
     loadCards: refreshCards, // Expose refresh function instead of internal loadCards
+    forceRefresh, // Force refresh that bypasses cache
     createCard,
     editCard,
     deleteCard,

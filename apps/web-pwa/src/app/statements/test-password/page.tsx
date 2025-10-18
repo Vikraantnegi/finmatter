@@ -11,7 +11,19 @@ export default function TestPasswordPage() {
   const [password, setPassword] = useState('');
   const [bankName, setBankName] = useState('hdfc');
   const [isTesting, setIsTesting] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    transactionCount: number;
+    metadataFields: {
+      cardNumber: boolean;
+      statementDate: boolean;
+      totalDue: boolean;
+      creditLimit: boolean;
+    };
+    errors?: string[];
+    warnings?: string[];
+    rawTextPreview?: string;
+  } | null>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -46,25 +58,45 @@ export default function TestPasswordPage() {
         formData.append('password', password);
       }
 
-      const response: Record<string, any> = await apiClient.post(
-        '/api/statements/test-password',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+      const response = await apiClient.post<{
+        success: boolean;
+        data?: {
+          result: {
+            success: boolean;
+            transactionCount: number;
+            metadataFields: {
+              cardNumber: boolean;
+              statementDate: boolean;
+              totalDue: boolean;
+              creditLimit: boolean;
+            };
+            errors?: string[];
+            warnings?: string[];
+            rawTextPreview?: string;
+          };
+        };
+        error?: {
+          message: string;
+        };
+      }>('/api/statements/test-password', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
         },
-      );
+      });
 
-      if (response.success) {
+      if (response.success && response.data) {
         setResult(response.data.result);
         toast.success('PDF parsing test completed!');
       } else {
         toast.error(response.error?.message || 'Test failed');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Test error:', error);
-      toast.error(error.message || 'An error occurred during testing');
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'An error occurred during testing',
+      );
     } finally {
       setIsTesting(false);
     }
@@ -77,7 +109,7 @@ export default function TestPasswordPage() {
   };
 
   return (
-    <div className='min-h-screen bg-gray-50 py-8'>
+    <div className='min-h-screen bg-white py-8'>
       <div className='max-w-2xl mx-auto px-4'>
         <div className='bg-white rounded-lg shadow-sm border p-6'>
           <h1 className='text-2xl font-bold text-gray-900 mb-6'>
@@ -141,14 +173,21 @@ export default function TestPasswordPage() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder='Enter password if PDF is protected'
-                  className='w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  className='w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-500'
                 />
                 <Lock className='absolute right-3 top-2.5 w-4 h-4 text-gray-400' />
               </div>
               <p className='mt-1 text-xs text-gray-500'>
-                Common passwords: Last 4 digits of card, DOB (DDMMYYYY), or PAN
-                last 4 digits
+                Common passwords: Last 4 digits of card, DOB (DDMMYYYY), PAN
+                last 4 digits, mobile last 4 digits, or account last 4 digits
               </p>
+              <div className='mt-2 p-3 bg-blue-50 rounded-md'>
+                <p className='text-xs text-blue-700'>
+                  <strong>Tip:</strong> If you don&apos;t know the password, try
+                  common patterns like your card&apos;s last 4 digits or date of
+                  birth in DDMMYYYY format.
+                </p>
+              </div>
             </div>
 
             {/* Test Button */}
@@ -220,6 +259,19 @@ export default function TestPasswordPage() {
                           <li key={index}>• {error}</li>
                         ))}
                       </ul>
+                      {result.errors.some(
+                        (error: string) =>
+                          error.toLowerCase().includes('password') ||
+                          error.toLowerCase().includes('protected'),
+                      ) && (
+                        <div className='mt-2 p-2 bg-yellow-50 rounded border border-yellow-200'>
+                          <p className='text-xs text-yellow-700'>
+                            <strong>Password Help:</strong> Try common passwords
+                            like your card&apos;s last 4 digits, date of birth
+                            (DDMMYYYY), or PAN last 4 digits.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 

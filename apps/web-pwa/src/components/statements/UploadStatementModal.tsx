@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   X,
   Upload,
@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { statementService, type BankName } from '@/services/statementService';
+import { useStatementStatus } from '@/hooks/useStatementStatus';
 import { formatFileSize } from '@finmatter/shared';
 import toast from 'react-hot-toast';
 
@@ -43,7 +44,58 @@ export function UploadStatementModal({
     'idle' | 'success' | 'error'
   >('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [uploadedStatementId, setUploadedStatementId] = useState<string | null>(
+    null,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Statement status polling
+  const {
+    status: statementStatus,
+    isPolling,
+    error: _statusError,
+  } = useStatementStatus({
+    statementId: uploadedStatementId,
+    enabled: !!uploadedStatementId && uploadStatus === 'success',
+  });
+
+  const handleClose = useCallback(() => {
+    setSelectedFile(null);
+    setPassword('');
+    setShowPassword(false);
+    setUploadStatus('idle');
+    setErrorMessage('');
+    setUploadedStatementId(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    onClose();
+  }, [onClose]);
+
+  // Handle processing completion
+  useEffect(() => {
+    if (
+      statementStatus &&
+      (statementStatus.status === 'success' ||
+        statementStatus.status === 'failed')
+    ) {
+      if (statementStatus.status === 'success') {
+        toast.success(
+          `Statement processed successfully! Found ${statementStatus.transactionCount} transactions.`,
+        );
+      } else {
+        toast.error(
+          `Statement processing failed: ${statementStatus.error || 'Unknown error'}`,
+        );
+      }
+
+      // Close modal and call success callback after a short delay
+      setTimeout(() => {
+        onSuccess?.();
+        handleClose();
+      }, 2000);
+    }
+  }, [statementStatus, onSuccess, handleClose]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -100,13 +152,15 @@ export function UploadStatementModal({
 
       if (response.success) {
         setUploadStatus('success');
+        setUploadedStatementId(response.data?.statement?.id || null);
         toast.success(
           response.data?.message || 'Statement uploaded successfully!',
         );
-        setTimeout(() => {
-          onSuccess?.();
-          handleClose();
-        }, 1500);
+        // Don't close immediately - wait for processing to complete
+        // setTimeout(() => {
+        //   onSuccess?.();
+        //   handleClose();
+        // }, 1500);
       } else {
         setUploadStatus('error');
         const errorMsg = response.error?.message || 'Upload failed';
@@ -132,18 +186,6 @@ export function UploadStatementModal({
     }
   };
 
-  const handleClose = () => {
-    setSelectedFile(null);
-    setPassword('');
-    setShowPassword(false);
-    setUploadStatus('idle');
-    setErrorMessage('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-    onClose();
-  };
-
   return (
     <BottomSheet isOpen={isOpen} onClose={handleClose} title='Upload Statement'>
       <div className='space-y-6 pb-6'>
@@ -164,7 +206,7 @@ export function UploadStatementModal({
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder='Enter password if PDF is protected'
-              className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 pr-10'
+              className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 pr-10 text-gray-900 placeholder-gray-500'
               disabled={isUploading}
             />
             <button
@@ -181,9 +223,16 @@ export function UploadStatementModal({
             </button>
           </div>
           <p className='text-xs text-gray-500 mt-1.5'>
-            Common passwords: Last 4 digits of card, DOB (DDMMYYYY), or PAN last
-            4 chars
+            Common passwords: Last 4 digits of card, DOB (DDMMYYYY), PAN last 4
+            digits, mobile last 4 digits, or account last 4 digits
           </p>
+          <div className='mt-2 p-2 bg-blue-50 rounded border border-blue-200'>
+            <p className='text-xs text-blue-700'>
+              <strong>Tip:</strong> If you don&apos;t know the password, try
+              your card&apos;s last 4 digits or date of birth in DDMMYYYY
+              format.
+            </p>
+          </div>
         </div>
 
         {/* File Upload */}
@@ -234,9 +283,38 @@ export function UploadStatementModal({
                   </p>
 
                   {uploadStatus === 'success' && (
-                    <div className='flex items-center space-x-2 mt-2 text-green-600'>
-                      <CheckCircle className='w-4 h-4' />
-                      <span className='text-sm'>Upload successful!</span>
+                    <div className='mt-2 space-y-2'>
+                      <div className='flex items-center space-x-2 text-green-600'>
+                        <CheckCircle className='w-4 h-4' />
+                        <span className='text-sm'>Upload successful!</span>
+                      </div>
+                      {isPolling && (
+                        <div className='flex items-center space-x-2 text-blue-600'>
+                          <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600'></div>
+                          <span className='text-sm'>
+                            Processing statement...
+                          </span>
+                        </div>
+                      )}
+                      {statementStatus &&
+                        statementStatus.status === 'success' && (
+                          <div className='flex items-center space-x-2 text-green-600'>
+                            <CheckCircle className='w-4 h-4' />
+                            <span className='text-sm'>
+                              Processing complete! Found{' '}
+                              {statementStatus.transactionCount} transactions.
+                            </span>
+                          </div>
+                        )}
+                      {statementStatus &&
+                        statementStatus.status === 'failed' && (
+                          <div className='flex items-center space-x-2 text-red-600'>
+                            <AlertCircle className='w-4 h-4' />
+                            <span className='text-sm'>
+                              Processing failed: {statementStatus.error}
+                            </span>
+                          </div>
+                        )}
                     </div>
                   )}
 
@@ -302,7 +380,18 @@ export function UploadStatementModal({
                 Uploading...
               </>
             ) : uploadStatus === 'success' ? (
-              'Uploaded!'
+              isPolling ? (
+                <>
+                  <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2' />
+                  Processing...
+                </>
+              ) : statementStatus?.status === 'success' ? (
+                'Complete!'
+              ) : statementStatus?.status === 'failed' ? (
+                'Failed'
+              ) : (
+                'Uploaded!'
+              )
             ) : (
               'Upload'
             )}

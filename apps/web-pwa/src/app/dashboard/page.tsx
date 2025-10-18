@@ -1,6 +1,6 @@
 'use client';
 
-// import { useEffect } from 'react'; // Removed since we're not using useEffect anymore
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useCards } from '@/hooks';
 import { Button } from '@/components/ui/Button';
@@ -17,11 +17,17 @@ function DashboardContent() {
     isLoading: loading,
     totalCards,
     highUtilizationCards,
+    forceRefresh,
   } = useCards();
+
+  // Force refresh cards data to get latest hasStatement values
+  useEffect(() => {
+    forceRefresh();
+  }, [forceRefresh]);
 
   if (loading) {
     return (
-      <div className='min-h-screen bg-gray-50'>
+      <div className='min-h-screen bg-white'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
           <div className='mb-8'>
             <div className='h-8 w-48 bg-gray-200 rounded animate-pulse mb-2'></div>
@@ -45,7 +51,7 @@ function DashboardContent() {
   }
 
   return (
-    <div className='min-h-screen bg-gray-50'>
+    <div className='min-h-screen bg-white'>
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         {/* Welcome Header */}
         <div className='mb-8'>
@@ -96,7 +102,7 @@ function DashboardContent() {
                   onClick={() => router.push(`/cards/${card.id}`)}
                   className='cursor-pointer transform transition-transform hover:scale-105'
                 >
-                  <CardVisual card={card} />
+                  <CardVisual card={card} showDetails={false} />
                 </div>
               ))}
               <div className='flex items-center gap-3 ml-auto'>

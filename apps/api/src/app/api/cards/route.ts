@@ -147,7 +147,8 @@ export async function GET(request: NextRequest) {
       .select(
         `
         *,
-        card_benefits (*)
+        card_benefits (*),
+        statements (id)
       `,
       )
       .eq('user_id', userId)

@@ -37,30 +37,52 @@ export class ICICIParser extends BaseParser {
       const transactions: ParsedTransaction[] = [];
       const metadata = this.extractICICIMetadata(pdfText);
 
-      // Extract transactions: DD/MM/YYYY + Serial(11) + Merchant + Points(1-3) + Amount
+      // Extract transactions: DD/MM/YYYY + Serial(11) + Merchant + IN + RewardPoints + Amount
       // Example: 23/08/202511843152554ZOMATO NEW DELHI IN4249.60
+      // The amount format is: RewardPoints + Amount (e.g., 4249.60 = 4 points + 249.60 amount)
       const transactionPattern =
-        /(\d{2}\/\d{2}\/\d{4})\d{11}(.+? IN)(\d{1,3})([\d,]+\.\d{2})(?: CR)?$/gm;
+        /(\d{2}\/\d{2}\/\d{4})\d{11}(.+? IN)(\d+\.\d{2})(?: CR)?$/gm;
 
       let match;
       while ((match = transactionPattern.exec(pdfText)) !== null) {
-        if (!match[1] || !match[2] || !match[3] || !match[4]) continue;
+        if (!match[1] || !match[2] || !match[3]) continue;
 
         const dateStr = match[1]; // DD/MM/YYYY
         let merchantName = match[2].trim(); // Merchant + location (ends with " IN")
-        const rewardPointsStr = match[3]; // Reward points (1-3 digits)
-        const amountStr = match[4]; // 249.60 or 1,427.16
+        const combinedAmountStr = match[3]; // 4249.60 (includes reward points)
 
         const date = this.parseDate(dateStr);
         if (!date) continue;
 
+        // Split the combined amount: RewardPoints + Amount
+        // 4249.60 -> reward points: 4, amount: 249.60
+        const amountParts = combinedAmountStr.split('.');
+        const integerPart = amountParts[0]; // "4249"
+        const decimalPart = amountParts[1]; // "60"
+
+        let rewardPoints = 0;
+        let actualAmountStr = combinedAmountStr;
+
+        if (integerPart && integerPart.length >= 3) {
+          // Take first 1-3 digits as reward points, rest as amount
+          // 4249 -> 4 (reward) + 249 (amount)
+          const rewardDigits = integerPart.slice(0, -3); // "4" from "4249"
+          const amountDigits = integerPart.slice(-3); // "249" from "4249"
+
+          if (rewardDigits.length >= 1 && rewardDigits.length <= 3) {
+            rewardPoints = parseInt(rewardDigits);
+            actualAmountStr = `${amountDigits}.${decimalPart}`; // "249.60"
+          } else {
+            // Fallback: use first 1-2 digits as reward points
+            rewardPoints = parseInt(integerPart.slice(0, 2));
+            actualAmountStr = `${integerPart.slice(2)}.${decimalPart}`;
+          }
+        }
+
         // Parse amount
         const isCredit = match[0].includes(' CR');
-        const amountNum = parseFloat(amountStr.replace(/,/g, ''));
+        const amountNum = parseFloat(actualAmountStr.replace(/,/g, ''));
         if (isNaN(amountNum)) continue;
-
-        // Parse reward points
-        const rewardPoints = parseInt(rewardPointsStr);
 
         // Determine location (domestic vs international)
         let location: 'domestic' | 'international' | undefined;

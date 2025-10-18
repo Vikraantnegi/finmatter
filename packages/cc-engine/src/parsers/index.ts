@@ -8,11 +8,7 @@ import { HDFCParser } from './HDFCParser';
 import { ICICIParser } from './ICICIParser';
 import { SBIParser } from './SBIParser';
 import { AxisParser } from './AxisParser';
-import {
-  parsePDFWithPassword,
-  isPDFPasswordProtected,
-  tryCommonPasswords,
-} from './pdfUtils';
+import { parsePDFWithPassword, tryCommonPasswords } from './pdfUtils';
 import type { ParseResult, BankName } from './types';
 
 // Export types
@@ -32,49 +28,51 @@ export async function parseStatement(
   pdfBuffer: Buffer,
   bankName: BankName,
   password?: string,
+  userInfo?: {
+    cardLastFour?: string;
+    dateOfBirth?: string;
+    panLastFour?: string;
+    mobileLastFour?: string;
+    accountLastFour?: string;
+  },
 ): Promise<ParseResult> {
   try {
     let pdfText = '';
     let parseError: string | undefined;
 
-    // First, check if PDF is password protected
-    const isProtected = await isPDFPasswordProtected(pdfBuffer);
-
-    if (isProtected) {
-      // Try with provided password first
-      if (password) {
-        const result = await parsePDFWithPassword(pdfBuffer, password);
-        if (result.success) {
-          pdfText = result.text;
-        } else {
-          parseError =
-            result.error || 'Failed to parse PDF with provided password';
-        }
+    // Try with provided password first
+    if (password) {
+      const result = await parsePDFWithPassword(pdfBuffer, password);
+      if (result.success) {
+        pdfText = result.text;
       } else {
-        // Try common passwords if no password provided
-        const commonPassword = await tryCommonPasswords(pdfBuffer);
-        if (commonPassword !== null) {
-          const result = await parsePDFWithPassword(pdfBuffer, commonPassword);
-          pdfText = result.text;
-        } else {
-          parseError =
-            'PDF is password protected. Please provide the correct password.';
-        }
+        parseError =
+          result.error || 'Failed to parse PDF with provided password';
       }
     } else {
-      // PDF is not password protected, use pdf-parse for better performance
-      try {
-        const pdfData = await pdf(pdfBuffer, {
-          max: 0, // Parse all pages
-        });
-        pdfText = pdfData.text;
-      } catch {
-        // Fallback to pdfjs-dist if pdf-parse fails
-        const result = await parsePDFWithPassword(pdfBuffer);
-        if (result.success) {
-          pdfText = result.text;
+      // Try without password first
+      const result = await parsePDFWithPassword(pdfBuffer);
+      if (result.success) {
+        pdfText = result.text;
+      } else {
+        // If that fails, try common passwords
+        const commonPassword = await tryCommonPasswords(pdfBuffer, userInfo);
+        if (commonPassword !== null) {
+          const resultWithPassword = await parsePDFWithPassword(
+            pdfBuffer,
+            commonPassword,
+          );
+          if (resultWithPassword.success) {
+            pdfText = resultWithPassword.text;
+          } else {
+            parseError =
+              resultWithPassword.error ||
+              'Failed to parse PDF with common password';
+          }
         } else {
-          parseError = result.error || 'Failed to parse PDF';
+          parseError =
+            result.error ||
+            'PDF is password protected. Please provide the correct password.';
         }
       }
     }

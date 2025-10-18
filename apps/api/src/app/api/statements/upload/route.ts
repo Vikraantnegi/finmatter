@@ -318,15 +318,27 @@ async function parseStatementAsync(
     const result = await parseStatement(fileBuffer, bankName, password);
 
     if (!result.success) {
-      // Update statement with error
-      await supabaseAdmin
+      // Delete the statement record and file since parsing failed
+      console.log(
+        `Statement ${statementId} parsing failed, deleting record and file`,
+      );
+
+      // Get the file path before deleting the record
+      const { data: statementData } = await supabaseAdmin
         .from('statements')
-        .update({
-          parsing_status: 'failed',
-          parsing_error: result.errors.join('; '),
-          parsed_at: new Date().toISOString(),
-        })
-        .eq('id', statementId);
+        .select('file_path')
+        .eq('id', statementId)
+        .single();
+
+      // Delete the statement record
+      await supabaseAdmin.from('statements').delete().eq('id', statementId);
+
+      // Delete the uploaded file from storage
+      if (statementData?.file_path) {
+        await supabaseAdmin.storage
+          .from('statements')
+          .remove([statementData.file_path]);
+      }
 
       return;
     }
@@ -437,21 +449,29 @@ async function parseStatementAsync(
       );
     }
 
-    // If critical fields are missing, mark as failed
+    // If critical fields are missing, delete the statement
     if (validationErrors.length > 0) {
       console.warn(
-        `Statement ${statementId} missing mandatory fields:`,
+        `Statement ${statementId} missing mandatory fields, deleting:`,
         validationErrors,
       );
 
-      await supabaseAdmin
+      // Get the file path before deleting the record
+      const { data: statementData } = await supabaseAdmin
         .from('statements')
-        .update({
-          parsing_status: 'failed',
-          parsing_error: `Missing mandatory fields: ${validationErrors.join(', ')}`,
-          parsed_at: new Date().toISOString(),
-        })
-        .eq('id', statementId);
+        .select('file_path')
+        .eq('id', statementId)
+        .single();
+
+      // Delete the statement record
+      await supabaseAdmin.from('statements').delete().eq('id', statementId);
+
+      // Delete the uploaded file from storage
+      if (statementData?.file_path) {
+        await supabaseAdmin.storage
+          .from('statements')
+          .remove([statementData.file_path]);
+      }
 
       return;
     }

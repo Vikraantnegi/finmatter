@@ -73,7 +73,7 @@ export function BottomSheet({
     <div
       className='fixed inset-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm m-0'
       onClick={handleBackdropClick}
-      style={{ touchAction: 'none' }}
+      style={{ touchAction: 'none', margin: 0 }}
     >
       <div
         ref={sheetRef}

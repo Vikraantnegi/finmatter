@@ -140,7 +140,8 @@ export async function GET(
       .select(
         `
         *,
-        card_benefits (*)
+        card_benefits (*),
+        statements (id)
       `,
       )
       .eq('id', cardId)
@@ -311,7 +312,8 @@ export async function PUT(
       .select(
         `
         *,
-        card_benefits (*)
+        card_benefits (*),
+        statements (id)
       `,
       )
       .single();

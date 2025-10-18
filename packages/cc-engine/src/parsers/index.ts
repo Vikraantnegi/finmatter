@@ -4,45 +4,19 @@
  */
 
 import pdf from 'pdf-parse';
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { HDFCParser } from './HDFCParser';
 import { ICICIParser } from './ICICIParser';
 import { SBIParser } from './SBIParser';
 import { AxisParser } from './AxisParser';
+import { parsePDFWithPassword, tryCommonPasswords } from './pdfUtils';
 import type { ParseResult, BankName } from './types';
 
 // Export types
 export * from './types';
 export { BaseParser } from './BaseParser';
 
-/**
- * Extract text from password-protected PDF using pdfjs-dist
- */
-async function extractTextWithPassword(
-  pdfBuffer: Buffer,
-  password: string,
-): Promise<string> {
-  const uint8Array = new Uint8Array(pdfBuffer);
-  const loadingTask = pdfjsLib.getDocument({
-    data: uint8Array,
-    password,
-    useSystemFonts: true,
-    standardFontDataUrl: undefined,
-  });
-
-  const pdfDocument = await loadingTask.promise;
-  const numPages = pdfDocument.numPages;
-  let fullText = '';
-
-  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-    const page = await pdfDocument.getPage(pageNum);
-    const textContent = await page.getTextContent();
-    const pageText = textContent.items.map((item: any) => item.str).join(' ');
-    fullText += `${pageText}\n`;
-  }
-
-  return fullText;
-}
+// Note: Password-protected PDF support is limited due to library constraints
+// Most bank statements use simple passwords like last 4 digits, DOB, or PAN
 
 /**
  * Main function to parse statement PDF
@@ -54,31 +28,64 @@ export async function parseStatement(
   pdfBuffer: Buffer,
   bankName: BankName,
   password?: string,
+  userInfo?: {
+    cardLastFour?: string;
+    dateOfBirth?: string;
+    panLastFour?: string;
+    mobileLastFour?: string;
+    accountLastFour?: string;
+  },
 ): Promise<ParseResult> {
   try {
-    // Extract text from PDF (with or without password)
-    let pdfText: string;
+    let pdfText = '';
+    let parseError: string | undefined;
+
+    // Try with provided password first
     if (password) {
-      try {
-        pdfText = await extractTextWithPassword(pdfBuffer, password);
-      } catch (error: any) {
-        if (
-          error.name === 'PasswordException' ||
-          error.message?.includes('password')
-        ) {
-          return {
-            transactions: [],
-            metadata: {},
-            success: false,
-            errors: ['Incorrect password or PDF encryption not supported'],
-            warnings: [],
-          };
-        }
-        throw error;
+      const result = await parsePDFWithPassword(pdfBuffer, password);
+      if (result.success) {
+        pdfText = result.text;
+      } else {
+        parseError =
+          result.error || 'Failed to parse PDF with provided password';
       }
     } else {
-      const pdfData = await pdf(pdfBuffer);
-      pdfText = pdfData.text;
+      // Try without password first
+      const result = await parsePDFWithPassword(pdfBuffer);
+      if (result.success) {
+        pdfText = result.text;
+      } else {
+        // If that fails, try common passwords
+        const commonPassword = await tryCommonPasswords(pdfBuffer, userInfo);
+        if (commonPassword !== null) {
+          const resultWithPassword = await parsePDFWithPassword(
+            pdfBuffer,
+            commonPassword,
+          );
+          if (resultWithPassword.success) {
+            pdfText = resultWithPassword.text;
+          } else {
+            parseError =
+              resultWithPassword.error ||
+              'Failed to parse PDF with common password';
+          }
+        } else {
+          parseError =
+            result.error ||
+            'PDF is password protected. Please provide the correct password.';
+        }
+      }
+    }
+
+    if (parseError) {
+      return {
+        transactions: [],
+        metadata: {},
+        success: false,
+        errors: [parseError],
+        warnings: [],
+        rawText: '',
+      };
     }
 
     if (!pdfText || pdfText.trim().length === 0) {
@@ -88,6 +95,7 @@ export async function parseStatement(
         success: false,
         errors: ['PDF appears to be empty or could not be parsed'],
         warnings: [],
+        rawText: '',
       };
     }
 
@@ -117,7 +125,13 @@ export async function parseStatement(
         };
     }
 
-    return await parser.parse(pdfText);
+    const result = await parser.parse(pdfText);
+
+    // Add raw text to result for debugging (first 5000 chars)
+    return {
+      ...result,
+      rawText: pdfText.substring(0, 5000),
+    };
   } catch (error) {
     return {
       transactions: [],

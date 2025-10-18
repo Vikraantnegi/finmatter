@@ -83,16 +83,16 @@ function CardsContent() {
   );
 
   // Calculate portfolio stats
-  const totalLimit = cards.reduce(
-    (sum, card) => sum + (card.creditLimit || 0),
-    0,
-  );
-  const totalUsed = cards.reduce((sum, card) => {
-    const limit = card.creditLimit || 0;
-    const used = limit - (card.availableCredit || 0);
-    return sum + used;
-  }, 0);
-  const avgUtilization = totalLimit > 0 ? (totalUsed / totalLimit) * 100 : 0;
+  // const totalLimit = cards.reduce(
+  //   (sum, card) => sum + (card.creditLimit || 0),
+  //   0,
+  // );
+  // const totalUsed = cards.reduce((sum, card) => {
+  //   const limit = card.creditLimit || 0;
+  //   const used = limit - (card.availableCredit || 0);
+  //   return sum + used;
+  // }, 0);
+  // const avgUtilization = totalLimit > 0 ? (totalUsed / totalLimit) * 100 : 0;
 
   const handleCardClick = (cardId: string) => {
     router.push(`/cards/${cardId}`);
@@ -104,7 +104,7 @@ function CardsContent() {
 
   if (loading) {
     return (
-      <div className='min-h-screen bg-gray-50'>
+      <div className='min-h-screen bg-white'>
         <div className='bg-white border-b border-gray-200 sticky top-0 z-30'>
           <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
             <div className='flex items-center justify-between py-6'>
@@ -120,7 +120,7 @@ function CardsContent() {
   }
 
   return (
-    <div className='min-h-screen bg-gray-50'>
+    <div className='min-h-screen bg-white'>
       {/* Header */}
       <div className='bg-white border-b border-gray-200'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
@@ -144,7 +144,7 @@ function CardsContent() {
       </div>
 
       {/* Portfolio Stats */}
-      {cards.length > 0 && (
+      {/* {cards.length > 0 && (
         <div className='bg-white border-b border-gray-200'>
           <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6'>
             <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
@@ -175,7 +175,7 @@ function CardsContent() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Search and Filters */}
       <div className='bg-white border-b border-gray-200'>

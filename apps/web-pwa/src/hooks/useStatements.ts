@@ -11,8 +11,8 @@ export function useStatements(params?: {
   );
 
   return {
-    statements: data?.data?.statements || [],
-    pagination: data?.data?.pagination,
+    statements: data || [],
+    pagination: undefined, // Not available in the new format
     isLoading,
     error,
     mutate,

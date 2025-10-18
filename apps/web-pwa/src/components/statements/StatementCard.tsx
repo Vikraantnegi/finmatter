@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
+import { formatFileSize } from '@finmatter/shared';
 import type { Statement } from '@/services/statementService';
 
 interface StatementCardProps {
@@ -57,12 +58,6 @@ export function StatementCard({ statement, onDelete }: StatementCardProps) {
       default:
         return 'text-gray-600 bg-gray-50';
     }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const handleDelete = async () => {
@@ -145,11 +140,9 @@ export function StatementCard({ statement, onDelete }: StatementCardProps) {
         )}
       </div>
 
-      {statement.status === 'success' &&
-        (statement.dueDate ||
-          statement.minimumPayment ||
-          statement.creditLimit) && (
-          <div className='mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-4 text-center'>
+      {statement.status === 'success' && (
+        <div className='mt-4 pt-4 border-t border-gray-100'>
+          <div className='grid grid-cols-2 md:grid-cols-4 gap-4 text-center'>
             {statement.dueDate && (
               <div>
                 <p className='text-xs text-gray-500'>Due Date</p>
@@ -166,6 +159,30 @@ export function StatementCard({ statement, onDelete }: StatementCardProps) {
                 </p>
               </div>
             )}
+            {statement.totalSpends && (
+              <div>
+                <p className='text-xs text-gray-500'>Total Spends</p>
+                <p className='text-sm font-medium text-gray-900 mt-1'>
+                  ₹{statement.totalSpends.toLocaleString()}
+                </p>
+              </div>
+            )}
+            {statement.emiCount && statement.emiCount > 0 && (
+              <div>
+                <p className='text-xs text-gray-500'>EMI Loans</p>
+                <p className='text-sm font-medium text-gray-900 mt-1'>
+                  {statement.emiCount}
+                </p>
+              </div>
+            )}
+            {statement.rewardPointsEarned && (
+              <div>
+                <p className='text-xs text-gray-500'>Points Earned</p>
+                <p className='text-sm font-medium text-green-600 mt-1'>
+                  +{statement.rewardPointsEarned.toLocaleString()}
+                </p>
+              </div>
+            )}
             {statement.creditLimit && (
               <div>
                 <p className='text-xs text-gray-500'>Credit Limit</p>
@@ -175,7 +192,8 @@ export function StatementCard({ statement, onDelete }: StatementCardProps) {
               </div>
             )}
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 }

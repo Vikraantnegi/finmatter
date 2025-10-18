@@ -1,20 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CardVisual } from '@/components/cards/CardVisual';
-import { UploadStatementWidget } from '@/components/cards/UploadStatementWidget';
+import { UploadStatementModal } from '@/components/statements/UploadStatementModal';
+import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { Modal } from '@/components/ui/Modal';
 import { useCardStore } from '@/stores/cardStore';
 import { cardService } from '@/services/cardService';
+import { useStatements } from '@/hooks/useStatements';
 import type {
   CardBenefitResponse,
   CardMetadataResponse,
 } from '@finmatter/types';
 import { Card } from '@finmatter/types';
-import { ArrowLeft, Edit, Trash2, Gift, Calendar } from 'lucide-react';
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Gift,
+  Calendar,
+  Upload,
+  BarChart3,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function CardDetailPage() {
@@ -25,22 +35,45 @@ export default function CardDetailPage() {
   const { cards, isLoading: loading, fetchCards, deleteCard } = useCardStore();
   const [card, setCard] = useState<Card | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [benefits, setBenefits] = useState<CardBenefitResponse[]>([]);
   const [benefitsLoading, setBenefitsLoading] = useState(false);
-  const [cardMetadata, setCardMetadata] = useState<CardMetadataResponse | null>(
-    null,
-  );
+  const [_cardMetadata, setCardMetadata] =
+    useState<CardMetadataResponse | null>(null);
 
-  // Fetch card details
-  useEffect(() => {
+  // Fetch statements for this card
+  const { statements, isLoading: statementsLoading } = useStatements({
+    cardId,
+  });
+
+  // Fallback function for when individual card fetch fails
+  const handleCardFetchFallback = useCallback(() => {
     if (!cards.length) {
       fetchCards();
     } else {
       const foundCard = cards.find(c => c.id === cardId);
       setCard(foundCard || null);
     }
-  }, [cardId, cards, fetchCards]);
+  }, [cards, cardId, fetchCards]);
+
+  // Fetch card details
+  useEffect(() => {
+    const fetchCardDetails = async () => {
+      try {
+        const cardData = await cardService.getCardById(cardId);
+        setCard(cardData);
+      } catch (error) {
+        console.error('Failed to fetch card details:', error);
+        // Fallback to fetching all cards if individual fetch fails
+        handleCardFetchFallback();
+      }
+    };
+
+    if (cardId) {
+      fetchCardDetails();
+    }
+  }, [cardId, handleCardFetchFallback]);
 
   // Fetch benefits from database
   useEffect(() => {
@@ -99,7 +132,7 @@ export default function CardDetailPage() {
   }
 
   return (
-    <div className='min-h-screen bg-gray-50'>
+    <div className='min-h-screen bg-white'>
       {/* Header */}
       <div className='bg-white border-b border-gray-200 sticky top-0 z-30'>
         <div className='max-w-4xl mx-auto px-4 sm:px-6 lg:px-8'>
@@ -142,12 +175,115 @@ export default function CardDetailPage() {
         {/* Card Visual */}
         <CardVisual card={card} showDetails={false} />
 
-        {/* Upload Statement Widget */}
-        <UploadStatementWidget
-          onUpload={() =>
-            toast('Statement upload feature coming soon!', { icon: 'ℹ️' })
-          }
-        />
+        {/* Statements Section */}
+        <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
+          <div className='flex items-center justify-between mb-4'>
+            <h2 className='text-lg font-semibold text-gray-900'>Statements</h2>
+            {statements && statements.length > 0 && (
+              <Button
+                onClick={() => setShowUploadModal(true)}
+                className='flex items-center gap-2'
+                size='sm'
+              >
+                <Upload className='w-4 h-4' />
+                Upload Statement
+              </Button>
+            )}
+          </div>
+
+          {statementsLoading ? (
+            <div className='text-center flex-col items-center justify-center py-8 w-full'>
+              <LoadingSpinner size='md' className='mx-auto' />
+              <p className='text-gray-500 mt-2'>Loading statements...</p>
+            </div>
+          ) : statements && statements.length > 0 ? (
+            <div className='space-y-3'>
+              {statements.map(statement => (
+                <div
+                  key={statement.id}
+                  className='flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors'
+                >
+                  <div className='flex items-center space-x-3'>
+                    <Calendar className='w-5 h-5 text-primary-500' />
+                    <div>
+                      <div className='text-sm font-medium text-gray-900'>
+                        {statement.fileName}
+                      </div>
+                      <div className='text-xs text-gray-500'>
+                        Uploaded:{' '}
+                        {new Date(statement.uploadedAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                  <div className='flex items-center space-x-3'>
+                    <div className='text-right'>
+                      <div className='text-sm font-medium text-gray-900'>
+                        {statement.transactionCount || 0} transactions
+                      </div>
+                      <div
+                        className={`text-xs capitalize ${
+                          statement.status === 'success'
+                            ? 'text-green-600'
+                            : statement.status === 'failed'
+                              ? 'text-red-600'
+                              : statement.status === 'processing'
+                                ? 'text-yellow-600'
+                                : 'text-gray-500'
+                        }`}
+                      >
+                        {statement.status}
+                      </div>
+                    </div>
+                    {statement.status === 'success' && (
+                      <Button
+                        size='sm'
+                        variant='outline'
+                        onClick={() => {
+                          // Navigate to statement details
+                          router.push(`/statements/${statement.id}`);
+                        }}
+                      >
+                        View
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className='text-center py-8'>
+              <div className='w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4'>
+                <Upload className='w-6 h-6 text-blue-600' />
+              </div>
+              <h3 className='text-lg font-semibold text-gray-900 mb-2'>
+                Upload Your First Statement
+              </h3>
+              <p className='text-sm text-gray-600 mb-4'>
+                Upload your statement to see credit limit and utilization
+              </p>
+              <Button
+                onClick={() => setShowUploadModal(true)}
+                className='flex items-center space-x-2 mx-auto'
+              >
+                <Upload className='w-4 h-4' />
+                <span>Upload Statement</span>
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Analytics Section */}
+        {statements && statements.length > 0 && (
+          <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
+            <div className='flex items-center justify-between mb-4'>
+              <h2 className='text-lg font-semibold text-gray-900 flex items-center gap-2'>
+                <BarChart3 className='w-5 h-5 text-primary-500' />
+                Analytics
+              </h2>
+            </div>
+            <AnalyticsDashboard cardId={cardId} />
+          </div>
+        )}
 
         {/* Card Stats */}
         {card.hasStatement && (
@@ -217,100 +353,141 @@ export default function CardDetailPage() {
             </div>
           )} */}
         </div>
-        {/* Card Metadata Information */}
-        {cardMetadata && (
-          <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
-            <h2 className='text-lg font-semibold text-gray-900 mb-4'>
-              Card Details
-            </h2>
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+        {/* Card Details Information */}
+        <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
+          <h2 className='text-lg font-semibold text-gray-900 mb-4'>
+            Card Details
+          </h2>
+          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Card Type
+              </label>
+              <p className='text-gray-900 capitalize'>{card.cardType}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Network
+              </label>
+              <p className='text-gray-900 capitalize'>{card.network}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Reward Type
+              </label>
+              <p className='text-gray-900 capitalize'>{card.rewardType}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Annual Fee
+              </label>
+              <p className='text-gray-900'>
+                ₹{card.annualFee?.toLocaleString() || '0'}
+              </p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Status
+              </label>
+              <p className='text-gray-900 capitalize'>{card.status}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Currency
+              </label>
+              <p className='text-gray-900 uppercase'>{card.currency}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Bank ID
+              </label>
+              <p className='text-gray-900 uppercase'>{card.bankId}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Card Metadata ID
+              </label>
+              <p className='text-gray-900'>{card.cardMetadataId}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Is Custom
+              </label>
+              <p className='text-gray-900'>{card.isCustom ? 'Yes' : 'No'}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Has Statement
+              </label>
+              <p className='text-gray-900'>
+                {card.hasStatement ? 'Yes' : 'No'}
+              </p>
+            </div>
+            {card.billingDay && (
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-500'>
-                  Card Type
+                  Billing Day
                 </label>
-                <p className='text-gray-900 capitalize'>
-                  {cardMetadata.cardType}
-                </p>
+                <p className='text-gray-900'>{card.billingDay}</p>
               </div>
+            )}
+            {card.creditLimit && (
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-500'>
-                  Network
-                </label>
-                <p className='text-gray-900 capitalize'>
-                  {cardMetadata.network}
-                </p>
-              </div>
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-500'>
-                  Reward Type
-                </label>
-                <p className='text-gray-900 capitalize'>
-                  {cardMetadata.rewardType}
-                </p>
-              </div>
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-500'>
-                  Annual Fee
+                  Credit Limit
                 </label>
                 <p className='text-gray-900'>
-                  ₹{cardMetadata.annualFee.toLocaleString()}
+                  ₹{card.creditLimit.toLocaleString()}
                 </p>
               </div>
-              {cardMetadata.primaryColor && (
-                <div className='space-y-2'>
-                  <label className='text-sm font-medium text-gray-500'>
-                    Card Colors
-                  </label>
-                  <div className='flex items-center space-x-2'>
+            )}
+            {card.availableCredit && (
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-500'>
+                  Available Credit
+                </label>
+                <p className='text-gray-900'>
+                  ₹{card.availableCredit.toLocaleString()}
+                </p>
+              </div>
+            )}
+            {card.primaryColor && (
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-500'>
+                  Card Colors
+                </label>
+                <div className='flex items-center space-x-2'>
+                  <div
+                    className='w-6 h-6 rounded border border-gray-300'
+                    style={{ backgroundColor: card.primaryColor }}
+                  />
+                  {card.secondaryColor && (
                     <div
                       className='w-6 h-6 rounded border border-gray-300'
-                      style={{ backgroundColor: cardMetadata.primaryColor }}
+                      style={{ backgroundColor: card.secondaryColor }}
                     />
-                    {cardMetadata.secondaryColor && (
-                      <div
-                        className='w-6 h-6 rounded border border-gray-300'
-                        style={{ backgroundColor: cardMetadata.secondaryColor }}
-                      />
-                    )}
-                  </div>
+                  )}
                 </div>
-              )}
-              {cardMetadata.description && (
-                <div className='space-y-2 md:col-span-2 lg:col-span-3'>
-                  <label className='text-sm font-medium text-gray-500'>
-                    Description
-                  </label>
-                  <p className='text-gray-900'>{cardMetadata.description}</p>
-                </div>
-              )}
-              {cardMetadata.rewardRules &&
-                Object.keys(cardMetadata.rewardRules).length > 0 && (
-                  <div className='space-y-2 md:col-span-2 lg:col-span-3'>
-                    <label className='text-sm font-medium text-gray-500'>
-                      Reward Rules
-                    </label>
-                    <div className='space-y-2'>
-                      {Object.entries(cardMetadata.rewardRules).map(
-                        ([key, value]) => (
-                          <div
-                            key={key}
-                            className='flex justify-between text-sm'
-                          >
-                            <span className='text-gray-600 capitalize'>
-                              {key.replace(/([A-Z])/g, ' $1').trim()}:
-                            </span>
-                            <span className='text-gray-900'>
-                              {String(value)}
-                            </span>
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  </div>
-                )}
+              </div>
+            )}
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Created At
+              </label>
+              <p className='text-gray-900 text-sm'>
+                {new Date(card.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Updated At
+              </label>
+              <p className='text-gray-900 text-sm'>
+                {new Date(card.updatedAt).toLocaleDateString()}
+              </p>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Custom Benefits */}
         <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6'>
@@ -379,6 +556,27 @@ export default function CardDetailPage() {
             </div>
           )}
         </div>
+
+        {/* Upload Statement Modal */}
+        {showUploadModal && (
+          <UploadStatementModal
+            isOpen={showUploadModal}
+            onClose={() => setShowUploadModal(false)}
+            cardId={card.id}
+            cardName={card.cardName}
+            bankName={card.bankName}
+            onSuccess={() => {
+              setShowUploadModal(false);
+              toast.success(
+                'Statement uploaded! Transactions will appear shortly.',
+              );
+              // Optionally refresh card data
+              fetchCards();
+            }}
+          />
+        )}
+
+        {/* Delete Modal */}
         {showDeleteModal && (
           <Modal
             isOpen={true}

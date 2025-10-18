@@ -25,37 +25,104 @@ export abstract class BaseParser {
   protected abstract getConfig(bankName: BankName): ParserConfig;
 
   // Parse date from text using configured date formats
+  // Returns date at noon UTC to avoid timezone shifting issues
   protected parseDate(dateStr: string): Date | null {
     if (!dateStr) return null;
 
-    for (const format of this.config.dateFormats) {
-      try {
-        const parsed = parseDate(dateStr.trim(), format, new Date());
-        if (isValid(parsed)) {
-          return parsed;
+    const trimmed = dateStr.trim();
+
+    // Try to parse date components directly to avoid timezone issues
+    // Format: "17 Sep, 2025" or "September 18, 2025" or "17/09/2025"
+    const patterns = [
+      // MMMM dd, yyyy (September 18, 2025) - month first
+      /(\w{3,})\s+(\d{1,2}),?\s+(\d{4})/i,
+      // dd MMMM, yyyy (18 Sep, 2025) - day first
+      /(\d{1,2})\s+(\w{3,}),?\s+(\d{4})/i,
+      // dd/MM/yyyy (17/09/2025)
+      /(\d{1,2})\/(\d{1,2})\/(\d{4})/,
+      // dd-MM-yyyy (17-09-2025)
+      /(\d{1,2})-(\d{1,2})-(\d{4})/,
+    ];
+
+    const monthMap: Record<string, number> = {
+      jan: 0,
+      january: 0,
+      feb: 1,
+      february: 1,
+      mar: 2,
+      march: 2,
+      apr: 3,
+      april: 3,
+      may: 4,
+      jun: 5,
+      june: 5,
+      jul: 6,
+      july: 6,
+      aug: 7,
+      august: 7,
+      sep: 8,
+      sept: 8,
+      september: 8,
+      oct: 9,
+      october: 9,
+      nov: 10,
+      november: 10,
+      dec: 11,
+      december: 11,
+    };
+
+    for (const pattern of patterns) {
+      const match = trimmed.match(pattern);
+      if (match && match[1] && match[2] && match[3]) {
+        let day: number;
+        let month: number;
+        let year: number;
+
+        // Check if first group is month name (MMMM dd, yyyy format)
+        if (isNaN(parseInt(match[1]))) {
+          // Month first: September 18, 2025
+          const monthLower = match[1].toLowerCase();
+          const monthNum = monthMap[monthLower];
+          if (monthNum === undefined) continue;
+          month = monthNum;
+          day = parseInt(match[2]);
+          year = parseInt(match[3]);
+        } else {
+          // Day first: 18 Sep, 2025 or 18/09/2025
+          day = parseInt(match[1]);
+          year = parseInt(match[3]);
+
+          if (isNaN(parseInt(match[2]))) {
+            // Month name
+            const monthLower = match[2].toLowerCase();
+            const monthNum = monthMap[monthLower];
+            if (monthNum === undefined) continue;
+            month = monthNum;
+          } else {
+            // Month number (1-12)
+            month = parseInt(match[2]) - 1; // Convert to 0-indexed
+          }
         }
-      } catch {
-        continue;
+
+        // Create date in Indian timezone (IST = UTC+5:30)
+        // Use local timezone for Indian dates
+        const date = new Date(year, month, day, 12, 0, 0, 0);
+        if (isValid(date)) {
+          return date;
+        }
       }
     }
 
-    const commonFormats = [
-      'dd/MM/yyyy',
-      'dd-MM-yyyy',
-      'dd MMM yyyy',
-      'dd-MMM-yyyy',
-      'dd/MM/yy',
-      'dd-MM-yy',
-    ];
-
-    for (const format of commonFormats) {
+    // Fallback to date-fns parsing (less reliable due to timezone)
+    for (const format of this.config.dateFormats) {
       try {
-        const parsed = parseDate(dateStr.trim(), format, new Date());
+        const parsed = parseDate(trimmed, format, new Date());
         if (isValid(parsed)) {
-          this.warnings.push(
-            `Date parsed using fallback format: ${format} for ${dateStr}`,
-          );
-          return parsed;
+          // Extract components and create date in local timezone
+          const year = parsed.getFullYear();
+          const month = parsed.getMonth();
+          const day = parsed.getDate();
+          return new Date(year, month, day, 12, 0, 0, 0);
         }
       } catch {
         continue;
@@ -199,11 +266,13 @@ export abstract class BaseParser {
   protected extractMetadata(pdfText: string): StatementMetadata {
     const metadata: StatementMetadata = {};
 
+    // Card identification
     const cardNumber = this.extractCardNumber(pdfText);
     if (cardNumber) {
       metadata.cardLastFourDigits = cardNumber;
     }
 
+    // Credit limit
     const creditLimitPatterns = [
       /credit\s+limit[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+)/i,
       /limit[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+)/i,
@@ -217,6 +286,7 @@ export abstract class BaseParser {
       }
     }
 
+    // Due date
     const dueDatePatterns = [
       /payment\s*due\s*date[:\s\n-]*?(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
       /due\s*date[:\s\n-]*?(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
@@ -234,6 +304,7 @@ export abstract class BaseParser {
       }
     }
 
+    // Minimum payment
     const minPaymentPatterns = [
       /minimum\s+(?:amount\s+)?due[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)/i,
       /minimum\s+payment[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)/i,
@@ -247,6 +318,21 @@ export abstract class BaseParser {
       }
     }
 
+    // Total amount due
+    const totalDuePatterns = [
+      /total\s+(?:amount\s+)?due[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)/i,
+      /amount\s+due[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)/i,
+    ];
+
+    for (const pattern of totalDuePatterns) {
+      const match = pdfText.match(pattern);
+      if (match && match[1]) {
+        metadata.totalDue = parseFloat(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
+
+    // Available credit
     const availableCreditPatterns = [
       /available\s+credit[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+)/i,
       /credit\s+available[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+)/i,
@@ -260,6 +346,105 @@ export abstract class BaseParser {
       }
     }
 
+    // Cash advance limit
+    const cashAdvancePatterns = [
+      /cash\s+advance\s+limit[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+)/i,
+      /advance\s+limit[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+)/i,
+    ];
+
+    for (const pattern of cashAdvancePatterns) {
+      const match = pdfText.match(pattern);
+      if (match && match[1]) {
+        metadata.cashAdvanceLimit = parseFloat(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
+
+    // Late payment fee
+    const lateFeePatterns = [
+      /late\s+payment\s+(?:fee|charge)[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)/i,
+      /overdue\s+charges[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)/i,
+    ];
+
+    for (const pattern of lateFeePatterns) {
+      const match = pdfText.match(pattern);
+      if (match && match[1]) {
+        metadata.latePaymentFee = parseFloat(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
+
+    // Interest charges
+    const interestPatterns = [
+      /interest\s+charged?[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)/i,
+      /finance\s+charges[:\s]+(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)/i,
+    ];
+
+    for (const pattern of interestPatterns) {
+      const match = pdfText.match(pattern);
+      if (match && match[1]) {
+        metadata.interestCharges = parseFloat(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
+
     return metadata;
+  }
+
+  /**
+   * Extract reward points information
+   * Should be overridden by bank-specific parsers
+   */
+  protected extractRewardPoints(pdfText: string): any {
+    const rewardPoints: any = {
+      opening: 0,
+      earned: 0,
+      redeemed: 0,
+      expired: 0,
+      closing: 0,
+    };
+
+    // Generic patterns - banks should override with specific logic
+    const openingPatterns = [
+      /opening\s+(?:balance|points)[:\s]+(\d+)/i,
+      /previous\s+balance[:\s]+(\d+)/i,
+    ];
+
+    const earnedPatterns = [
+      /(?:points\s+)?earned[:\s]+(\d+)/i,
+      /accrued[:\s]+(\d+)/i,
+    ];
+
+    const closingPatterns = [
+      /closing\s+(?:balance|points)[:\s]+(\d+)/i,
+      /current\s+balance[:\s]+(\d+)/i,
+      /available\s+points[:\s]+(\d+)/i,
+    ];
+
+    for (const pattern of openingPatterns) {
+      const match = pdfText.match(pattern);
+      if (match && match[1]) {
+        rewardPoints.opening = parseInt(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
+
+    for (const pattern of earnedPatterns) {
+      const match = pdfText.match(pattern);
+      if (match && match[1]) {
+        rewardPoints.earned = parseInt(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
+
+    for (const pattern of closingPatterns) {
+      const match = pdfText.match(pattern);
+      if (match && match[1]) {
+        rewardPoints.closing = parseInt(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
+
+    return rewardPoints;
   }
 }

@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
         `
         *,
         card_benefits (*),
-        statements:card_statements (count)
+        statements (id)
       `,
       )
       .eq('user_id', userId)
@@ -164,7 +164,6 @@ export async function GET(request: NextRequest) {
     const { data: cards, error } = await query;
 
     if (error) {
-      // Supabase error logged
       throw new FinMatterError(
         'Failed to fetch cards',
         'DB_QUERY_FAILED',
@@ -187,8 +186,8 @@ export async function GET(request: NextRequest) {
     const { count, error: countError } = await countQuery;
 
     if (countError) {
-      // Count error logged
       // Continue without count if there's an error
+      console.error('Failed to count cards:', countError);
     }
 
     // Transform database format to API format
@@ -223,7 +222,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Error logged
+    console.error('Cards GET error:', error);
     return createCorsResponse(
       {
         success: false,
@@ -419,7 +418,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Error logged
+    console.error('Cards POST error:', error);
     return createCorsResponse(
       {
         success: false,

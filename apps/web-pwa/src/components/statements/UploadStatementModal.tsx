@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   X,
   Upload,
@@ -11,8 +11,10 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { statementService, type BankName } from '@/services/statementService';
+import { useStatementStatus } from '@/hooks/useStatementStatus';
+import { formatFileSize } from '@finmatter/shared';
 import toast from 'react-hot-toast';
 
 interface UploadStatementModalProps {
@@ -23,17 +25,6 @@ interface UploadStatementModalProps {
   bankName: string;
   onSuccess?: () => void;
 }
-
-const BANK_OPTIONS: { value: BankName; label: string }[] = [
-  { value: 'hdfc', label: 'HDFC Bank' },
-  { value: 'icici', label: 'ICICI Bank' },
-  { value: 'sbi', label: 'State Bank of India' },
-  { value: 'axis', label: 'Axis Bank' },
-  { value: 'kotak', label: 'Kotak Mahindra Bank' },
-  { value: 'citi', label: 'Citi Bank' },
-  { value: 'amex', label: 'American Express' },
-  { value: 'hsbc', label: 'HSBC' },
-];
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -46,20 +37,6 @@ export function UploadStatementModal({
   onSuccess,
 }: UploadStatementModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [bankName, setBankName] = useState<BankName>(() => {
-    const normalizedBank = defaultBankName.toLowerCase().replace(/\s+/g, '');
-    if (normalizedBank.includes('hdfc')) return 'hdfc';
-    if (normalizedBank.includes('icici')) return 'icici';
-    if (normalizedBank.includes('sbi') || normalizedBank.includes('state'))
-      return 'sbi';
-    if (normalizedBank.includes('axis')) return 'axis';
-    if (normalizedBank.includes('kotak')) return 'kotak';
-    if (normalizedBank.includes('citi')) return 'citi';
-    if (normalizedBank.includes('amex') || normalizedBank.includes('american'))
-      return 'amex';
-    if (normalizedBank.includes('hsbc')) return 'hsbc';
-    return 'hdfc';
-  });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -67,7 +44,58 @@ export function UploadStatementModal({
     'idle' | 'success' | 'error'
   >('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [uploadedStatementId, setUploadedStatementId] = useState<string | null>(
+    null,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Statement status polling
+  const {
+    status: statementStatus,
+    isPolling,
+    error: _statusError,
+  } = useStatementStatus({
+    statementId: uploadedStatementId,
+    enabled: !!uploadedStatementId && uploadStatus === 'success',
+  });
+
+  const handleClose = useCallback(() => {
+    setSelectedFile(null);
+    setPassword('');
+    setShowPassword(false);
+    setUploadStatus('idle');
+    setErrorMessage('');
+    setUploadedStatementId(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    onClose();
+  }, [onClose]);
+
+  // Handle processing completion
+  useEffect(() => {
+    if (
+      statementStatus &&
+      (statementStatus.status === 'success' ||
+        statementStatus.status === 'failed')
+    ) {
+      if (statementStatus.status === 'success') {
+        toast.success(
+          `Statement processed successfully! Found ${statementStatus.transactionCount} transactions.`,
+        );
+      } else {
+        toast.error(
+          `Statement processing failed: ${statementStatus.error || 'Unknown error'}`,
+        );
+      }
+
+      // Close modal and call success callback after a short delay
+      setTimeout(() => {
+        onSuccess?.();
+        handleClose();
+      }, 2000);
+    }
+  }, [statementStatus, onSuccess, handleClose]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -97,23 +125,42 @@ export function UploadStatementModal({
     setUploadStatus('idle');
     setErrorMessage('');
 
+    // Normalize bank name to BankName type
+    const normalizedBank = defaultBankName.toLowerCase().replace(/\s+/g, '');
+    let bankNameValue: BankName = 'hdfc';
+    if (normalizedBank.includes('hdfc')) bankNameValue = 'hdfc';
+    else if (normalizedBank.includes('icici')) bankNameValue = 'icici';
+    else if (normalizedBank.includes('sbi') || normalizedBank.includes('state'))
+      bankNameValue = 'sbi';
+    else if (normalizedBank.includes('axis')) bankNameValue = 'axis';
+    else if (normalizedBank.includes('kotak')) bankNameValue = 'kotak';
+    else if (normalizedBank.includes('citi')) bankNameValue = 'citi';
+    else if (
+      normalizedBank.includes('amex') ||
+      normalizedBank.includes('american')
+    )
+      bankNameValue = 'amex';
+    else if (normalizedBank.includes('hsbc')) bankNameValue = 'hsbc';
+
     try {
       const response = await statementService.uploadStatement(
         selectedFile,
         cardId,
-        bankName,
+        bankNameValue,
         password || undefined,
       );
 
       if (response.success) {
         setUploadStatus('success');
+        setUploadedStatementId(response.data?.statement?.id || null);
         toast.success(
           response.data?.message || 'Statement uploaded successfully!',
         );
-        setTimeout(() => {
-          onSuccess?.();
-          handleClose();
-        }, 1500);
+        // Don't close immediately - wait for processing to complete
+        // setTimeout(() => {
+        //   onSuccess?.();
+        //   handleClose();
+        // }, 1500);
       } else {
         setUploadStatus('error');
         const errorMsg = response.error?.message || 'Upload failed';
@@ -139,50 +186,13 @@ export function UploadStatementModal({
     }
   };
 
-  const handleClose = () => {
-    setSelectedFile(null);
-    setPassword('');
-    setShowPassword(false);
-    setUploadStatus('idle');
-    setErrorMessage('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-    onClose();
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title='Upload Statement'>
-      <div className='space-y-6'>
+    <BottomSheet isOpen={isOpen} onClose={handleClose} title='Upload Statement'>
+      <div className='space-y-6 pb-6'>
         {/* Card Info */}
         <div className='bg-gray-50 rounded-lg p-4'>
           <p className='text-sm text-gray-600'>Uploading statement for</p>
           <p className='text-base font-semibold text-gray-900'>{cardName}</p>
-        </div>
-
-        {/* Bank Selection */}
-        <div>
-          <label className='block text-sm font-medium text-gray-700 mb-2'>
-            Select Bank
-          </label>
-          <select
-            value={bankName}
-            onChange={e => setBankName(e.target.value as BankName)}
-            className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-            disabled={isUploading}
-          >
-            {BANK_OPTIONS.map(bank => (
-              <option key={bank.value} value={bank.value}>
-                {bank.label}
-              </option>
-            ))}
-          </select>
         </div>
 
         {/* PDF Password (Optional) */}
@@ -196,7 +206,7 @@ export function UploadStatementModal({
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder='Enter password if PDF is protected'
-              className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 pr-10'
+              className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 pr-10 text-gray-900 placeholder-gray-500'
               disabled={isUploading}
             />
             <button
@@ -213,9 +223,16 @@ export function UploadStatementModal({
             </button>
           </div>
           <p className='text-xs text-gray-500 mt-1.5'>
-            Common passwords: Last 4 digits of card, DOB (DDMMYYYY), or PAN last
-            4 chars
+            Common passwords: Last 4 digits of card, DOB (DDMMYYYY), PAN last 4
+            digits, mobile last 4 digits, or account last 4 digits
           </p>
+          <div className='mt-2 p-2 bg-blue-50 rounded border border-blue-200'>
+            <p className='text-xs text-blue-700'>
+              <strong>Tip:</strong> If you don&apos;t know the password, try
+              your card&apos;s last 4 digits or date of birth in DDMMYYYY
+              format.
+            </p>
+          </div>
         </div>
 
         {/* File Upload */}
@@ -266,9 +283,38 @@ export function UploadStatementModal({
                   </p>
 
                   {uploadStatus === 'success' && (
-                    <div className='flex items-center space-x-2 mt-2 text-green-600'>
-                      <CheckCircle className='w-4 h-4' />
-                      <span className='text-sm'>Upload successful!</span>
+                    <div className='mt-2 space-y-2'>
+                      <div className='flex items-center space-x-2 text-green-600'>
+                        <CheckCircle className='w-4 h-4' />
+                        <span className='text-sm'>Upload successful!</span>
+                      </div>
+                      {isPolling && (
+                        <div className='flex items-center space-x-2 text-blue-600'>
+                          <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600'></div>
+                          <span className='text-sm'>
+                            Processing statement...
+                          </span>
+                        </div>
+                      )}
+                      {statementStatus &&
+                        statementStatus.status === 'success' && (
+                          <div className='flex items-center space-x-2 text-green-600'>
+                            <CheckCircle className='w-4 h-4' />
+                            <span className='text-sm'>
+                              Processing complete! Found{' '}
+                              {statementStatus.transactionCount} transactions.
+                            </span>
+                          </div>
+                        )}
+                      {statementStatus &&
+                        statementStatus.status === 'failed' && (
+                          <div className='flex items-center space-x-2 text-red-600'>
+                            <AlertCircle className='w-4 h-4' />
+                            <span className='text-sm'>
+                              Processing failed: {statementStatus.error}
+                            </span>
+                          </div>
+                        )}
                     </div>
                   )}
 
@@ -334,13 +380,24 @@ export function UploadStatementModal({
                 Uploading...
               </>
             ) : uploadStatus === 'success' ? (
-              'Uploaded!'
+              isPolling ? (
+                <>
+                  <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2' />
+                  Processing...
+                </>
+              ) : statementStatus?.status === 'success' ? (
+                'Complete!'
+              ) : statementStatus?.status === 'failed' ? (
+                'Failed'
+              ) : (
+                'Uploaded!'
+              )
             ) : (
-              'Upload Statement'
+              'Upload'
             )}
           </Button>
         </div>
       </div>
-    </Modal>
+    </BottomSheet>
   );
 }

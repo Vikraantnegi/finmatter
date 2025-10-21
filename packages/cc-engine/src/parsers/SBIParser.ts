@@ -7,7 +7,7 @@ import type { ParseResult, ParsedTransaction, ParserConfig } from './types';
 
 export class SBIParser extends BaseParser {
   constructor() {
-    super('sbi');
+    super();
   }
 
   protected getConfig(): ParserConfig {

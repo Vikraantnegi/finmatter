@@ -13,7 +13,7 @@ import type {
 
 export class ICICIParser extends BaseParser {
   constructor() {
-    super('icici');
+    super();
   }
 
   protected getConfig(): ParserConfig {

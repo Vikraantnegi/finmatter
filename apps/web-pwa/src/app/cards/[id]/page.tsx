@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CardVisual } from '@/components/cards/CardVisual';
 import { UploadStatementModal } from '@/components/statements/UploadStatementModal';
+import { ParsingProgressModal } from '@/components/statements/ParsingProgressModal';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { Modal } from '@/components/ui/Modal';
 import { useCardStore } from '@/stores/cardStore';
@@ -36,6 +37,10 @@ export default function CardDetailPage() {
   const [card, setCard] = useState<Card | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showParsingModal, setShowParsingModal] = useState(false);
+  const [parsingStatementId, setParsingStatementId] = useState<string | null>(
+    null,
+  );
   const [deleting, setDeleting] = useState(false);
   const [benefits, setBenefits] = useState<CardBenefitResponse[]>([]);
   const [benefitsLoading, setBenefitsLoading] = useState(false);
@@ -195,6 +200,22 @@ export default function CardDetailPage() {
             <div className='text-center flex-col items-center justify-center py-8 w-full'>
               <LoadingSpinner size='md' className='mx-auto' />
               <p className='text-gray-500 mt-2'>Loading statements...</p>
+            </div>
+          ) : card.parsingInProgress ? (
+            <div className='text-center py-8'>
+              <div className='w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center'>
+                <LoadingSpinner size='md' />
+              </div>
+              <h3 className='text-lg font-semibold text-gray-900 mb-2'>
+                Parsing Statement
+              </h3>
+              <p className='text-gray-600 mb-4'>
+                We&apos;re processing your statement. This usually takes 30-60
+                seconds.
+              </p>
+              <p className='text-sm text-gray-500'>
+                You&apos;ll be notified once it&apos;s ready.
+              </p>
             </div>
           ) : statements && statements.length > 0 ? (
             <div className='space-y-3'>
@@ -565,13 +586,33 @@ export default function CardDetailPage() {
             cardId={card.id}
             cardName={card.cardName}
             bankName={card.bankName}
-            onSuccess={() => {
+            onSuccess={statementId => {
               setShowUploadModal(false);
+              if (statementId) {
+                setParsingStatementId(statementId);
+                setShowParsingModal(true);
+              }
               toast.success(
                 'Statement uploaded! Transactions will appear shortly.',
               );
-              // Optionally refresh card data
+            }}
+          />
+        )}
+
+        {/* Parsing Progress Modal */}
+        {showParsingModal && parsingStatementId && (
+          <ParsingProgressModal
+            isOpen={showParsingModal}
+            onClose={() => {
+              setShowParsingModal(false);
+              setParsingStatementId(null);
+            }}
+            statementId={parsingStatementId}
+            cardName={card.cardName}
+            onComplete={() => {
+              // Refresh card data and statements when parsing completes
               fetchCards();
+              // The statements will be refreshed by the useStatements hook
             }}
           />
         )}

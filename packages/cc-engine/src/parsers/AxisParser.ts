@@ -7,7 +7,7 @@ import type { ParseResult, ParsedTransaction, ParserConfig } from './types';
 
 export class AxisParser extends BaseParser {
   constructor() {
-    super('axis');
+    super();
   }
 
   protected getConfig(): ParserConfig {

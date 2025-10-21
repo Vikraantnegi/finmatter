@@ -13,7 +13,7 @@ import type {
 
 export class HDFCParser extends BaseParser {
   constructor() {
-    super('hdfc');
+    super();
   }
 
   protected getConfig(): ParserConfig {
@@ -222,22 +222,25 @@ export class HDFCParser extends BaseParser {
     }
 
     // Due Date: 07 Oct, 2025
-    const duePattern = /DUE\s+DATE\s*\n\s*(\d{1,2}\s+\w+,\s+\d{4})/i;
+    // Updated pattern to match inline format: "DUE DATE 07 Oct, 2025"
+    const duePattern = /DUE\s+DATE\s+(\d{1,2}\s+\w+,\s+\d{4})/i;
     const dueMatch = pdfText.match(duePattern);
     if (dueMatch && dueMatch[1]) {
       const date = this.parseDate(dueMatch[1]);
       if (date) metadata.dueDate = date;
     }
 
-    // Total Amount Due: C7,658.00
-    const totalDuePattern = /TOTAL\s+AMOUNT\s+DUE\s*\n\s*C\s*([\d,]+\.?\d*)/i;
+    // Total Amount Due: C 7,658.00
+    // Updated pattern to match inline format: "TOTAL AMOUNT DUE C 7,658.00"
+    const totalDuePattern = /TOTAL\s+AMOUNT\s+DUE\s+C\s*([\d,]+\.?\d*)/i;
     const totalMatch = pdfText.match(totalDuePattern);
     if (totalMatch && totalMatch[1]) {
       metadata.totalDue = parseFloat(totalMatch[1].replace(/,/g, ''));
     }
 
-    // Minimum Due: C2,750.00
-    const minPattern = /MINIMUM\s+DUE\s*\n\s*C\s*([\d,]+\.?\d*)/i;
+    // Minimum Due: C 2,750.00
+    // Updated pattern to match inline format: "MINIMUM DUE C 2,750.00"
+    const minPattern = /MINIMUM\s+DUE\s+C\s*([\d,]+\.?\d*)/i;
     const minMatch = pdfText.match(minPattern);
     if (minMatch && minMatch[1]) {
       metadata.minimumPayment = parseFloat(minMatch[1].replace(/,/g, ''));

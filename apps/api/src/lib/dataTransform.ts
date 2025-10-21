@@ -12,6 +12,8 @@ import type { Card, CardBenefit } from '@finmatter/types';
 export function dbCardToApiCard(dbCard: any, dbBenefits?: any[]): Card {
   // Check if card has any statements
   const hasStatement = dbCard.statements?.length > 0;
+  // Check if any statement is currently being parsed
+  const parsingInProgress = dbCard.parsing_in_progress || false;
 
   return {
     id: dbCard.id,
@@ -36,6 +38,7 @@ export function dbCardToApiCard(dbCard: any, dbBenefits?: any[]): Card {
     secondaryColor: dbCard.secondary_color,
     isCustom: dbCard.is_custom,
     hasStatement,
+    parsingInProgress,
     // Transform joined benefits
     benefits: dbBenefits
       ? dbBenefits.map(dbBenefitToApiBenefit)

@@ -42,12 +42,19 @@ export async function parseStatement(
 
     // Try with provided password first
     if (password) {
+      console.log(`Trying to parse PDF with provided password: ${password}`);
       const result = await parsePDFWithPassword(pdfBuffer, password);
       if (result.success) {
         pdfText = result.text;
+        console.log(
+          `PDF parsed successfully with provided password. Text length: ${pdfText.length}`,
+        );
       } else {
         parseError =
           result.error || 'Failed to parse PDF with provided password';
+        console.log(
+          `Failed to parse PDF with provided password: ${parseError}`,
+        );
       }
     } else {
       // Try without password first
@@ -56,23 +63,20 @@ export async function parseStatement(
         pdfText = result.text;
       } else {
         // If that fails, try common passwords
-        const commonPassword = await tryCommonPasswords(pdfBuffer, userInfo);
-        if (commonPassword !== null) {
-          const resultWithPassword = await parsePDFWithPassword(
-            pdfBuffer,
-            commonPassword,
+        console.log('PDF is password protected, trying common passwords...');
+        const commonResult = await tryCommonPasswords(pdfBuffer, userInfo);
+        if (commonResult.success) {
+          pdfText = commonResult.text;
+          console.log(
+            `PDF parsed successfully with common password. Text length: ${pdfText.length}`,
           );
-          if (resultWithPassword.success) {
-            pdfText = resultWithPassword.text;
-          } else {
-            parseError =
-              resultWithPassword.error ||
-              'Failed to parse PDF with common password';
-          }
         } else {
           parseError =
-            result.error ||
+            commonResult.error ||
             'PDF is password protected. Please provide the correct password.';
+          console.log(
+            `Failed to parse PDF with common passwords: ${parseError}`,
+          );
         }
       }
     }

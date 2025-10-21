@@ -3,13 +3,12 @@
  * All bank-specific parsers extend this class
  */
 
-import { parse as parseDate, isValid } from 'date-fns';
+// Simple date parsing without external dependencies
 import type {
   ParsedTransaction,
   ParseResult,
   StatementMetadata,
   ParserConfig,
-  BankName,
 } from './types';
 
 export abstract class BaseParser {
@@ -17,12 +16,12 @@ export abstract class BaseParser {
   protected errors: string[] = [];
   protected warnings: string[] = [];
 
-  constructor(bankName: BankName) {
-    this.config = this.getConfig(bankName);
+  constructor() {
+    this.config = this.getConfig();
   }
 
   abstract parse(pdfText: string): Promise<ParseResult>;
-  protected abstract getConfig(bankName: BankName): ParserConfig;
+  protected abstract getConfig(): ParserConfig;
 
   // Parse date from text using configured date formats
   // Returns date at noon UTC to avoid timezone shifting issues
@@ -107,26 +106,21 @@ export abstract class BaseParser {
         // Create date in Indian timezone (IST = UTC+5:30)
         // Use local timezone for Indian dates
         const date = new Date(year, month, day, 12, 0, 0, 0);
-        if (isValid(date)) {
+        if (!isNaN(date.getTime())) {
           return date;
         }
       }
     }
 
-    // Fallback to date-fns parsing (less reliable due to timezone)
-    for (const format of this.config.dateFormats) {
-      try {
-        const parsed = parseDate(trimmed, format, new Date());
-        if (isValid(parsed)) {
-          // Extract components and create date in local timezone
-          const year = parsed.getFullYear();
-          const month = parsed.getMonth();
-          const day = parsed.getDate();
-          return new Date(year, month, day, 12, 0, 0, 0);
-        }
-      } catch {
-        continue;
+    // Fallback to simple ISO date parsing
+    try {
+      const isoDate = new Date(trimmed);
+      if (!isNaN(isoDate.getTime())) {
+        isoDate.setUTCHours(12, 0, 0, 0);
+        return isoDate;
       }
+    } catch {
+      // Ignore
     }
 
     this.warnings.push(`Could not parse date: ${dateStr}`);

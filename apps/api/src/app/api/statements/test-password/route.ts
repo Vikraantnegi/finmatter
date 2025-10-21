@@ -3,6 +3,9 @@
  * POST /api/statements/test-password - Test PDF parsing with password
  */
 
+// Import polyfills first
+import '@/lib/polyfills';
+
 import { NextRequest } from 'next/server';
 import { createCorsResponse, handleCorsPreflight } from '@/lib/cors';
 import { parseStatement, type BankName } from '@finmatter/cc-engine/server';

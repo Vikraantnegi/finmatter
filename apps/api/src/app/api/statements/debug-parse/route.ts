@@ -6,6 +6,9 @@
  * It returns the raw parse results without persisting to the database.
  */
 
+// Import polyfills first
+import '@/lib/polyfills';
+
 import { NextRequest } from 'next/server';
 import { createCorsResponse, handleCorsPreflight } from '@/lib/cors';
 import { parseStatement } from '@finmatter/cc-engine/server';

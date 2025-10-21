@@ -1,11 +1,73 @@
 /**
  * PDF Utilities for PDF parsing
- * Uses pdf-lib for password-protected PDFs and pdf-parse for regular PDFs
+ * Uses pdf-parse for regular PDFs and pdfjs-dist for password-protected PDFs
  */
 
-import pdf from 'pdf-parse';
-// import { PDFDocument } from 'pdf-lib';
+// Polyfills for Node.js environment (minimal for text extraction)
+if (typeof globalThis.DOMMatrix === 'undefined') {
+  globalThis.DOMMatrix = class DOMMatrix {
+    constructor() {
+      // Simple polyfill for DOMMatrix
+    }
+  } as any;
+}
 
+if (typeof globalThis.DOMRect === 'undefined') {
+  globalThis.DOMRect = class DOMRect {
+    constructor() {
+      // Simple polyfill for DOMRect
+    }
+  } as any;
+}
+
+if (typeof globalThis.TextEncoder === 'undefined') {
+  const { TextEncoder, TextDecoder } = require('util');
+  globalThis.TextEncoder = TextEncoder;
+  globalThis.TextDecoder = TextDecoder;
+}
+
+if (typeof globalThis.URL === 'undefined') {
+  globalThis.URL = require('url').URL;
+}
+
+import pdf from 'pdf-parse';
+
+/**
+ * Logger utility for development debugging
+ */
+const logger = {
+  log: (message: string) => {
+    if (
+      process.env.NODE_ENV === 'development' ||
+      process.env.DEBUG_PDF === 'true'
+    ) {
+      // eslint-disable-next-line no-console
+      console.log(message);
+    }
+  },
+  error: (message: string) => {
+    if (
+      process.env.NODE_ENV === 'development' ||
+      process.env.DEBUG_PDF === 'true'
+    ) {
+      // eslint-disable-next-line no-console
+      console.error(message);
+    }
+  },
+  warn: (message: string) => {
+    if (
+      process.env.NODE_ENV === 'development' ||
+      process.env.DEBUG_PDF === 'true'
+    ) {
+      // eslint-disable-next-line no-console
+      console.warn(message);
+    }
+  },
+};
+
+/**
+ * Result interface for PDF parsing
+ */
 export interface PDFParseResult {
   text: string;
   pageCount: number;
@@ -14,7 +76,7 @@ export interface PDFParseResult {
 }
 
 /**
- * Parse PDF with password support using pdf-lib and pdf-parse
+ * Parse PDF with password support using pdf-parse and pdfjs-dist
  * @param pdfBuffer - PDF file buffer
  * @param password - Optional password for encrypted PDFs
  * @returns Promise with parsed text and metadata
@@ -24,6 +86,10 @@ export async function parsePDFWithPassword(
   password?: string,
 ): Promise<PDFParseResult> {
   try {
+    logger.log(
+      `Starting PDF parsing (password: ${password ? 'provided' : 'none'})`,
+    );
+
     // First, try with pdf-parse (faster for unprotected PDFs)
     if (!password) {
       try {
@@ -31,25 +97,36 @@ export async function parsePDFWithPassword(
           max: 0, // Parse all pages
         });
 
+        logger.log(
+          `PDF parsed successfully with pdf-parse. Pages: ${pdfData.numpages}`,
+        );
         return {
           text: pdfData.text,
           pageCount: pdfData.numpages,
           success: true,
         };
       } catch (error: any) {
+        logger.log(`pdf-parse failed: ${error.message}`);
+
         // If pdf-parse fails due to password protection, try pdfjs-dist
         if (
           error.message?.includes('password') ||
-          error.message?.includes('encrypted')
+          error.message?.includes('encrypted') ||
+          error.message?.includes('Invalid password')
         ) {
-          return await parsePDFWithPasswordUsingPdfJs(pdfBuffer, password);
+          logger.log('Detected password protection, trying pdfjs-dist...');
+          return await parsePDFWithPdfJs(pdfBuffer, password);
         }
-        throw error;
+
+        // For other errors, try pdfjs-dist as fallback
+        logger.log('Trying pdfjs-dist as fallback...');
+        return await parsePDFWithPdfJs(pdfBuffer, password);
       }
     }
 
     // If password is provided, use pdfjs-dist directly
-    return await parsePDFWithPasswordUsingPdfJs(pdfBuffer, password);
+    logger.log('Password provided, using pdfjs-dist directly...');
+    return await parsePDFWithPdfJs(pdfBuffer, password);
   } catch (error: any) {
     // Handle PDF parsing errors
     if (
@@ -60,21 +137,12 @@ export async function parsePDFWithPassword(
         text: '',
         pageCount: 0,
         success: false,
-        error:
-          'PDF appears to be password protected. Please provide the correct password.',
+        error: password
+          ? 'Incorrect password provided. Please check and try again.'
+          : 'Password-protected PDF detected. Please provide the correct password.',
       };
     }
 
-    if (error.message?.includes('Invalid PDF')) {
-      return {
-        text: '',
-        pageCount: 0,
-        success: false,
-        error: 'Invalid PDF file. Please ensure the file is a valid PDF.',
-      };
-    }
-
-    // Generic error
     return {
       text: '',
       pageCount: 0,
@@ -85,53 +153,138 @@ export async function parsePDFWithPassword(
 }
 
 /**
- * Parse PDF using pdf-parse (password support is limited)
+ * Parse PDF using pdfjs-dist with password support
  * @param pdfBuffer - PDF file buffer
- * @param password - Optional password for encrypted PDFs
+ * @param password - Password for encrypted PDFs
  * @returns Promise with parsed text and metadata
  */
-async function parsePDFWithPasswordUsingPdfJs(
+async function parsePDFWithPdfJs(
   pdfBuffer: Buffer,
   password?: string,
 ): Promise<PDFParseResult> {
   try {
-    // Try to parse with pdf-parse
-    const pdfData = await pdf(pdfBuffer, {
-      max: 0, // Parse all pages
+    // Dynamically import pdfjs-dist to avoid module loading issues
+    let pdfjsLib;
+    try {
+      // Use Function constructor to avoid static analysis
+      const importPdfJs = new Function(
+        'return import("pdfjs-dist/build/pdf.mjs")',
+      );
+      pdfjsLib = await importPdfJs();
+    } catch (importError) {
+      logger.error(`Failed to import pdfjs-dist: ${importError}`);
+      return {
+        text: '',
+        pageCount: 0,
+        success: false,
+        error: 'PDF parsing library not available',
+      };
+    }
+
+    // Convert buffer to Uint8Array
+    const uint8Array = new Uint8Array(pdfBuffer);
+
+    logger.log(
+      `Attempting to parse PDF with pdfjs-dist (password: ${password ? 'provided' : 'none'})`,
+    );
+
+    // Load the PDF document with password support
+    const loadingTask = pdfjsLib.getDocument({
+      data: uint8Array,
+      password: password || '',
+      useSystemFonts: true,
+      disableFontFace: false,
+      disableRange: false,
+      disableStream: false,
     });
 
+    const pdfDocument = await loadingTask.promise;
+    const pageCount = pdfDocument.numPages;
+
+    logger.log(`PDF loaded successfully. Pages: ${pageCount}`);
+
+    let extractedText = '';
+
+    // Extract text from all pages
+    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+      const page = await pdfDocument.getPage(pageNum);
+      const textContent = await page.getTextContent();
+
+      // Combine all text items with proper spacing
+      const pageText = textContent.items
+        .map((item: any) => {
+          // Handle different text item types
+          if (typeof item === 'string') {
+            return item;
+          }
+          if (item && typeof item === 'object' && 'str' in item) {
+            return item.str;
+          }
+          return '';
+        })
+        .filter((text: string) => text && text.trim().length > 0)
+        .join(' ');
+
+      extractedText += `${pageText}\n`;
+    }
+
+    // Clean up
+    pdfDocument.destroy();
+
+    logger.log(
+      `Text extraction completed. Text length: ${extractedText.length}`,
+    );
+
     return {
-      text: pdfData.text,
-      pageCount: pdfData.numpages,
+      text: extractedText.trim(),
+      pageCount,
       success: true,
     };
   } catch (error: any) {
-    // Check if it's a password-related error
+    logger.error(`pdfjs-dist error: ${error.name} - ${error.message}`);
+
+    // Check if it's a password error
     if (
-      error.message?.includes('password') ||
-      error.message?.includes('encrypted') ||
-      error.message?.includes('Invalid password') ||
-      error.message?.includes('password required')
+      error.name === 'PasswordException' ||
+      error.message?.includes('password')
     ) {
-      if (password) {
-        return {
-          text: '',
-          pageCount: 0,
-          success: false,
-          error: `Password-protected PDF detected. We received your password "${password}", but our current PDF parsing library doesn't support password decryption. Please try one of these solutions: 1) Remove the password from your PDF using a PDF editor, 2) Use a different PDF tool to remove the password, or 3) Contact support for assistance.`,
-        };
-      } else {
-        return {
-          text: '',
-          pageCount: 0,
-          success: false,
-          error:
-            'This PDF is password protected. Please provide the correct password in the upload form.',
-        };
-      }
+      return {
+        text: '',
+        pageCount: 0,
+        success: false,
+        error: password
+          ? 'Incorrect password provided. Please check and try again.'
+          : 'Password-protected PDF detected. Please provide the correct password.',
+      };
     }
 
-    // Other parsing errors
+    // Check if it's a corrupted PDF
+    if (
+      error.name === 'InvalidPDFException' ||
+      error.message?.includes('Invalid PDF')
+    ) {
+      return {
+        text: '',
+        pageCount: 0,
+        success: false,
+        error:
+          'Invalid or corrupted PDF file. Please ensure the file is valid.',
+      };
+    }
+
+    // Check for encryption errors
+    if (
+      error.message?.includes('encrypted') ||
+      error.message?.includes('security')
+    ) {
+      return {
+        text: '',
+        pageCount: 0,
+        success: false,
+        error: 'PDF is encrypted and requires a password for access.',
+      };
+    }
+
     return {
       text: '',
       pageCount: 0,
@@ -142,79 +295,54 @@ async function parsePDFWithPasswordUsingPdfJs(
 }
 
 /**
- * Check if PDF is password protected without parsing
+ * Try common passwords for password-protected PDFs
  * @param pdfBuffer - PDF file buffer
- * @returns Promise indicating if PDF is encrypted
- */
-export async function isPDFPasswordProtected(
-  pdfBuffer: Buffer,
-): Promise<boolean> {
-  try {
-    // Try to parse with pdf-parse
-    await pdf(pdfBuffer, { max: 0 });
-    return false; // No password needed
-  } catch (error: any) {
-    // If parsing fails, it might be password protected
-    return (
-      error.message?.includes('password') ||
-      error.message?.includes('encrypted') ||
-      false
-    );
-  }
-}
-
-/**
- * Try common passwords for bank statements
- * @param pdfBuffer - PDF file buffer
- * @param userInfo - Optional user information to generate passwords
- * @returns Promise with successful password or null
+ * @param userInfo - User information for generating common passwords
+ * @returns Promise with parsed text and metadata
  */
 export async function tryCommonPasswords(
   pdfBuffer: Buffer,
   userInfo?: {
     cardLastFour?: string;
-    dateOfBirth?: string; // DDMMYYYY format
+    dateOfBirth?: string;
     panLastFour?: string;
     mobileLastFour?: string;
     accountLastFour?: string;
   },
-): Promise<string | null> {
-  // First try without password
-  try {
-    const result = await parsePDFWithPassword(pdfBuffer);
-    if (result.success) {
-      return ''; // No password needed
-    }
-  } catch {
-    // PDF might be password protected
-  }
+): Promise<PDFParseResult> {
+  logger.log('Attempting to parse with common passwords...');
 
-  // If user info is provided, try common password patterns
-  if (userInfo) {
-    const commonPasswords = generateCommonPasswords(userInfo);
+  const commonPasswords = generateCommonPasswords(userInfo);
 
-    for (const password of commonPasswords) {
-      try {
-        const result = await parsePDFWithPassword(pdfBuffer, password);
-        if (result.success) {
-          return password;
-        }
-      } catch {
-        // Continue to next password
-        continue;
+  for (const password of commonPasswords) {
+    logger.log(`Trying password: ${password}`);
+
+    try {
+      const result = await parsePDFWithPdfJs(pdfBuffer, password);
+      if (result.success) {
+        logger.log(`Successfully parsed with password: ${password}`);
+        return result;
       }
+    } catch (error: any) {
+      logger.log(`Password ${password} failed: ${error.message}`);
     }
   }
 
-  return null; // No password worked
+  return {
+    text: '',
+    pageCount: 0,
+    success: false,
+    error:
+      'Unable to parse PDF with common passwords. Please provide the correct password.',
+  };
 }
 
 /**
- * Generate common password patterns for bank statements
- * @param userInfo - User information to generate passwords from
- * @returns Array of potential passwords
+ * Generate common passwords based on user information
+ * @param userInfo - User information for generating passwords
+ * @returns Array of common passwords to try
  */
-function generateCommonPasswords(userInfo: {
+function generateCommonPasswords(userInfo?: {
   cardLastFour?: string;
   dateOfBirth?: string;
   panLastFour?: string;
@@ -223,38 +351,83 @@ function generateCommonPasswords(userInfo: {
 }): string[] {
   const passwords: string[] = [];
 
-  // Last 4 digits of card
-  if (userInfo.cardLastFour) {
-    passwords.push(userInfo.cardLastFour);
-  }
+  // Common default passwords
+  const defaults = ['1234', '0000', '1111', '123456', 'password', '12345678'];
+  passwords.push(...defaults);
 
-  // Date of birth in DDMMYYYY format
-  if (userInfo.dateOfBirth) {
-    passwords.push(userInfo.dateOfBirth);
-    // Also try YYYYMMDD format
-    if (userInfo.dateOfBirth.length === 8) {
-      const day = userInfo.dateOfBirth.substring(0, 2);
-      const month = userInfo.dateOfBirth.substring(2, 4);
-      const year = userInfo.dateOfBirth.substring(4, 8);
-      passwords.push(`${year}${month}${day}`);
+  if (userInfo) {
+    // Card last 4 digits
+    if (userInfo.cardLastFour) {
+      passwords.push(userInfo.cardLastFour);
+    }
+
+    // Date of birth variations
+    if (userInfo.dateOfBirth) {
+      const dob = userInfo.dateOfBirth.replace(/\D/g, ''); // Remove non-digits
+      if (dob.length >= 4) {
+        passwords.push(dob.slice(-4)); // Last 4 digits
+        passwords.push(dob.slice(0, 4)); // First 4 digits
+        if (dob.length >= 6) {
+          passwords.push(dob.slice(-6)); // Last 6 digits
+        }
+      }
+    }
+
+    // PAN last 4 digits
+    if (userInfo.panLastFour) {
+      passwords.push(userInfo.panLastFour);
+    }
+
+    // Mobile last 4 digits
+    if (userInfo.mobileLastFour) {
+      passwords.push(userInfo.mobileLastFour);
+    }
+
+    // Account last 4 digits
+    if (userInfo.accountLastFour) {
+      passwords.push(userInfo.accountLastFour);
     }
   }
 
-  // Last 4 digits of PAN
-  if (userInfo.panLastFour) {
-    passwords.push(userInfo.panLastFour);
-  }
-
-  // Last 4 digits of mobile
-  if (userInfo.mobileLastFour) {
-    passwords.push(userInfo.mobileLastFour);
-  }
-
-  // Last 4 digits of account
-  if (userInfo.accountLastFour) {
-    passwords.push(userInfo.accountLastFour);
-  }
-
-  // Remove duplicates
+  // Remove duplicates and return
   return [...new Set(passwords)];
+}
+
+/**
+ * Test password-protected PDF parsing with a sample PDF
+ * @param pdfPath - Path to the PDF file
+ * @param password - Password to test
+ * @returns Promise with test results
+ */
+export async function testPasswordProtectedPDF(
+  pdfPath: string,
+  password?: string,
+): Promise<PDFParseResult> {
+  try {
+    const fs = require('fs');
+    const pdfBuffer = fs.readFileSync(pdfPath);
+
+    logger.log(`Testing PDF: ${pdfPath}`);
+    logger.log(`Password: ${password || 'none'}`);
+
+    const result = await parsePDFWithPassword(pdfBuffer, password);
+
+    logger.log(`Test completed. Success: ${result.success}`);
+    if (result.success) {
+      logger.log(`Pages: ${result.pageCount}`);
+      logger.log(`Text length: ${result.text.length}`);
+    } else {
+      logger.log(`Error: ${result.error}`);
+    }
+
+    return result;
+  } catch (error: any) {
+    logger.error(`Test failed: ${error.message}`);
+    return {
+      text: '',
+      pageCount: 0,
+      success: false,
+      error: `Test failed: ${error.message}`,
+    };
+  }
 }

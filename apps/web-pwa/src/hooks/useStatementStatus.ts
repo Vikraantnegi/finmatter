@@ -1,172 +1,86 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { statementService } from '@/services/statementService';
+'use client';
 
-interface StatementStatus {
-  id: string;
-  status: 'pending' | 'processing' | 'success' | 'failed';
-  error?: string;
-  transactionCount?: number;
-  parsedAt?: string;
-  uploadedAt: string;
-  fileName: string;
-  fileSize: number;
-}
+import { useState, useEffect, useCallback } from 'react';
+import { statementService } from '@/services/statementService';
 
 interface UseStatementStatusOptions {
   statementId: string | null;
   enabled?: boolean;
-  pollInterval?: number;
-  maxPollingTime?: number;
-}
-
-interface UseStatementStatusReturn {
-  status: StatementStatus | null;
-  isLoading: boolean;
-  error: string | null;
-  isPolling: boolean;
-  refetch: () => void;
+  interval?: number; // Polling interval in milliseconds
 }
 
 export function useStatementStatus({
   statementId,
   enabled = true,
-  pollInterval = 5000, // 5 seconds
-  maxPollingTime = 60000, // 1 minute
-}: UseStatementStatusOptions): UseStatementStatusReturn {
-  const [status, setStatus] = useState<StatementStatus | null>(null);
+  interval = 3000, // 3 seconds
+}: UseStatementStatusOptions) {
+  const [status, setStatus] = useState<
+    'pending' | 'processing' | 'success' | 'failed'
+  >('pending');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statement, setStatement] = useState<any>(null);
   const [isPolling, setIsPolling] = useState(false);
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startTimeRef = useRef<number | null>(null);
-  const mountedRef = useRef(true);
-
-  const fetchStatus = useCallback(async () => {
+  const checkStatus = useCallback(async () => {
     if (!statementId || !enabled) return;
 
+    setIsLoading(true);
+    setError(null);
+
     try {
-      setIsLoading(true);
-      setError(null);
+      const response = await statementService.getStatementById(statementId);
 
-      const response = await statementService.getStatementStatus(statementId);
+      if (response.success && response.data) {
+        const newStatus = response.data.statement.status;
+        setStatus(newStatus);
+        setStatement(response.data.statement);
 
-      if (response.success && response.data?.statement) {
-        const statementData = response.data.statement;
-        setStatus(statementData);
-
-        // Stop polling if status is final (success or failed)
-        if (
-          statementData.status === 'success' ||
-          statementData.status === 'failed'
-        ) {
-          setIsPolling(false);
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-          }
+        // Stop polling if status is final
+        if (newStatus === 'success' || newStatus === 'failed') {
+          return false; // Stop polling
         }
       } else {
-        setError(response.error?.message || 'Failed to fetch statement status');
+        setError('Failed to fetch statement status');
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(errorMessage);
-      setIsPolling(false);
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
+
+    return true; // Continue polling
   }, [statementId, enabled]);
 
-  const stopPolling = useCallback(() => {
-    setIsPolling(false);
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, []);
-
-  const startPolling = useCallback(() => {
-    if (!statementId || !enabled || isPolling) return;
+  useEffect(() => {
+    if (!statementId || !enabled) return;
 
     setIsPolling(true);
-    startTimeRef.current = Date.now();
 
-    // Add a small delay before starting to poll to avoid immediate 404s
-    setTimeout(() => {
-      if (!mountedRef.current) return;
+    // Initial check
+    checkStatus();
 
-      // Initial fetch
-      fetchStatus();
-
-      // Set up polling interval
-      intervalRef.current = setInterval(() => {
-        if (!mountedRef.current) return;
-
-        // Check if we've exceeded max polling time
-        if (
-          startTimeRef.current &&
-          Date.now() - startTimeRef.current > maxPollingTime
-        ) {
-          setIsPolling(false);
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-          }
-          setError(
-            'Statement processing is taking longer than expected. Please check back later.',
-          );
-          return;
-        }
-
-        fetchStatus();
-      }, pollInterval);
-    }, 1000); // 1 second delay
-  }, [
-    statementId,
-    enabled,
-    isPolling,
-    pollInterval,
-    maxPollingTime,
-    fetchStatus,
-  ]);
-
-  const refetch = useCallback(() => {
-    if (statementId && enabled) {
-      fetchStatus();
-    }
-  }, [statementId, enabled, fetchStatus]);
-
-  // Start/stop polling based on statementId and enabled state
-  useEffect(() => {
-    if (statementId && enabled) {
-      startPolling();
-    } else {
-      stopPolling();
-    }
+    // Set up polling
+    const pollInterval = setInterval(async () => {
+      const shouldContinue = await checkStatus();
+      if (!shouldContinue) {
+        clearInterval(pollInterval);
+        setIsPolling(false);
+      }
+    }, interval);
 
     return () => {
-      stopPolling();
+      clearInterval(pollInterval);
+      setIsPolling(false);
     };
-  }, [statementId, enabled, startPolling, stopPolling]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-      stopPolling();
-    };
-  }, [stopPolling]);
+  }, [statementId, enabled, interval, checkStatus]);
 
   return {
     status,
     isLoading,
     error,
+    statement,
     isPolling,
-    refetch,
+    refetch: checkStatus,
   };
 }

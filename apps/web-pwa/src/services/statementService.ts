@@ -30,6 +30,7 @@ export interface Statement {
   creditLimit?: number;
   availableCredit?: number;
   parsingError?: string;
+  parsingErrorDetails?: string;
   uploadedAt: string;
   parsedAt?: string;
 
@@ -203,6 +204,7 @@ export class StatementService {
       creditLimit: dbStatement.credit_limit,
       availableCredit: dbStatement.available_credit,
       parsingError: dbStatement.parsing_error,
+      parsingErrorDetails: dbStatement.parsing_error_details,
       uploadedAt: dbStatement.uploaded_at,
       parsedAt: dbStatement.parsed_at,
 
@@ -246,10 +248,33 @@ export class StatementService {
 
   async getStatementById(statementId: string): Promise<GetStatementResponse> {
     try {
-      const response = await apiClient.get<GetStatementResponse>(
-        `/api/statements/${statementId}`,
-      );
-      return response;
+      const response = await apiClient.get<{
+        success: boolean;
+        data?: {
+          statement: any;
+        };
+        error?: {
+          code: string;
+          message: string;
+        };
+      }>(`/api/statements/${statementId}`);
+
+      if (response.success && response.data?.statement) {
+        return {
+          success: true,
+          data: {
+            statement: this.transformStatement(response.data.statement),
+          },
+        };
+      }
+
+      return {
+        success: false,
+        error: response.error || {
+          code: 'UNKNOWN_ERROR',
+          message: 'Failed to fetch statement',
+        },
+      };
     } catch (error) {
       console.error('Get statement error:', error);
       throw error;

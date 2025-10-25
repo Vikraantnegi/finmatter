@@ -5,14 +5,15 @@
 
 import { NextRequest } from 'next/server';
 import { createCorsResponse, handleCorsPreflight } from '@/lib/cors';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase/client';
 import { FinMatterError } from '@/lib/errors';
 import { parseStatement } from '@finmatter/cc-engine/server';
 import { z } from 'zod';
 
-// Force Node.js runtime for PDF parsing
+// Force Node.js runtime for PDF parsing with extended timeout
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300; // 5 minutes timeout for parsing
 
 const RetrySchema = z.object({
   password: z.string().optional(),

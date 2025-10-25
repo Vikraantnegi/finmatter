@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -33,6 +34,8 @@ export default function CardDetailPage() {
   const params = useParams();
   const cardId = params.id as string;
 
+  console.log('CardDetailPage render:', { cardId });
+
   const { cards, isLoading: loading, fetchCards, deleteCard } = useCardStore();
   const [card, setCard] = useState<Card | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -46,21 +49,12 @@ export default function CardDetailPage() {
   const [benefitsLoading, setBenefitsLoading] = useState(false);
   const [_cardMetadata, setCardMetadata] =
     useState<CardMetadataResponse | null>(null);
+  const benefitsFetched = useRef<string | null>(null);
 
   // Fetch statements for this card
   const { statements, isLoading: statementsLoading } = useStatements({
     cardId,
   });
-
-  // Fallback function for when individual card fetch fails
-  const handleCardFetchFallback = useCallback(() => {
-    if (!cards.length) {
-      fetchCards();
-    } else {
-      const foundCard = cards.find(c => c.id === cardId);
-      setCard(foundCard || null);
-    }
-  }, [cards, cardId, fetchCards]);
 
   // Fetch card details
   useEffect(() => {
@@ -70,23 +64,33 @@ export default function CardDetailPage() {
         setCard(cardData);
       } catch (error) {
         console.error('Failed to fetch card details:', error);
-        // Fallback to fetching all cards if individual fetch fails
-        handleCardFetchFallback();
+        // Don't fallback to cards store to avoid dependency loops
+        // Just set card to null if fetch fails
+        setCard(null);
       }
     };
 
     if (cardId) {
       fetchCardDetails();
     }
-  }, [cardId, handleCardFetchFallback]);
+  }, [cardId]); // Only depend on cardId
 
   // Fetch benefits from database
   useEffect(() => {
     const fetchBenefits = async () => {
-      if (!card) return;
+      if (!card || benefitsFetched.current === card.id) {
+        console.log(
+          'Skipping benefits fetch - already fetched for card:',
+          card?.id,
+        );
+        return;
+      }
 
       setBenefitsLoading(true);
+      benefitsFetched.current = card.id;
+
       try {
+        console.log('Fetching benefits for card:', card.id);
         // Fetch benefits and metadata from database API
         const { benefits: dbBenefits, metadata } =
           await cardService.getCardBenefitsWithMetadata(card.id);
@@ -101,6 +105,7 @@ export default function CardDetailPage() {
       } catch (error) {
         console.error('Error fetching benefits:', error);
         setBenefits([]);
+        benefitsFetched.current = null; // Reset on error to allow retry
       } finally {
         setBenefitsLoading(false);
       }
@@ -307,7 +312,7 @@ export default function CardDetailPage() {
         )}
 
         {/* Card Stats */}
-        {card.hasStatement && (
+        {/* {card.hasStatement && (
           <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
             <h2 className='text-lg font-semibold text-gray-900 mb-4'>
               Card Information
@@ -351,7 +356,7 @@ export default function CardDetailPage() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Additional Info */}
         <div className='mt-6 border-t border-gray-200 space-y-3'>

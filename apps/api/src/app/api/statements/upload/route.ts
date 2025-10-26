@@ -842,6 +842,20 @@ async function parseStatementAsync(
         // Continue anyway - this is not critical
       }
     }
+
+    // Update card with latest credit limit and available credit from statement
+    if (result.metadata.creditLimit) {
+      await supabaseAdmin
+        .from('cards')
+        .update({
+          credit_limit: result.metadata.creditLimit,
+          available_credit: result.metadata.availableCredit,
+          billing_day: result.metadata.billingDay,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', cardId)
+        .eq('user_id', userId);
+    }
   } catch (error) {
     console.error('Parse statement async error:', error);
     await supabaseAdmin

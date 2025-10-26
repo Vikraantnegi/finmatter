@@ -185,42 +185,154 @@ export async function POST(
         transaction_count: result.transactions.length,
         parsed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        // Add other parsed fields here
-        statement_date: result.metadata.statementDate?.toISOString(),
-        due_date: result.metadata.dueDate?.toISOString(),
+
+        // Statement dates
+        statement_date: result.metadata.statementDate,
+        statement_period_start: result.metadata.statementPeriodStart,
+        statement_period_end: result.metadata.statementPeriodEnd,
+
+        // Financial metadata
+        due_date: result.metadata.dueDate,
         minimum_payment: result.metadata.minimumPayment,
         total_amount_due: result.metadata.totalDue,
         credit_limit: result.metadata.creditLimit,
         available_credit: result.metadata.availableCredit,
+        billing_day: result.metadata.billingDay,
+        statement_day: result.metadata.statementDay,
+
+        // Previous balance info
+        previous_balance: result.metadata.previousBalance,
+        purchases_charges: result.metadata.purchasesCharges,
+        cash_advances: result.metadata.cashAdvances,
+        payments_credits: result.metadata.paymentsCredits,
+
+        // Fees and charges
+        late_payment_fee: result.metadata.latePaymentFee,
+        interest_charges: result.metadata.interestCharges,
+        cash_advance_limit: result.metadata.cashAdvanceLimit,
+
+        // Reward points
         reward_points_opening: result.metadata.rewardPoints?.opening || 0,
         reward_points_earned: result.metadata.rewardPoints?.earned || 0,
         reward_points_redeemed: result.metadata.rewardPoints?.redeemed || 0,
         reward_points_expired: result.metadata.rewardPoints?.expired || 0,
         reward_points_closing: result.metadata.rewardPoints?.closing || 0,
+
+        // EMI info
+        emi_count: result.metadata.emiSummary?.emiCount || 0,
+        total_emi_amount: result.metadata.emiSummary?.totalEMIAmount || 0,
+
+        // Spending overview
+        total_spends: result.metadata.spendsOverview?.totalSpends || 0,
+        domestic_spends: result.metadata.spendsOverview?.domesticSpends || 0,
+        international_spends:
+          result.metadata.spendsOverview?.internationalSpends || 0,
+        atm_withdrawals: result.metadata.spendsOverview?.atmWithdrawals || 0,
+        number_of_transactions:
+          result.metadata.spendsOverview?.numberOfTransactions ||
+          result.transactions.length,
+
+        // JSON data
+        category_wise_spends: result.metadata.spendsOverview?.categoryWiseSpends
+          ? JSON.stringify(result.metadata.spendsOverview.categoryWiseSpends)
+          : null,
+        reward_points_by_category: result.metadata.rewardPoints
+          ?.earnedByCategory
+          ? JSON.stringify(result.metadata.rewardPoints.earnedByCategory)
+          : null,
+
+        validation_warnings:
+          result.warnings && result.warnings.length > 0
+            ? result.warnings.join('; ')
+            : null,
       })
       .eq('id', statementId);
 
+    // Import categorization engine
+    const { categorizeTransaction } = await import('@finmatter/cc-engine');
+
+    // Delete existing transactions for this statement to avoid duplicates
+    await supabaseAdmin
+      .from('transactions')
+      .delete()
+      .eq('statement_id', statementId)
+      .eq('user_id', userId);
+
     // Insert transactions
     if (result.transactions.length > 0) {
-      const transactions = result.transactions.map(transaction => ({
-        statement_id: statementId,
-        user_id: userId,
-        card_id: statement.card_id,
-        date: transaction.date?.toISOString(),
-        description: transaction.merchantName,
-        amount: transaction.amount,
-        type: transaction.type,
-        category: transaction.category,
-        location: transaction.location,
-        reference_number: transaction.referenceNumber,
-        is_emi: transaction.isEMI || false,
-        emi_amount: transaction.emiDetails?.principalAmount || 0,
-        gst_amount: transaction.gstAmount,
-        reward_points: transaction.rewardPoints,
-        created_at: new Date().toISOString(),
-      }));
+      const transactions = result.transactions.map(transaction => {
+        // Auto-categorize transaction if not already categorized
+        const categorization =
+          !transaction.category || transaction.category === 'others'
+            ? categorizeTransaction(transaction.merchantName, { userId })
+            : null;
 
-      await supabaseAdmin.from('transactions').insert(transactions as any);
+        return {
+          statement_id: statementId,
+          user_id: userId,
+          card_id: statement.card_id,
+          transaction_date: transaction.date,
+          merchant_name: transaction.merchantName,
+          amount: transaction.amount,
+          transaction_type: transaction.type,
+          raw_text: transaction.rawText,
+          category:
+            transaction.category || categorization?.category || 'others',
+          subcategory: categorization?.subcategory,
+          source: 'pdf' as const,
+          status: 'completed' as const,
+
+          // Enhanced fields
+          location: transaction.location,
+          reward_points: transaction.rewardPoints,
+          reference_number: transaction.referenceNumber,
+          is_emi: transaction.isEMI || false,
+          gst_amount: transaction.gstAmount,
+          emi_details: transaction.emiDetails ? transaction.emiDetails : null,
+        };
+      });
+
+      await supabaseAdmin.from('transactions').insert(transactions);
+
+      // Delete and re-insert EMI loans to avoid duplicates
+      await supabaseAdmin
+        .from('statement_emi_loans')
+        .delete()
+        .eq('statement_id', statementId)
+        .eq('user_id', userId);
+
+      // Insert EMI loans if present
+      if (
+        result.metadata.emiSummary &&
+        result.metadata.emiSummary.loans.length > 0
+      ) {
+        const emiLoans = result.metadata.emiSummary.loans.map(loan => ({
+          statement_id: statementId,
+          user_id: userId,
+          card_id: statement.card_id,
+          loan_number: loan.loanNumber,
+          principal_amount: loan.principalAmount,
+          emi_amount: loan.emiAmount,
+          remaining_tenure: loan.remainingTenure,
+          interest_rate: loan.interestRate,
+        }));
+
+        await supabaseAdmin.from('statement_emi_loans').insert(emiLoans);
+      }
+    }
+
+    // Update card with latest credit limit and available credit from statement
+    if (result.metadata.creditLimit) {
+      await supabaseAdmin
+        .from('cards')
+        .update({
+          credit_limit: result.metadata.creditLimit,
+          available_credit: result.metadata.availableCredit,
+          billing_day: result.metadata.billingDay,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', statement.card_id)
+        .eq('user_id', userId);
     }
 
     return createCorsResponse(

@@ -223,29 +223,47 @@ function calculateDateRange(
   }
 
   let start: Date;
+  let end: Date;
 
   switch (period) {
     case 'week':
+      // Last 7 days
       start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      end = now;
       break;
-    case 'month':
-      start = new Date(now.getFullYear(), now.getMonth(), 1);
+    case 'month': {
+      // Last full month (previous month, not current incomplete month)
+      const lastMonth = now.getMonth() - 1;
+      const lastMonthYear =
+        lastMonth < 0 ? now.getFullYear() - 1 : now.getFullYear();
+      start = new Date(lastMonthYear, lastMonth < 0 ? 11 : lastMonth, 1);
+      end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999); // Last day of last month
       break;
+    }
     case 'quarter': {
-      const quarterStart = Math.floor(now.getMonth() / 3) * 3;
-      start = new Date(now.getFullYear(), quarterStart, 1);
+      // Last complete quarter
+      const currentQuarter = Math.floor(now.getMonth() / 3);
+      const quarterStartMonth =
+        currentQuarter === 0 ? 9 : (currentQuarter - 1) * 3;
+      const quarterStartYear =
+        currentQuarter === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      start = new Date(quarterStartYear, quarterStartMonth, 1);
+      end = new Date(now.getFullYear(), currentQuarter * 3, 0, 23, 59, 59, 999);
       break;
     }
     case 'year':
-      start = new Date(now.getFullYear(), 0, 1);
+      // Last year
+      start = new Date(now.getFullYear() - 1, 0, 1);
+      end = new Date(now.getFullYear(), 0, 0, 23, 59, 59, 999);
       break;
     default:
       start = new Date(now.getFullYear(), now.getMonth(), 1);
+      end = now;
   }
 
   return {
     start: start.toISOString(),
-    end: now.toISOString(),
+    end: end.toISOString(),
   };
 }
 

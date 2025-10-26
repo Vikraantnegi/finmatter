@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Transaction } from '@finmatter/types';
 import { CategoryIcon } from '@/components/transactions/CategoryIcon';
@@ -28,45 +28,76 @@ export default function TransactionDetailPage() {
   const router = useRouter();
   const transactionId = params.id as string;
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [editingCategory, setEditingCategory] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const [newSubcategory, setNewSubcategory] = useState('');
+  const [transaction, setTransaction] = useState<Transaction | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { updateCategory } = useUpdateTransactionCategory();
 
-  // Mock transaction data - in real app, this would come from API
-  const transaction: Transaction = {
-    id: transactionId,
-    userId: 'user-123',
-    amount: 1250.0,
-    currency: 'INR',
-    type: 'debit',
-    status: 'completed',
-    merchantName: 'SWIGGY',
-    description: 'Food delivery order',
-    date: new Date('2024-01-15T19:30:00Z'),
-    category: 'dining',
-    subcategory: 'food_delivery',
-    tags: ['food', 'delivery'],
-    notes: 'Dinner order for family',
-    location: {
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      country: 'India',
-    },
-    cardId: 'card-123',
-    reference: 'TXN123456789',
-    rewardPoints: 12,
-    createdAt: new Date('2024-01-15T19:30:00Z'),
-    updatedAt: new Date('2024-01-15T19:30:00Z'),
-  };
+  // Fetch transaction data
+  useEffect(() => {
+    async function fetchTransaction() {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/transactions/${transactionId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('finmatter-auth-token')}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.data.transaction) {
+          const t = data.data.transaction;
+          // Transform API response to frontend Transaction type
+          setTransaction({
+            id: t.id,
+            userId: t.user_id,
+            cardId: t.card_id,
+            amount: t.amount,
+            currency: t.currency,
+            type: t.transaction_type,
+            status: t.status,
+            merchantName: t.merchant_name,
+            description: t.description,
+            date: new Date(t.transaction_date),
+            category: t.category,
+            subcategory: t.subcategory,
+            tags: t.tags,
+            notes: t.notes,
+            location: t.location
+              ? typeof t.location === 'string'
+                ? JSON.parse(t.location)
+                : t.location
+              : undefined,
+            reference: t.reference_number,
+            rewardPoints: t.reward_points,
+            createdAt: new Date(t.created_at),
+            updatedAt: new Date(t.updated_at),
+          } as Transaction);
+        } else {
+          setError(data.error?.message || 'Transaction not found');
+        }
+      } catch (err) {
+        console.error('Failed to fetch transaction:', err);
+        setError('Failed to load transaction');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchTransaction();
+  }, [transactionId]);
 
   const handleBack = () => {
     router.back();
   };
 
   const handleEditCategory = () => {
+    if (!transaction) return;
     setEditingCategory(true);
     setNewCategory(transaction.category);
     setNewSubcategory(transaction.subcategory || '');
@@ -78,6 +109,8 @@ export default function TransactionDetailPage() {
       await updateCategory(transactionId, newCategory, newSubcategory);
       toast.success('Category updated successfully');
       setEditingCategory(false);
+      // Refresh transaction data
+      window.location.reload();
     } catch (error) {
       toast.error('Failed to update category');
     } finally {
@@ -86,10 +119,40 @@ export default function TransactionDetailPage() {
   };
 
   const handleCancelEdit = () => {
+    if (!transaction) return;
     setEditingCategory(false);
     setNewCategory(transaction.category);
     setNewSubcategory(transaction.subcategory || '');
   };
+
+  if (loading) {
+    return (
+      <div className='min-h-screen bg-gray-50 flex items-center justify-center'>
+        <LoadingSpinner size='lg' />
+      </div>
+    );
+  }
+
+  if (error || !transaction) {
+    return (
+      <div className='min-h-screen bg-gray-50 flex items-center justify-center'>
+        <div className='text-center'>
+          <h2 className='text-xl font-semibold text-gray-900'>
+            Transaction Not Found
+          </h2>
+          <p className='text-gray-600 mt-2'>
+            {error || 'This transaction does not exist'}
+          </p>
+          <button
+            onClick={handleBack}
+            className='mt-4 text-blue-600 hover:text-blue-700'
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const isDebit = transaction.type === 'debit';
   const amountColor = isDebit ? 'text-red-600' : 'text-green-600';

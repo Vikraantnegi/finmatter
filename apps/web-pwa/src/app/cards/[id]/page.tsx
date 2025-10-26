@@ -26,6 +26,7 @@ import {
   Calendar,
   Upload,
   BarChart3,
+  DollarSign,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -297,6 +298,66 @@ export default function CardDetailPage() {
             </div>
           )}
         </div>
+
+        {/* Latest Statement Summary */}
+        {statements &&
+          statements.length > 0 &&
+          statements[0].status === 'success' && (
+            <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
+              <div className='flex items-center justify-between mb-4'>
+                <h2 className='text-lg font-semibold text-gray-900 flex items-center gap-2'>
+                  <DollarSign className='w-5 h-5 text-primary-500' />
+                  Latest Statement Summary
+                </h2>
+              </div>
+              <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+                {statements[0].creditLimit && (
+                  <div>
+                    <div className='text-sm text-gray-600 mb-1'>
+                      Credit Limit
+                    </div>
+                    <div className='text-xl font-bold text-gray-900'>
+                      ₹{statements[0].creditLimit.toLocaleString()}
+                    </div>
+                  </div>
+                )}
+                {statements[0].availableCredit != null &&
+                  statements[0].availableCredit !== undefined && (
+                    <div>
+                      <div className='text-sm text-gray-600 mb-1'>
+                        Available Credit
+                      </div>
+                      <div className='text-xl font-bold text-green-600'>
+                        ₹{(statements[0].availableCredit || 0).toLocaleString()}
+                      </div>
+                    </div>
+                  )}
+                {statements[0].minimumPayment && (
+                  <div>
+                    <div className='text-sm text-gray-600 mb-1'>
+                      Min Payment
+                    </div>
+                    <div className='text-xl font-bold text-orange-600'>
+                      ₹{statements[0].minimumPayment.toLocaleString()}
+                    </div>
+                  </div>
+                )}
+                {statements[0].dueDate && (
+                  <div>
+                    <div className='text-sm text-gray-600 mb-1'>Due Date</div>
+                    <div className='text-xl font-bold text-gray-900'>
+                      {new Date(statements[0].dueDate)
+                        .toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                        })
+                        .toUpperCase()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
         {/* Analytics Section */}
         {statements && statements.length > 0 && (

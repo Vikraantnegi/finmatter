@@ -271,14 +271,16 @@ export async function PUT(
       updateData.currency = validatedData.currency;
     if (validatedData.status !== undefined)
       updateData.status = validatedData.status;
-    if (validatedData.issueDate !== undefined)
-      updateData.issue_date = validatedData.issueDate
-        ? new Date(validatedData.issueDate)
-        : undefined;
-    if (validatedData.expiryDate !== undefined)
-      updateData.expiry_date = validatedData.expiryDate
-        ? new Date(validatedData.expiryDate)
-        : undefined;
+    if (validatedData.issueDate !== undefined) {
+      if (validatedData.issueDate) {
+        updateData.issue_date = new Date(validatedData.issueDate);
+      }
+    }
+    if (validatedData.expiryDate !== undefined) {
+      if (validatedData.expiryDate) {
+        updateData.expiry_date = new Date(validatedData.expiryDate);
+      }
+    }
     if (validatedData.creditLimit !== undefined)
       updateData.credit_limit = validatedData.creditLimit;
     if (validatedData.availableCredit !== undefined)

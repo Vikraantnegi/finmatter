@@ -1,27 +1,23 @@
 import type { AuditFields, Currency } from './common';
 import type { TransactionCategory } from './card';
-
 /**
  * Transaction related types for FinMatter
  */
-
 export type TransactionType =
   | 'debit'
   | 'credit'
   | 'refund'
   | 'fee'
   | 'interest';
-
 export type TransactionStatus =
   | 'completed'
   | 'pending'
   | 'failed'
   | 'cancelled';
-
 export type Transaction = AuditFields & {
   id: string;
   userId: string;
-  cardId?: string; // Optional for manual entries
+  cardId?: string;
   amount: number;
   currency: Currency;
   type: TransactionType;
@@ -29,7 +25,7 @@ export type Transaction = AuditFields & {
   merchantName: string;
   merchantCategory?: TransactionCategory;
   description?: string;
-  reference?: string; // Transaction reference from bank
+  reference?: string;
   date: Date;
   category: TransactionCategory;
   subcategory?: string;
@@ -45,24 +41,21 @@ export type Transaction = AuditFields & {
   };
   isRecurring?: boolean;
   recurringPattern?: RecurringPattern;
-  statementId?: string; // If from PDF statement
-  emailId?: string; // If from email alert
+  statementId?: string;
+  emailId?: string;
   isSplit?: boolean;
   splitTransactions?: SplitTransaction[];
   attachments?: TransactionAttachment[];
-  rewardPoints?: number; // Points earned from this transaction
 };
-
 export type RecurringPattern = {
   frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
-  dayOfWeek?: number; // 0-6 for weekly
-  dayOfMonth?: number; // 1-31 for monthly
-  interval: number; // Every N periods
+  dayOfWeek?: number;
+  dayOfMonth?: number;
+  interval: number;
   startDate: Date;
   endDate?: Date;
   isActive: boolean;
 };
-
 export type SplitTransaction = {
   id: string;
   transactionId: string;
@@ -71,7 +64,6 @@ export type SplitTransaction = {
   description?: string;
   tags?: string[];
 };
-
 export type TransactionAttachment = {
   id: string;
   transactionId: string;
@@ -81,7 +73,6 @@ export type TransactionAttachment = {
   filePath: string;
   uploadedAt: Date;
 };
-
 export type TransactionFilter = {
   dateRange?: {
     startDate: Date;
@@ -89,7 +80,6 @@ export type TransactionFilter = {
   };
   categories?: TransactionCategory[];
   cards?: string[];
-  cardId?: string; // Single card filter
   amountRange?: {
     min: number;
     max: number;
@@ -98,12 +88,11 @@ export type TransactionFilter = {
   tags?: string[];
   status?: TransactionStatus[];
   type?: TransactionType[];
-  search?: string; // Search in merchant name, description, notes
+  search?: string;
 };
-
 export type TransactionSummary = {
   totalSpent: number;
-  totalEarned: number; // Refunds, cashback
+  totalEarned: number;
   transactionCount: number;
   averageTransactionValue: number;
   topCategories: Array<{
@@ -124,13 +113,12 @@ export type TransactionSummary = {
     count: number;
   }>;
   monthlyTrend: Array<{
-    month: string; // YYYY-MM format
+    month: string;
     amount: number;
     count: number;
     categories: Record<TransactionCategory, number>;
   }>;
 };
-
 export type CreateTransactionRequest = {
   cardId?: string;
   amount: number;
@@ -147,7 +135,6 @@ export type CreateTransactionRequest = {
   isRecurring?: boolean;
   recurringPattern?: RecurringPattern;
 };
-
 export type UpdateTransactionRequest = Partial<
   Pick<
     Transaction,
@@ -162,7 +149,6 @@ export type UpdateTransactionRequest = Partial<
     | 'location'
   >
 >;
-
 export type BulkTransactionImport = {
   transactions: CreateTransactionRequest[];
   source: 'pdf' | 'email' | 'csv' | 'manual';
@@ -178,14 +164,12 @@ export type BulkTransactionImport = {
     validateAmounts?: boolean;
   };
 };
-
 export type TransactionExport = {
   format: 'csv' | 'xlsx' | 'json' | 'pdf';
   filters?: TransactionFilter;
   includeAttachments?: boolean;
   customFields?: string[];
 };
-
 export type TransactionInsight = {
   id: string;
   type:
@@ -202,33 +186,32 @@ export type TransactionInsight = {
   createdAt: Date;
   expiresAt?: Date;
 };
-
 export type Merchant = {
   id: string;
   name: string;
-  aliases: string[]; // Alternative names
+  aliases: string[];
   category: TransactionCategory;
   subcategory?: string;
   logo?: string;
   website?: string;
   isActive: boolean;
-  confidence: number; // 0-100 for categorization confidence
+  confidence: number;
   userCorrections?: Array<{
     userId: string;
     category: TransactionCategory;
     correctedAt: Date;
   }>;
 };
-
 export type CategoryRule = {
   id: string;
-  merchantPattern: string; // Regex pattern
+  merchantPattern: string;
   category: TransactionCategory;
   subcategory?: string;
-  priority: number; // Higher priority rules are applied first
+  priority: number;
   isActive: boolean;
   createdBy: 'system' | 'user';
   userId?: string;
   createdAt: Date;
   updatedAt: Date;
 };
+//# sourceMappingURL=transaction.d.ts.map

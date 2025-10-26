@@ -15,7 +15,7 @@ export function dbCardToApiCard(dbCard: any, dbBenefits?: any[]): Card {
   // Check if any statement is currently being parsed
   const parsingInProgress = dbCard.parsing_in_progress || false;
 
-  return {
+  const card: Card = {
     id: dbCard.id,
     userId: dbCard.user_id,
     bankName: dbCard.bank_name,
@@ -27,8 +27,6 @@ export function dbCardToApiCard(dbCard: any, dbBenefits?: any[]): Card {
     annualFee: dbCard.annual_fee,
     currency: dbCard.currency,
     status: dbCard.status,
-    issueDate: dbCard.issue_date ? new Date(dbCard.issue_date) : undefined,
-    expiryDate: dbCard.expiry_date ? new Date(dbCard.expiry_date) : undefined,
     creditLimit: dbCard.credit_limit,
     availableCredit: dbCard.available_credit,
     billingDay: dbCard.billing_day,
@@ -46,13 +44,23 @@ export function dbCardToApiCard(dbCard: any, dbBenefits?: any[]): Card {
     createdAt: new Date(dbCard.created_at),
     updatedAt: new Date(dbCard.updated_at),
   };
+
+  if (dbCard.issue_date) {
+    card.issueDate = new Date(dbCard.issue_date);
+  }
+
+  if (dbCard.expiry_date) {
+    card.expiryDate = new Date(dbCard.expiry_date);
+  }
+
+  return card;
 }
 
 /**
  * Convert database benefit (snake_case) to API benefit (camelCase)
  */
 export function dbBenefitToApiBenefit(dbBenefit: any): CardBenefit {
-  return {
+  const benefit: CardBenefit = {
     id: dbBenefit.id,
     cardId: dbBenefit.card_id,
     category: dbBenefit.category,
@@ -61,15 +69,19 @@ export function dbBenefitToApiBenefit(dbBenefit: any): CardBenefit {
     rewardCap: dbBenefit.reward_cap,
     conditions: dbBenefit.conditions,
     isActive: dbBenefit.is_active,
-    validFrom: dbBenefit.valid_from
-      ? new Date(dbBenefit.valid_from)
-      : undefined,
-    validUntil: dbBenefit.valid_until
-      ? new Date(dbBenefit.valid_until)
-      : undefined,
     description: dbBenefit.description,
     value: dbBenefit.value,
   };
+
+  if (dbBenefit.valid_from) {
+    benefit.validFrom = new Date(dbBenefit.valid_from);
+  }
+
+  if (dbBenefit.valid_until) {
+    benefit.validUntil = new Date(dbBenefit.valid_until);
+  }
+
+  return benefit;
 }
 
 /**

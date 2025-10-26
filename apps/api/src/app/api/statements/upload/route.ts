@@ -764,28 +764,40 @@ async function parseStatementAsync(
       .update(updateData)
       .eq('id', statementId);
 
-    // Insert transactions with enhanced metadata
-    const transactions = result.transactions.map(t => ({
-      user_id: userId,
-      card_id: cardId,
-      statement_id: statementId,
-      transaction_date: t.date,
-      merchant_name: t.merchantName,
-      amount: t.amount,
-      transaction_type: t.type,
-      raw_text: t.rawText,
-      category: t.category || 'others',
-      source: 'pdf' as const,
-      status: 'completed' as const,
+    // Import categorization engine
+    const { categorizeTransaction } = await import('@finmatter/cc-engine');
 
-      // Enhanced fields
-      location: t.location,
-      reward_points: t.rewardPoints,
-      reference_number: t.referenceNumber,
-      is_emi: t.isEMI || false,
-      gst_amount: t.gstAmount,
-      emi_details: t.emiDetails ? t.emiDetails : null,
-    }));
+    // Insert transactions with enhanced metadata and automatic categorization
+    const transactions = result.transactions.map(t => {
+      // Auto-categorize transaction if not already categorized
+      const categorization =
+        !t.category || t.category === 'others'
+          ? categorizeTransaction(t.merchantName, { userId })
+          : null;
+
+      return {
+        user_id: userId,
+        card_id: cardId,
+        statement_id: statementId,
+        transaction_date: t.date,
+        merchant_name: t.merchantName,
+        amount: t.amount,
+        transaction_type: t.type,
+        raw_text: t.rawText,
+        category: t.category || categorization?.category || 'others',
+        subcategory: categorization?.subcategory,
+        source: 'pdf' as const,
+        status: 'completed' as const,
+
+        // Enhanced fields
+        location: t.location,
+        reward_points: t.rewardPoints,
+        reference_number: t.referenceNumber,
+        is_emi: t.isEMI || false,
+        gst_amount: t.gstAmount,
+        emi_details: t.emiDetails ? t.emiDetails : null,
+      };
+    });
 
     if (transactions.length > 0) {
       const { error: transactionError } = await supabaseAdmin

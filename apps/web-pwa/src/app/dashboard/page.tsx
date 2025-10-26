@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { CardVisual } from '@/components/cards/CardVisual';
 import { UtilizationAlert } from '@/components/cards/UtilizationAlert';
 import { DashboardErrorBoundary } from '@/components/ErrorBoundary';
+import { SpendingAlerts } from '@/components/transactions/SpendingAlerts';
+import { TransactionInsights } from '@/components/transactions/TransactionInsights';
 import { CreditCard, Plus, AlertCircle } from 'lucide-react';
 
 function DashboardContent() {
@@ -65,6 +67,12 @@ function DashboardContent() {
 
         {/* Credit Utilization Alert */}
         <UtilizationAlert cards={cards} className='mb-8' />
+
+        {/* Transaction Insights */}
+        <TransactionInsights className='mb-8' />
+
+        {/* Spending Alerts */}
+        <SpendingAlerts className='mb-8' />
 
         {/* Your Cards */}
         <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8'>

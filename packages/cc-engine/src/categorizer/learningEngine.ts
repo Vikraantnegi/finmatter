@@ -256,20 +256,19 @@ export class LearningEngine {
         );
 
         const topCategoryEntry = sortedCategories[0];
-        if (!topCategoryEntry) {
-          continue;
-        }
-        const [topCategory, topCount] = topCategoryEntry;
-        const confidence = topCount / totalCorrections;
+        if (topCategoryEntry) {
+          const [topCategory, topCount] = topCategoryEntry;
+          const confidence = topCount / totalCorrections;
 
-        if (confidence >= 0.8) {
-          // Only suggest if 80%+ consistent
-          suggestions.push({
-            merchant,
-            suggestedCategory: topCategory,
-            confidence,
-            reasoning: `User corrected ${topCount}/${totalCorrections} times to ${topCategory}`,
-          });
+          if (confidence >= 0.8) {
+            // Only suggest if 80%+ consistent
+            suggestions.push({
+              merchant,
+              suggestedCategory: topCategory,
+              confidence,
+              reasoning: `User corrected ${topCount}/${totalCorrections} times to ${topCategory}`,
+            });
+          }
         }
       }
     }

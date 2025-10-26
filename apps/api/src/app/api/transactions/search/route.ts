@@ -77,6 +77,8 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
  * GET /api/transactions/search - Search transactions
  */
 export async function GET(request: NextRequest) {
+  const origin = request.headers.get('origin');
+
   try {
     const userId = await getAuthenticatedUserId(request);
     const { searchParams } = new URL(request.url);
@@ -195,7 +197,7 @@ export async function GET(request: NextRequest) {
     );
 
     return createCorsResponse(
-      JSON.stringify({
+      {
         success: true,
         data: {
           transactions: scoredTransactions,
@@ -220,9 +222,10 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-      }),
+      },
       {
         status: 200,
+        origin: origin || undefined,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -233,13 +236,14 @@ export async function GET(request: NextRequest) {
 
     if (error instanceof FinMatterError) {
       return createCorsResponse(
-        JSON.stringify({
+        {
           success: false,
           error: error.message,
           code: error.code,
-        }),
+        },
         {
           status: error.statusCode,
+          origin: origin || undefined,
           headers: {
             'Content-Type': 'application/json',
           },
@@ -249,13 +253,14 @@ export async function GET(request: NextRequest) {
 
     if (error instanceof z.ZodError) {
       return createCorsResponse(
-        JSON.stringify({
+        {
           success: false,
           error: 'Validation error',
           details: error.errors,
-        }),
+        },
         {
           status: 400,
+          origin: origin || undefined,
           headers: {
             'Content-Type': 'application/json',
           },
@@ -264,12 +269,13 @@ export async function GET(request: NextRequest) {
     }
 
     return createCorsResponse(
-      JSON.stringify({
+      {
         success: false,
         error: 'Internal server error',
-      }),
+      },
       {
         status: 500,
+        origin: origin || undefined,
         headers: {
           'Content-Type': 'application/json',
         },

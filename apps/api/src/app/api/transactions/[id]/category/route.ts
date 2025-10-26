@@ -76,6 +76,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
+  const origin = request.headers.get('origin');
+
   try {
     const userId = await getAuthenticatedUserId(request);
     const transactionId = params.id;
@@ -153,13 +155,14 @@ export async function PUT(
     }
 
     return createCorsResponse(
-      JSON.stringify({
+      {
         success: true,
         data: updatedTransaction,
         message: 'Transaction category updated successfully',
-      }),
+      },
       {
         status: 200,
+        origin: origin || undefined,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -170,13 +173,14 @@ export async function PUT(
 
     if (error instanceof FinMatterError) {
       return createCorsResponse(
-        JSON.stringify({
+        {
           success: false,
           error: error.message,
           code: error.code,
-        }),
+        },
         {
           status: error.statusCode,
+          origin: origin || undefined,
           headers: {
             'Content-Type': 'application/json',
           },
@@ -186,13 +190,14 @@ export async function PUT(
 
     if (error instanceof z.ZodError) {
       return createCorsResponse(
-        JSON.stringify({
+        {
           success: false,
           error: 'Validation error',
           details: error.errors,
-        }),
+        },
         {
           status: 400,
+          origin: origin || undefined,
           headers: {
             'Content-Type': 'application/json',
           },
@@ -201,12 +206,13 @@ export async function PUT(
     }
 
     return createCorsResponse(
-      JSON.stringify({
+      {
         success: false,
         error: 'Internal server error',
-      }),
+      },
       {
         status: 500,
+        origin: origin || undefined,
         headers: {
           'Content-Type': 'application/json',
         },

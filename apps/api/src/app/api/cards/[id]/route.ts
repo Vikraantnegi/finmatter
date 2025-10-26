@@ -400,6 +400,8 @@ export async function DELETE(
     await verifyCardOwnership(cardId, userId);
 
     // Soft delete by setting deleted_at timestamp
+    // This allows data recovery and maintains audit trail
+    // Users can permanently delete via admin panel after 30 days
     const { data: card, error } = await supabaseAdmin
       .from('cards')
       .update({

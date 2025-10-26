@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useCards } from '@/hooks';
 import { Button } from '@/components/ui/Button';
@@ -19,13 +18,7 @@ function DashboardContent() {
     isLoading: loading,
     totalCards,
     highUtilizationCards,
-    forceRefresh,
   } = useCards();
-
-  // Force refresh cards data to get latest hasStatement values
-  useEffect(() => {
-    forceRefresh();
-  }, [forceRefresh]);
 
   if (loading) {
     return (
@@ -66,13 +59,13 @@ function DashboardContent() {
         </div>
 
         {/* Credit Utilization Alert */}
-        <UtilizationAlert cards={cards} className='mb-8' />
+        {totalCards > 0 && <UtilizationAlert cards={cards} className='mb-8' />}
 
-        {/* Transaction Insights */}
-        <TransactionInsights className='mb-8' />
+        {/* Transaction Insights - Only show if user has cards */}
+        {totalCards > 0 && <TransactionInsights className='mb-8' />}
 
-        {/* Spending Alerts */}
-        <SpendingAlerts className='mb-8' />
+        {/* Spending Alerts - Only show if user has cards */}
+        {totalCards > 0 && <SpendingAlerts className='mb-8' />}
 
         {/* Your Cards */}
         <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8'>

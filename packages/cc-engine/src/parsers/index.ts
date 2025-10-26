@@ -42,16 +42,19 @@ export async function parseStatement(
 
     // Try with provided password first
     if (password) {
+      // eslint-disable-next-line no-console
       console.log(`Trying to parse PDF with provided password: ${password}`);
       const result = await parsePDFWithPassword(pdfBuffer, password);
       if (result.success) {
         pdfText = result.text;
+        // eslint-disable-next-line no-console
         console.log(
           `PDF parsed successfully with provided password. Text length: ${pdfText.length}`,
         );
       } else {
         parseError =
           result.error || 'Failed to parse PDF with provided password';
+        // eslint-disable-next-line no-console
         console.log(
           `Failed to parse PDF with provided password: ${parseError}`,
         );
@@ -63,10 +66,12 @@ export async function parseStatement(
         pdfText = result.text;
       } else {
         // If that fails, try common passwords
+        // eslint-disable-next-line no-console
         console.log('PDF is password protected, trying common passwords...');
         const commonResult = await tryCommonPasswords(pdfBuffer, userInfo);
         if (commonResult.success) {
           pdfText = commonResult.text;
+          // eslint-disable-next-line no-console
           console.log(
             `PDF parsed successfully with common password. Text length: ${pdfText.length}`,
           );
@@ -74,6 +79,7 @@ export async function parseStatement(
           parseError =
             commonResult.error ||
             'PDF is password protected. Please provide the correct password.';
+          // eslint-disable-next-line no-console
           console.log(
             `Failed to parse PDF with common passwords: ${parseError}`,
           );

@@ -7,30 +7,30 @@
  */
 
 // Apply polyfills before importing any modules that use pdfjs-dist
-if (typeof globalThis.DOMMatrix === 'undefined') {
-  globalThis.DOMMatrix = class DOMMatrix {
+if (typeof (globalThis as any).DOMMatrix === 'undefined') {
+  (globalThis as any).DOMMatrix = class DOMMatrix {
     constructor() {
       // Simple polyfill for DOMMatrix
     }
   } as any;
 }
 
-if (typeof globalThis.DOMRect === 'undefined') {
-  globalThis.DOMRect = class DOMRect {
+if (typeof (globalThis as any).DOMRect === 'undefined') {
+  (globalThis as any).DOMRect = class DOMRect {
     constructor() {
       // Simple polyfill for DOMRect
     }
   } as any;
 }
 
-if (typeof globalThis.TextEncoder === 'undefined') {
+if (typeof (globalThis as any).TextEncoder === 'undefined') {
   const { TextEncoder, TextDecoder } = require('util');
-  globalThis.TextEncoder = TextEncoder;
-  globalThis.TextDecoder = TextDecoder;
+  (globalThis as any).TextEncoder = TextEncoder;
+  (globalThis as any).TextDecoder = TextDecoder;
 }
 
-if (typeof globalThis.URL === 'undefined') {
-  globalThis.URL = require('url').URL;
+if (typeof (globalThis as any).URL === 'undefined') {
+  (globalThis as any).URL = require('url').URL;
 }
 
 export * from './parsers';

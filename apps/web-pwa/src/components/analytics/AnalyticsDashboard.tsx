@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   analyticsService,
   CardUsageStats,
@@ -16,38 +16,93 @@ interface AnalyticsDashboardProps {
 }
 
 export function AnalyticsDashboard({ cardId }: AnalyticsDashboardProps) {
+  console.log('AnalyticsDashboard render:', { cardId });
+
   const [usageStats, setUsageStats] = useState<CardUsageStats[]>([]);
   const [monthlySpending, setMonthlySpending] = useState<MonthlySpending[]>([]);
   const [topMerchants, setTopMerchants] = useState<TopMerchant[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasFetched = useRef<string | null>(null);
 
   const fetchAnalytics = useCallback(async () => {
+    if (!cardId || hasFetched.current === cardId) {
+      console.log('Skipping fetch - already fetched for cardId:', cardId);
+      return;
+    }
+
     try {
       setLoading(true);
+      hasFetched.current = cardId;
+      console.log('Fetching analytics for cardId:', cardId);
+
       const [usage, spending, merchants] = await Promise.all([
         analyticsService.getCardUsageStats({ cardId, limit: 10 }),
         analyticsService.getMonthlySpending({ cardId, limit: 20 }),
         analyticsService.getTopMerchants({ cardId, limit: 10 }),
       ]);
 
+      console.log('Analytics data fetched:', {
+        usage: usage.length,
+        spending: spending.length,
+        merchants: merchants.length,
+        usageData: usage,
+        spendingData: spending,
+        merchantsData: merchants,
+      });
+
       setUsageStats(usage);
       setMonthlySpending(spending);
       setTopMerchants(merchants);
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
+      hasFetched.current = null; // Reset on error to allow retry
     } finally {
       setLoading(false);
     }
   }, [cardId]);
 
   useEffect(() => {
-    fetchAnalytics();
+    // Reset the fetched state when cardId changes
+    if (hasFetched.current !== cardId) {
+      hasFetched.current = null;
+      setUsageStats([]);
+      setMonthlySpending([]);
+      setTopMerchants([]);
+    }
+
+    if (cardId) {
+      fetchAnalytics();
+    }
   }, [cardId, fetchAnalytics]);
 
   if (loading) {
     return (
       <div className='flex items-center justify-center py-12'>
         <LoadingSpinner size='lg' />
+      </div>
+    );
+  }
+
+  console.log('AnalyticsDashboard render state:', {
+    usageStats: usageStats.length,
+    monthlySpending: monthlySpending.length,
+    topMerchants: topMerchants.length,
+    loading,
+  });
+
+  // Show empty state if no data at all
+  if (
+    usageStats.length === 0 &&
+    monthlySpending.length === 0 &&
+    topMerchants.length === 0
+  ) {
+    return (
+      <div className='text-center py-12'>
+        <div className='text-gray-400 mb-2'>📊</div>
+        <p className='text-gray-600'>No analytics data available yet.</p>
+        <p className='text-sm text-gray-500 mt-1'>
+          Upload statements or add transactions to see analytics.
+        </p>
       </div>
     );
   }

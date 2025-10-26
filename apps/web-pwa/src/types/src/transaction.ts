@@ -50,6 +50,9 @@ export type Transaction = AuditFields & {
   isSplit?: boolean;
   splitTransactions?: SplitTransaction[];
   attachments?: TransactionAttachment[];
+  // Additional fields from parsed data
+  rewardPoints?: number;
+  source?: 'pdf' | 'email' | 'manual' | 'aa';
 };
 
 export type RecurringPattern = {

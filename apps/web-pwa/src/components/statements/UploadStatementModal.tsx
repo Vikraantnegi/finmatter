@@ -176,6 +176,15 @@ export function UploadStatementModal({
     else if (normalizedBank.includes('hsbc')) bankNameValue = 'hsbc';
 
     try {
+      // Show progress message for long-running operation
+      toast.loading(
+        'Uploading and parsing statement... This may take a few minutes.',
+        {
+          duration: 300000, // 5 minutes
+          id: 'upload-progress',
+        },
+      );
+
       const response = await statementService.uploadStatement(
         selectedFile,
         cardId,
@@ -184,6 +193,9 @@ export function UploadStatementModal({
       );
 
       if (response.success) {
+        // Dismiss loading toast
+        toast.dismiss('upload-progress');
+
         setUploadStatus('success');
         setUploadedStatementId(response.data?.statement?.id || null);
         toast.success(
@@ -196,6 +208,9 @@ export function UploadStatementModal({
           handleClose();
         }, 1000);
       } else {
+        // Dismiss loading toast
+        toast.dismiss('upload-progress');
+
         setUploadStatus('error');
         const errorMsg = response.error?.message || 'Upload failed';
         setErrorMessage(errorMsg);
@@ -226,6 +241,9 @@ export function UploadStatementModal({
         }
       }
     } catch (error) {
+      // Dismiss loading toast
+      toast.dismiss('upload-progress');
+
       setUploadStatus('error');
       const message = error instanceof Error ? error.message : 'Upload failed';
       setErrorMessage(message);

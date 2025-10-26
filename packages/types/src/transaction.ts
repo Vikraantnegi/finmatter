@@ -50,6 +50,7 @@ export type Transaction = AuditFields & {
   isSplit?: boolean;
   splitTransactions?: SplitTransaction[];
   attachments?: TransactionAttachment[];
+  rewardPoints?: number; // Points earned from this transaction
 };
 
 export type RecurringPattern = {
@@ -88,6 +89,7 @@ export type TransactionFilter = {
   };
   categories?: TransactionCategory[];
   cards?: string[];
+  cardId?: string; // Single card filter
   amountRange?: {
     min: number;
     max: number;

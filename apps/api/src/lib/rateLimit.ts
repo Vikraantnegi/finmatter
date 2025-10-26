@@ -61,7 +61,7 @@ export function checkRateLimit(
     return {
       limited: false,
       remaining: options.max - 1,
-      resetTime: store[key].resetTime,
+      resetTime: store[key]!.resetTime,
       retryAfter: 0,
     };
   }

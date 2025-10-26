@@ -18,7 +18,10 @@ import {
   DollarSign,
   PieChart,
   BarChart3,
+  Receipt,
 } from 'lucide-react';
+import { Transaction } from '@finmatter/types';
+import { TransactionItem } from '@/components/transactions/TransactionItem';
 
 interface StatementDetailsProps {
   statement: Statement;
@@ -27,6 +30,7 @@ interface StatementDetailsProps {
 export function StatementDetails({ statement }: StatementDetailsProps) {
   const [emiLoans, setEmiLoans] = useState<EMILoan[]>([]);
   const [loadingEMI, setLoadingEMI] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
     if (statement.status === 'success' && statement.id) {
@@ -38,6 +42,15 @@ export function StatementDetails({ statement }: StatementDetailsProps) {
         .finally(() => setLoadingEMI(false));
     }
   }, [statement.id, statement.status]);
+
+  useEffect(() => {
+    if (statement.status === 'success' && statement.id) {
+      // Transactions are already included in the statement data
+      if (statement.transactions) {
+        setTransactions(statement.transactions as any);
+      }
+    }
+  }, [statement]);
 
   const getStatusIcon = () => {
     switch (statement.status) {
@@ -375,6 +388,31 @@ export function StatementDetails({ statement }: StatementDetailsProps) {
             </div>
           </div>
         )}
+
+      {/* Transactions List */}
+      {statement.status === 'success' && transactions.length > 0 && (
+        <div className='bg-white rounded-xl shadow-sm border border-gray-200'>
+          <div className='flex items-center space-x-2 p-6 border-b border-gray-200'>
+            <Receipt className='w-5 h-5 text-primary-500' />
+            <h3 className='text-lg font-semibold text-gray-900'>
+              Transactions ({transactions.length})
+            </h3>
+          </div>
+
+          <div className='p-6'>
+            <div className='space-y-3'>
+              {transactions.map(transaction => (
+                <TransactionItem
+                  key={transaction.id}
+                  transaction={transaction}
+                  showCard={false}
+                  className='border border-gray-200 rounded-lg'
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Validation Warnings */}
       {statement.validationWarnings && (

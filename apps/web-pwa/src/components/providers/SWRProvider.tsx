@@ -27,7 +27,7 @@ const swrConfig: SWRConfiguration = {
 
   // Error handling
   shouldRetryOnError: true,
-  errorRetryCount: 3,
+  errorRetryCount: 1, // Only retry once
   errorRetryInterval: 5000, // Wait 5s between retries
 
   // Deduplication
@@ -47,14 +47,22 @@ const swrConfig: SWRConfiguration = {
   },
 
   onErrorRetry: (error, key, config, revalidate, { retryCount }) => {
-    // Don't retry on 404
-    if (error.status === 404) return;
+    // Only retry once
+    if (retryCount >= 1) return;
 
-    // Don't retry on 401/403 (auth errors)
-    if (error.status === 401 || error.status === 403) return;
+    // Only retry 401 errors (unauthorized) - this is for auth token refresh
+    if (error.status !== 401) return;
 
-    // Only retry up to 3 times
-    if (retryCount >= 3) return;
+    // Detect CORS errors - they don't have a status code or have a specific error message
+    const corsError =
+      !error.response &&
+      (error.message?.includes('CORS') ||
+        error.message?.includes('Network Error') ||
+        error.code === 'ERR_NETWORK' ||
+        error.code === 'NETWORK_ERROR');
+
+    // Don't retry CORS errors
+    if (corsError) return;
 
     // Exponential backoff
     setTimeout(

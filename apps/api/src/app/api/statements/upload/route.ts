@@ -3,6 +3,11 @@
  * POST /api/statements/upload - Upload and parse PDF statement
  */
 
+// Force Node.js runtime for PDF parsing with extended timeout
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 300; // 5 minutes timeout for parsing
+
 // Import polyfills first
 import '@/lib/polyfills';
 
@@ -201,36 +206,99 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Upload file to Supabase Storage
+    // Upload file to Supabase Storage with retry logic
     const fileName = `${userId}/${cardId}/${Date.now()}-${file.name}`;
     const fileBuffer = Buffer.from(await file.arrayBuffer());
 
-    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-      .from('statements')
-      .upload(fileName, fileBuffer, {
-        contentType: file.type,
-        upsert: false,
-      });
+    let uploadData;
+    let uploadError;
+
+    // Retry storage upload with exponential backoff
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const result = await supabaseAdmin.storage
+          .from('statements')
+          .upload(fileName, fileBuffer, {
+            contentType: file.type,
+            upsert: false,
+          });
+
+        uploadData = result.data;
+        uploadError = result.error;
+
+        if (!uploadError) {
+          break; // Success, exit retry loop
+        }
+
+        if (attempt < 3) {
+          console.log(
+            `Storage upload attempt ${attempt} failed, retrying in ${attempt * 1000}ms...`,
+          );
+          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        }
+      } catch (error) {
+        uploadError = error;
+        if (attempt < 3) {
+          console.log(
+            `Storage upload attempt ${attempt} failed with error, retrying in ${attempt * 1000}ms...`,
+          );
+          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        }
+      }
+    }
 
     if (uploadError) {
-      console.error('Supabase storage upload error:', uploadError);
+      console.error(
+        'Supabase storage upload error after retries:',
+        uploadError,
+      );
       // For now, continue without storage upload for testing
       console.log('Continuing without storage upload for testing...');
     }
 
     // Create statement record with pending status
-    const { data: statement, error: statementError } = await supabaseAdmin
-      .from('statements')
-      .insert({
-        user_id: userId,
-        card_id: cardId,
-        file_path: uploadData?.path || 'temp-path', // Use temp path if storage failed
-        file_name: file.name,
-        file_size: file.size,
-        parsing_status: 'processing',
-      })
-      .select()
-      .single();
+    let statement: any;
+    let statementError: any;
+
+    // Retry database insert with exponential backoff
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const result = await supabaseAdmin
+          .from('statements')
+          .insert({
+            user_id: userId,
+            card_id: cardId,
+            file_path: uploadData?.path || 'temp-path', // Use temp path if storage failed
+            file_name: file.name,
+            file_size: file.size,
+            parsing_status: 'processing',
+          })
+          .select()
+          .single();
+
+        statement = result.data;
+        statementError = result.error;
+
+        if (!statementError) {
+          break; // Success, exit retry loop
+        }
+
+        if (attempt < 3) {
+          console.log(
+            `Database insert attempt ${attempt} failed, retrying in ${attempt * 1000}ms...`,
+          );
+          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        }
+      } catch (error) {
+        statementError = error;
+        if (attempt < 3) {
+          console.log(
+            `Database insert attempt ${attempt} failed with error, retrying in ${attempt * 1000}ms...`,
+          );
+          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        }
+      }
+    }
 
     if (statementError) {
       // Clean up uploaded file if statement creation fails (only if upload succeeded)
@@ -258,7 +326,7 @@ export async function POST(request: NextRequest) {
       userId,
       cardId,
       password || undefined,
-    ).catch(error => {
+    ).catch(async error => {
       console.error('Statement parsing failed:', error);
       console.error('Error details:', {
         statementId: statement.id,
@@ -266,6 +334,32 @@ export async function POST(request: NextRequest) {
         error: error.message,
         stack: error.stack,
       });
+
+      // Update statement status to failed if parsing crashes
+      try {
+        await supabaseAdmin
+          .from('statements')
+          .update({
+            parsing_status: 'failed',
+            parsing_error: error.message || 'Parsing failed unexpectedly',
+            parsing_error_details: JSON.stringify({
+              errorType: 'parsing_crash',
+              error: error.message,
+              stack: error.stack,
+            }),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', statement.id);
+
+        console.log(
+          `Updated statement ${statement.id} status to failed due to parsing crash`,
+        );
+      } catch (updateError: any) {
+        console.error(
+          `Failed to update statement ${statement.id} status:`,
+          updateError,
+        );
+      }
     });
 
     return createCorsResponse(
@@ -670,28 +764,40 @@ async function parseStatementAsync(
       .update(updateData)
       .eq('id', statementId);
 
-    // Insert transactions with enhanced metadata
-    const transactions = result.transactions.map(t => ({
-      user_id: userId,
-      card_id: cardId,
-      statement_id: statementId,
-      transaction_date: t.date,
-      merchant_name: t.merchantName,
-      amount: t.amount,
-      transaction_type: t.type,
-      raw_text: t.rawText,
-      category: t.category || 'others',
-      source: 'pdf' as const,
-      status: 'completed' as const,
+    // Import categorization engine
+    const { categorizeTransaction } = await import('@finmatter/cc-engine');
 
-      // Enhanced fields
-      location: t.location,
-      reward_points: t.rewardPoints,
-      reference_number: t.referenceNumber,
-      is_emi: t.isEMI || false,
-      gst_amount: t.gstAmount,
-      emi_details: t.emiDetails ? t.emiDetails : null,
-    }));
+    // Insert transactions with enhanced metadata and automatic categorization
+    const transactions = result.transactions.map(t => {
+      // Auto-categorize transaction if not already categorized
+      const categorization =
+        !t.category || t.category === 'others'
+          ? categorizeTransaction(t.merchantName, { userId })
+          : null;
+
+      return {
+        user_id: userId,
+        card_id: cardId,
+        statement_id: statementId,
+        transaction_date: t.date,
+        merchant_name: t.merchantName,
+        amount: t.amount,
+        transaction_type: t.type,
+        raw_text: t.rawText,
+        category: t.category || categorization?.category || 'others',
+        subcategory: categorization?.subcategory,
+        source: 'pdf' as const,
+        status: 'completed' as const,
+
+        // Enhanced fields
+        location: t.location,
+        reward_points: t.rewardPoints,
+        reference_number: t.referenceNumber,
+        is_emi: t.isEMI || false,
+        gst_amount: t.gstAmount,
+        emi_details: t.emiDetails ? t.emiDetails : null,
+      };
+    });
 
     if (transactions.length > 0) {
       const { error: transactionError } = await supabaseAdmin
@@ -735,6 +841,44 @@ async function parseStatementAsync(
         console.error('Failed to insert EMI loans:', emiError);
         // Continue anyway - this is not critical
       }
+    }
+
+    // Update card with latest credit limit and available credit from statement
+    if (result.metadata.creditLimit) {
+      const cardUpdateData: any = {
+        credit_limit: result.metadata.creditLimit,
+        billing_day: result.metadata.billingDay,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Calculate or use parsed available credit
+      if (
+        result.metadata.availableCredit !== undefined &&
+        result.metadata.availableCredit !== null
+      ) {
+        // Use parsed available credit if it exists
+        cardUpdateData.available_credit = result.metadata.availableCredit;
+      } else {
+        // If available credit wasn't parsed, try to estimate from spending
+        // Calculate from transactions: sum of all debit amounts
+        const totalSpent = result.transactions
+          .filter(t => t.type === 'debit' || t.amount > 0)
+          .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+        if (totalSpent > 0) {
+          const estimatedAvailable = result.metadata.creditLimit - totalSpent;
+          cardUpdateData.available_credit = Math.max(0, estimatedAvailable);
+          console.log(
+            `Calculated available credit from transactions: ${cardUpdateData.available_credit}`,
+          );
+        }
+      }
+
+      await supabaseAdmin
+        .from('cards')
+        .update(cardUpdateData)
+        .eq('id', cardId)
+        .eq('user_id', userId);
     }
   } catch (error) {
     console.error('Parse statement async error:', error);

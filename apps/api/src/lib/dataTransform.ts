@@ -15,7 +15,7 @@ export function dbCardToApiCard(dbCard: any, dbBenefits?: any[]): Card {
   // Check if any statement is currently being parsed
   const parsingInProgress = dbCard.parsing_in_progress || false;
 
-  return {
+  const card: Card = {
     id: dbCard.id,
     userId: dbCard.user_id,
     bankName: dbCard.bank_name,
@@ -27,8 +27,6 @@ export function dbCardToApiCard(dbCard: any, dbBenefits?: any[]): Card {
     annualFee: dbCard.annual_fee,
     currency: dbCard.currency,
     status: dbCard.status,
-    issueDate: dbCard.issue_date ? new Date(dbCard.issue_date) : undefined,
-    expiryDate: dbCard.expiry_date ? new Date(dbCard.expiry_date) : undefined,
     creditLimit: dbCard.credit_limit,
     availableCredit: dbCard.available_credit,
     billingDay: dbCard.billing_day,
@@ -46,13 +44,23 @@ export function dbCardToApiCard(dbCard: any, dbBenefits?: any[]): Card {
     createdAt: new Date(dbCard.created_at),
     updatedAt: new Date(dbCard.updated_at),
   };
+
+  if (dbCard.issue_date) {
+    card.issueDate = new Date(dbCard.issue_date);
+  }
+
+  if (dbCard.expiry_date) {
+    card.expiryDate = new Date(dbCard.expiry_date);
+  }
+
+  return card;
 }
 
 /**
  * Convert database benefit (snake_case) to API benefit (camelCase)
  */
 export function dbBenefitToApiBenefit(dbBenefit: any): CardBenefit {
-  return {
+  const benefit: CardBenefit = {
     id: dbBenefit.id,
     cardId: dbBenefit.card_id,
     category: dbBenefit.category,
@@ -61,15 +69,19 @@ export function dbBenefitToApiBenefit(dbBenefit: any): CardBenefit {
     rewardCap: dbBenefit.reward_cap,
     conditions: dbBenefit.conditions,
     isActive: dbBenefit.is_active,
-    validFrom: dbBenefit.valid_from
-      ? new Date(dbBenefit.valid_from)
-      : undefined,
-    validUntil: dbBenefit.valid_until
-      ? new Date(dbBenefit.valid_until)
-      : undefined,
     description: dbBenefit.description,
     value: dbBenefit.value,
   };
+
+  if (dbBenefit.valid_from) {
+    benefit.validFrom = new Date(dbBenefit.valid_from);
+  }
+
+  if (dbBenefit.valid_until) {
+    benefit.validUntil = new Date(dbBenefit.valid_until);
+  }
+
+  return benefit;
 }
 
 /**
@@ -171,4 +183,56 @@ export function dbUserToApiUser(dbUser: any) {
       lastName: dbUser.profile_data?.lastName || '',
     },
   };
+}
+
+/**
+ * Convert database transaction (snake_case) to API transaction (camelCase)
+ */
+export function dbTransactionToApiTransaction(dbTransaction: any) {
+  return {
+    id: dbTransaction.id,
+    userId: dbTransaction.user_id,
+    cardId: dbTransaction.card_id,
+    amount: dbTransaction.amount,
+    currency: dbTransaction.currency || 'INR',
+    type: dbTransaction.transaction_type,
+    status: dbTransaction.status,
+    merchantName: dbTransaction.merchant_name,
+    description: dbTransaction.description,
+    date: new Date(dbTransaction.transaction_date), // Convert to Date object
+    category: dbTransaction.category,
+    subcategory:
+      dbTransaction.subcategory?.replace(/_/g, ' ') ||
+      dbTransaction.subcategory, // Convert snake_case to spaces
+    tags: dbTransaction.tags,
+    notes: dbTransaction.notes,
+    location: dbTransaction.location
+      ? {
+          city: dbTransaction.location_city,
+          state: dbTransaction.location_state,
+          country: dbTransaction.location_country,
+        }
+      : undefined,
+    reference: dbTransaction.reference_number,
+    rewardPoints: dbTransaction.reward_points,
+    source: dbTransaction.source,
+    createdAt: new Date(dbTransaction.created_at),
+    updatedAt: new Date(dbTransaction.updated_at),
+    // Include card details if present
+    card: dbTransaction.cards
+      ? {
+          id: dbTransaction.cards.id,
+          cardName: dbTransaction.cards.card_name,
+          bankName: dbTransaction.cards.bank_name,
+          lastFourDigits: dbTransaction.cards.last_four_digits,
+        }
+      : undefined,
+  };
+}
+
+/**
+ * Helper to convert array of DB transactions to API transactions
+ */
+export function dbTransactionsToApiTransactions(dbTransactions: any[]) {
+  return dbTransactions.map(dbTransactionToApiTransaction);
 }

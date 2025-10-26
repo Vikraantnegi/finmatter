@@ -136,13 +136,30 @@ export class ICICIParser extends BaseParser {
 
       // Update spendsOverview with calculated domestic/international/total transactions
       if (metadata.spendsOverview) {
+        const debitTransactions = transactions.filter(t => t.type === 'debit');
+        const domesticDebitTransactions = transactions.filter(
+          t => t.location === 'domestic' && t.type === 'debit',
+        );
+        const internationalDebitTransactions = transactions.filter(
+          t => t.location === 'international' && t.type === 'debit',
+        );
+
+        // Calculate total spends if not already set (should be sum of all debit transactions)
+        if (
+          !metadata.spendsOverview.totalSpends ||
+          metadata.spendsOverview.totalSpends === 0
+        ) {
+          metadata.spendsOverview.totalSpends = debitTransactions.reduce(
+            (sum, t) => sum + t.amount,
+            0,
+          );
+        }
+
         metadata.spendsOverview.numberOfTransactions = transactions.length;
-        metadata.spendsOverview.domesticSpends = transactions
-          .filter(t => t.location === 'domestic' && t.type === 'debit')
-          .reduce((sum, t) => sum + t.amount, 0);
-        metadata.spendsOverview.internationalSpends = transactions
-          .filter(t => t.location === 'international' && t.type === 'debit')
-          .reduce((sum, t) => sum + t.amount, 0);
+        metadata.spendsOverview.domesticSpends =
+          domesticDebitTransactions.reduce((sum, t) => sum + t.amount, 0);
+        metadata.spendsOverview.internationalSpends =
+          internationalDebitTransactions.reduce((sum, t) => sum + t.amount, 0);
       }
 
       // Calculate reward points from transactions if not already set

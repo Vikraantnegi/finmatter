@@ -68,6 +68,7 @@ export interface Statement {
     lastFourDigits: string;
   };
   emiLoans?: EMILoan[];
+  transactions?: any[]; // Array of transactions from this statement
 }
 
 export interface UploadStatementResponse {
@@ -152,6 +153,7 @@ export class StatementService {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
+          timeout: 300000, // 5 minutes timeout for upload and parsing
         },
       );
 
@@ -251,7 +253,10 @@ export class StatementService {
       const response = await apiClient.get<{
         success: boolean;
         data?: {
-          statement: any;
+          statement: any & {
+            transactions?: any[];
+            emiLoans?: EMILoan[];
+          };
         };
         error?: {
           code: string;
@@ -260,10 +265,23 @@ export class StatementService {
       }>(`/api/statements/${statementId}`);
 
       if (response.success && response.data?.statement) {
+        const transformedStatement = this.transformStatement(
+          response.data.statement,
+        );
+
+        // Include transactions and EMI loans from the API
+        if (response.data.statement.transactions) {
+          transformedStatement.transactions =
+            response.data.statement.transactions;
+        }
+        if (response.data.statement.emiLoans) {
+          transformedStatement.emiLoans = response.data.statement.emiLoans;
+        }
+
         return {
           success: true,
           data: {
-            statement: this.transformStatement(response.data.statement),
+            statement: transformedStatement,
           },
         };
       }

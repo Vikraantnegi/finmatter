@@ -323,14 +323,35 @@ export async function POST(
 
     // Update card with latest credit limit and available credit from statement
     if (result.metadata.creditLimit) {
+      const cardUpdateData: any = {
+        credit_limit: result.metadata.creditLimit,
+        billing_day: result.metadata.billingDay,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Calculate or use parsed available credit
+      if (
+        result.metadata.availableCredit !== undefined &&
+        result.metadata.availableCredit !== null
+      ) {
+        // Use parsed available credit if it exists
+        cardUpdateData.available_credit = result.metadata.availableCredit;
+      } else {
+        // If available credit wasn't parsed, try to estimate from spending
+        // Calculate from transactions: sum of all debit amounts
+        const totalSpent = result.transactions
+          .filter(t => t.type === 'debit' || t.amount > 0)
+          .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+        if (totalSpent > 0) {
+          const estimatedAvailable = result.metadata.creditLimit - totalSpent;
+          cardUpdateData.available_credit = Math.max(0, estimatedAvailable);
+        }
+      }
+
       await supabaseAdmin
         .from('cards')
-        .update({
-          credit_limit: result.metadata.creditLimit,
-          available_credit: result.metadata.availableCredit,
-          billing_day: result.metadata.billingDay,
-          updated_at: new Date().toISOString(),
-        })
+        .update(cardUpdateData)
         .eq('id', statement.card_id)
         .eq('user_id', userId);
     }

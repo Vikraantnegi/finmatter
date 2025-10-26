@@ -153,23 +153,28 @@ export class HDFCParser extends BaseParser {
       }
 
       // Calculate transaction-based metrics
-      const domesticTransactions = transactions.filter(
-        t => t.location === 'domestic',
-      );
-      const internationalTransactions = transactions.filter(
-        t => t.location === 'international',
-      );
-
-      const domesticSpends = domesticTransactions
-        .filter(t => t.type === 'debit')
+      const debitTransactions = transactions.filter(t => t.type === 'debit');
+      const domesticSpends = transactions
+        .filter(t => t.location === 'domestic' && t.type === 'debit')
         .reduce((sum, t) => sum + t.amount, 0);
 
-      const internationalSpends = internationalTransactions
-        .filter(t => t.type === 'debit')
+      const internationalSpends = transactions
+        .filter(t => t.location === 'international' && t.type === 'debit')
         .reduce((sum, t) => sum + t.amount, 0);
 
       // Update spendsOverview with calculated values
       if (metadata.spendsOverview) {
+        // Calculate total spends if not already set (should be sum of all debit transactions)
+        if (
+          !metadata.spendsOverview.totalSpends ||
+          metadata.spendsOverview.totalSpends === 0
+        ) {
+          metadata.spendsOverview.totalSpends = debitTransactions.reduce(
+            (sum, t) => sum + t.amount,
+            0,
+          );
+        }
+
         metadata.spendsOverview.domesticSpends =
           Math.round(domesticSpends * 100) / 100;
         metadata.spendsOverview.internationalSpends =

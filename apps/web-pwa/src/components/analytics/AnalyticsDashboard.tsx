@@ -90,6 +90,23 @@ export function AnalyticsDashboard({ cardId }: AnalyticsDashboardProps) {
     loading,
   });
 
+  // Show empty state if no data at all
+  if (
+    usageStats.length === 0 &&
+    monthlySpending.length === 0 &&
+    topMerchants.length === 0
+  ) {
+    return (
+      <div className='text-center py-12'>
+        <div className='text-gray-400 mb-2'>📊</div>
+        <p className='text-gray-600'>No analytics data available yet.</p>
+        <p className='text-sm text-gray-500 mt-1'>
+          Upload statements or add transactions to see analytics.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className='space-y-6'>
       {/* Card Usage Stats */}

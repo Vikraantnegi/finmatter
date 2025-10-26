@@ -6,12 +6,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number, currency = 'INR'): string {
+  // Format the absolute value (currency formatter will add the symbol)
+  const absAmount = Math.abs(amount);
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(absAmount);
 }
 
 export function formatNumber(num: number): string {
@@ -24,6 +26,12 @@ export function formatPercentage(value: number): string {
 
 export function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
+
+  // Check if date is valid
+  if (isNaN(d.getTime())) {
+    return 'Invalid Date';
+  }
+
   return new Intl.DateTimeFormat('en-IN', {
     year: 'numeric',
     month: 'short',

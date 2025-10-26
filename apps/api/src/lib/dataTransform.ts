@@ -184,3 +184,55 @@ export function dbUserToApiUser(dbUser: any) {
     },
   };
 }
+
+/**
+ * Convert database transaction (snake_case) to API transaction (camelCase)
+ */
+export function dbTransactionToApiTransaction(dbTransaction: any) {
+  return {
+    id: dbTransaction.id,
+    userId: dbTransaction.user_id,
+    cardId: dbTransaction.card_id,
+    amount: dbTransaction.amount,
+    currency: dbTransaction.currency || 'INR',
+    type: dbTransaction.transaction_type,
+    status: dbTransaction.status,
+    merchantName: dbTransaction.merchant_name,
+    description: dbTransaction.description,
+    date: new Date(dbTransaction.transaction_date), // Convert to Date object
+    category: dbTransaction.category,
+    subcategory:
+      dbTransaction.subcategory?.replace(/_/g, ' ') ||
+      dbTransaction.subcategory, // Convert snake_case to spaces
+    tags: dbTransaction.tags,
+    notes: dbTransaction.notes,
+    location: dbTransaction.location
+      ? {
+          city: dbTransaction.location_city,
+          state: dbTransaction.location_state,
+          country: dbTransaction.location_country,
+        }
+      : undefined,
+    reference: dbTransaction.reference_number,
+    rewardPoints: dbTransaction.reward_points,
+    source: dbTransaction.source,
+    createdAt: new Date(dbTransaction.created_at),
+    updatedAt: new Date(dbTransaction.updated_at),
+    // Include card details if present
+    card: dbTransaction.cards
+      ? {
+          id: dbTransaction.cards.id,
+          cardName: dbTransaction.cards.card_name,
+          bankName: dbTransaction.cards.bank_name,
+          lastFourDigits: dbTransaction.cards.last_four_digits,
+        }
+      : undefined,
+  };
+}
+
+/**
+ * Helper to convert array of DB transactions to API transactions
+ */
+export function dbTransactionsToApiTransactions(dbTransactions: any[]) {
+  return dbTransactions.map(dbTransactionToApiTransaction);
+}

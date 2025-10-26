@@ -8,7 +8,8 @@
 import React from 'react';
 import { Transaction } from '@finmatter/types';
 import { CategoryIcon } from './CategoryIcon';
-import { formatCurrency, formatDate } from '@finmatter/shared';
+import { formatCurrency } from '@finmatter/shared';
+import { formatDate } from '@/lib/utils';
 import { ChevronRight, CreditCard } from 'lucide-react';
 
 interface TransactionItemProps {
@@ -24,9 +25,12 @@ export function TransactionItem({
   onClick,
   className = '',
 }: TransactionItemProps) {
-  const isDebit = transaction.type === 'debit';
-  const amountColor = isDebit ? 'text-red-600' : 'text-green-600';
-  const amountPrefix = isDebit ? '-' : '+';
+  // Amounts are stored as-is: positive = debit/charge, negative = credit/refund
+  const isDebit = transaction.amount > 0; // Positive amount = debit/charge
+  const isCredit = transaction.amount < 0; // Negative amount = credit/refund
+
+  const amountColor = isCredit ? 'text-green-600' : 'text-red-600';
+  const amountPrefix = isDebit ? '-' : '+'; // Show charges as negative, credits as positive
 
   return (
     <div
@@ -60,7 +64,7 @@ export function TransactionItem({
               <>
                 <span className='text-gray-400'>•</span>
                 <span className='text-sm text-gray-500'>
-                  {transaction.subcategory}
+                  {transaction.subcategory.replace(/_/g, ' ')}
                 </span>
               </>
             )}

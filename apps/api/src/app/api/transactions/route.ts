@@ -216,10 +216,51 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId);
 
+    // Transform transactions from database format to API format
+    const transformedTransactions =
+      transactions?.map(transaction => ({
+        id: transaction.id,
+        userId: transaction.user_id,
+        cardId: transaction.card_id,
+        amount: transaction.amount,
+        currency: transaction.currency || 'INR',
+        type: transaction.transaction_type,
+        status: transaction.status,
+        merchantName: transaction.merchant_name,
+        description: transaction.description,
+        date: new Date(transaction.transaction_date), // Convert to Date object
+        category: transaction.category,
+        subcategory:
+          transaction.subcategory?.replace(/_/g, ' ') ||
+          transaction.subcategory, // Convert snake_case to spaces
+        tags: transaction.tags,
+        notes: transaction.notes,
+        location: transaction.location
+          ? {
+              city: transaction.location_city,
+              state: transaction.location_state,
+              country: transaction.location_country,
+            }
+          : undefined,
+        reference: transaction.reference_number,
+        rewardPoints: transaction.reward_points,
+        source: transaction.source,
+        createdAt: new Date(transaction.created_at),
+        updatedAt: new Date(transaction.updated_at),
+        card: transaction.cards
+          ? {
+              id: transaction.cards.id,
+              cardName: transaction.cards.card_name,
+              bankName: transaction.cards.bank_name,
+              lastFourDigits: transaction.cards.last_four_digits,
+            }
+          : undefined,
+      })) || [];
+
     // Group transactions if requested
-    let groupedTransactions = transactions;
-    if (groupBy !== 'none' && transactions) {
-      groupedTransactions = groupTransactions(transactions, groupBy);
+    let groupedTransactions = transformedTransactions;
+    if (groupBy !== 'none' && transformedTransactions) {
+      groupedTransactions = groupTransactions(transformedTransactions, groupBy);
     }
 
     return createCorsResponse(

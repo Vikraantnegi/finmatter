@@ -9,10 +9,12 @@ import { CardVisual } from '@/components/cards/CardVisual';
 import { UploadStatementModal } from '@/components/statements/UploadStatementModal';
 import { ParsingProgressModal } from '@/components/statements/ParsingProgressModal';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
+import { TransactionItem } from '@/components/transactions/TransactionItem';
 import { Modal } from '@/components/ui/Modal';
 import { useCardStore } from '@/stores/cardStore';
 import { cardService } from '@/services/cardService';
 import { useStatements } from '@/hooks/useStatements';
+import { useTransactions } from '@/hooks/useTransactions';
 import type {
   CardBenefitResponse,
   CardMetadataResponse,
@@ -27,6 +29,7 @@ import {
   Upload,
   BarChart3,
   DollarSign,
+  Receipt,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -55,6 +58,13 @@ export default function CardDetailPage() {
   // Fetch statements for this card
   const { statements, isLoading: statementsLoading } = useStatements({
     cardId,
+  });
+
+  // Fetch recent transactions for this card
+  const { transactions, loading: transactionsLoading } = useTransactions({
+    filters: { cardId },
+    limit: 10,
+    groupBy: 'none',
   });
 
   // Fetch card details
@@ -186,10 +196,20 @@ export default function CardDetailPage() {
         {/* Card Visual */}
         <CardVisual card={card} showDetails={false} />
 
-        {/* Statements Section */}
+        {/* Recent Transactions Section */}
         <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
           <div className='flex items-center justify-between mb-4'>
-            <h2 className='text-lg font-semibold text-gray-900'>Statements</h2>
+            <h2 className='text-lg font-semibold text-gray-900 flex items-center gap-2'>
+              <Receipt className='w-5 h-5 text-primary-500' />
+              Recent Transactions
+            </h2>
+            <Button
+              onClick={() => router.push(`/cards/${cardId}/statements`)}
+              size='sm'
+              variant='outline'
+            >
+              View All Statements
+            </Button>
             {statements && statements.length > 0 && (
               <Button
                 onClick={() => setShowUploadModal(true)}
@@ -223,59 +243,45 @@ export default function CardDetailPage() {
                 You&apos;ll be notified once it&apos;s ready.
               </p>
             </div>
-          ) : statements && statements.length > 0 ? (
-            <div className='space-y-3'>
-              {statements.map(statement => (
-                <div
-                  key={statement.id}
-                  className='flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors'
-                >
-                  <div className='flex items-center space-x-3'>
-                    <Calendar className='w-5 h-5 text-primary-500' />
-                    <div>
-                      <div className='text-sm font-medium text-gray-900'>
-                        {statement.fileName}
-                      </div>
-                      <div className='text-xs text-gray-500'>
-                        Uploaded:{' '}
-                        {new Date(statement.uploadedAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                  <div className='flex items-center space-x-3'>
-                    <div className='text-right'>
-                      <div className='text-sm font-medium text-gray-900'>
-                        {statement.transactionCount || 0} transactions
-                      </div>
-                      <div
-                        className={`text-xs capitalize ${
-                          statement.status === 'success'
-                            ? 'text-green-600'
-                            : statement.status === 'failed'
-                              ? 'text-red-600'
-                              : statement.status === 'processing'
-                                ? 'text-yellow-600'
-                                : 'text-gray-500'
-                        }`}
-                      >
-                        {statement.status}
-                      </div>
-                    </div>
-                    {statement.status === 'success' && (
-                      <Button
-                        size='sm'
-                        variant='outline'
-                        onClick={() => {
-                          // Navigate to statement details
-                          router.push(`/statements/${statement.id}`);
-                        }}
-                      >
-                        View
-                      </Button>
-                    )}
-                  </div>
-                </div>
+          ) : transactionsLoading ? (
+            <div className='text-center flex-col items-center justify-center py-8 w-full'>
+              <LoadingSpinner size='md' className='mx-auto' />
+              <p className='text-gray-500 mt-2'>Loading transactions...</p>
+            </div>
+          ) : transactions && transactions.length > 0 ? (
+            <div className='space-y-0 border border-gray-200 rounded-lg overflow-hidden'>
+              {transactions.slice(0, 10).map((transaction, index) => (
+                <TransactionItem
+                  key={transaction.id}
+                  transaction={transaction}
+                  showCard={false}
+                  onClick={() => router.push(`/transactions/${transaction.id}`)}
+                  className={
+                    index === transactions.length - 1 ? 'border-b-0' : ''
+                  }
+                />
               ))}
+              {transactions.length > 10 && (
+                <div className='text-center py-3 border-t border-gray-200'>
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => router.push('/transactions')}
+                  >
+                    View All Transactions
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : statements && statements.length > 0 ? (
+            <div className='text-center py-8'>
+              <div className='text-gray-400 mb-2'>💳</div>
+              <p className='text-gray-600'>
+                No transactions yet for this card.
+              </p>
+              <p className='text-sm text-gray-500 mt-1'>
+                Transactions will appear here after uploading statements.
+              </p>
             </div>
           ) : (
             <div className='text-center py-8'>

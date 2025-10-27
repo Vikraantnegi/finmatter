@@ -8,6 +8,7 @@ import { UtilizationAlert } from '@/components/cards/UtilizationAlert';
 import { DashboardErrorBoundary } from '@/components/ErrorBoundary';
 import { SpendingAlerts } from '@/components/transactions/SpendingAlerts';
 import { TransactionInsights } from '@/components/transactions/TransactionInsights';
+import { SummaryStats } from '@/components/dashboard/SummaryStats';
 import { CreditCard, Plus, AlertCircle } from 'lucide-react';
 
 function DashboardContent() {
@@ -57,6 +58,9 @@ function DashboardContent() {
             Here&apos;s an overview of your credit card portfolio
           </p>
         </div>
+
+        {/* Summary Stats */}
+        {totalCards > 0 && <SummaryStats className='mb-8' />}
 
         {/* Credit Utilization Alert */}
         {totalCards > 0 && <UtilizationAlert cards={cards} className='mb-8' />}

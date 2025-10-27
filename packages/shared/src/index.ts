@@ -28,6 +28,7 @@ export * from './date';
 export {
   convertCurrency,
   formatCurrencyAmount,
+  formatLargeNumber,
   getCurrencyConfig,
 } from './currency';
 

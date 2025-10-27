@@ -151,7 +151,7 @@ export function TableRowSkeleton() {
  */
 export function PageSkeleton() {
   return (
-    <div className='min-h-screen bg-gray-50 p-4'>
+    <div className='min-h-screen bg-white p-4'>
       {/* Header */}
       <div className='max-w-7xl mx-auto mb-8'>
         <Skeleton width={200} height={32} className='mb-2' />

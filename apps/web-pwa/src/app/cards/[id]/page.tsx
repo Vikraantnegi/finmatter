@@ -1,20 +1,36 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CardVisual } from '@/components/cards/CardVisual';
-import { UploadStatementWidget } from '@/components/cards/UploadStatementWidget';
+import { UploadStatementModal } from '@/components/statements/UploadStatementModal';
+import { ParsingProgressModal } from '@/components/statements/ParsingProgressModal';
+import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
+import { TransactionItem } from '@/components/transactions/TransactionItem';
 import { Modal } from '@/components/ui/Modal';
 import { useCardStore } from '@/stores/cardStore';
 import { cardService } from '@/services/cardService';
+import { useStatements } from '@/hooks/useStatements';
+import { useTransactions } from '@/hooks/useTransactions';
 import type {
   CardBenefitResponse,
   CardMetadataResponse,
 } from '@finmatter/types';
 import { Card } from '@finmatter/types';
-import { ArrowLeft, Edit, Trash2, Gift, Calendar } from 'lucide-react';
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Gift,
+  Calendar,
+  Upload,
+  BarChart3,
+  DollarSign,
+  Receipt,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function CardDetailPage() {
@@ -22,33 +38,70 @@ export default function CardDetailPage() {
   const params = useParams();
   const cardId = params.id as string;
 
+  console.log('CardDetailPage render:', { cardId });
+
   const { cards, isLoading: loading, fetchCards, deleteCard } = useCardStore();
   const [card, setCard] = useState<Card | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showParsingModal, setShowParsingModal] = useState(false);
+  const [parsingStatementId, setParsingStatementId] = useState<string | null>(
+    null,
+  );
   const [deleting, setDeleting] = useState(false);
   const [benefits, setBenefits] = useState<CardBenefitResponse[]>([]);
   const [benefitsLoading, setBenefitsLoading] = useState(false);
-  const [cardMetadata, setCardMetadata] = useState<CardMetadataResponse | null>(
-    null,
-  );
+  const [_cardMetadata, setCardMetadata] =
+    useState<CardMetadataResponse | null>(null);
+  const benefitsFetched = useRef<string | null>(null);
+
+  // Fetch statements for this card
+  const { statements, isLoading: statementsLoading } = useStatements({
+    cardId,
+  });
+
+  // Fetch recent transactions for this card
+  const { transactions, loading: transactionsLoading } = useTransactions({
+    filters: { cardId },
+    limit: 10,
+    groupBy: 'none',
+  });
 
   // Fetch card details
   useEffect(() => {
-    if (!cards.length) {
-      fetchCards();
-    } else {
-      const foundCard = cards.find(c => c.id === cardId);
-      setCard(foundCard || null);
+    const fetchCardDetails = async () => {
+      try {
+        const cardData = await cardService.getCardById(cardId);
+        setCard(cardData);
+      } catch (error) {
+        console.error('Failed to fetch card details:', error);
+        // Don't fallback to cards store to avoid dependency loops
+        // Just set card to null if fetch fails
+        setCard(null);
+      }
+    };
+
+    if (cardId) {
+      fetchCardDetails();
     }
-  }, [cardId, cards, fetchCards]);
+  }, [cardId]); // Only depend on cardId
 
   // Fetch benefits from database
   useEffect(() => {
     const fetchBenefits = async () => {
-      if (!card) return;
+      if (!card || benefitsFetched.current === card.id) {
+        console.log(
+          'Skipping benefits fetch - already fetched for card:',
+          card?.id,
+        );
+        return;
+      }
 
       setBenefitsLoading(true);
+      benefitsFetched.current = card.id;
+
       try {
+        console.log('Fetching benefits for card:', card.id);
         // Fetch benefits and metadata from database API
         const { benefits: dbBenefits, metadata } =
           await cardService.getCardBenefitsWithMetadata(card.id);
@@ -63,6 +116,7 @@ export default function CardDetailPage() {
       } catch (error) {
         console.error('Error fetching benefits:', error);
         setBenefits([]);
+        benefitsFetched.current = null; // Reset on error to allow retry
       } finally {
         setBenefitsLoading(false);
       }
@@ -99,7 +153,7 @@ export default function CardDetailPage() {
   }
 
   return (
-    <div className='min-h-screen bg-gray-50'>
+    <div className='min-h-screen bg-white'>
       {/* Header */}
       <div className='bg-white border-b border-gray-200 sticky top-0 z-30'>
         <div className='max-w-4xl mx-auto px-4 sm:px-6 lg:px-8'>
@@ -142,15 +196,190 @@ export default function CardDetailPage() {
         {/* Card Visual */}
         <CardVisual card={card} showDetails={false} />
 
-        {/* Upload Statement Widget */}
-        <UploadStatementWidget
-          onUpload={() =>
-            toast('Statement upload feature coming soon!', { icon: 'ℹ️' })
-          }
-        />
+        {/* Recent Transactions Section */}
+        <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
+          <div className='flex items-center justify-between mb-4'>
+            <h2 className='text-lg font-semibold text-gray-900 flex items-center gap-2'>
+              <Receipt className='w-5 h-5 text-primary-500' />
+              Recent Transactions
+            </h2>
+            <Button
+              onClick={() => router.push(`/cards/${cardId}/statements`)}
+              size='sm'
+              variant='outline'
+            >
+              View All Statements
+            </Button>
+            {statements && statements.length > 0 && (
+              <Button
+                onClick={() => setShowUploadModal(true)}
+                className='flex items-center gap-2'
+                size='sm'
+              >
+                <Upload className='w-4 h-4' />
+                Upload Statement
+              </Button>
+            )}
+          </div>
+
+          {statementsLoading ? (
+            <div className='text-center flex-col items-center justify-center py-8 w-full'>
+              <LoadingSpinner size='md' className='mx-auto' />
+              <p className='text-gray-500 mt-2'>Loading statements...</p>
+            </div>
+          ) : card.parsingInProgress ? (
+            <div className='text-center py-8'>
+              <div className='w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center'>
+                <LoadingSpinner size='md' />
+              </div>
+              <h3 className='text-lg font-semibold text-gray-900 mb-2'>
+                Parsing Statement
+              </h3>
+              <p className='text-gray-600 mb-4'>
+                We&apos;re processing your statement. This usually takes 30-60
+                seconds.
+              </p>
+              <p className='text-sm text-gray-500'>
+                You&apos;ll be notified once it&apos;s ready.
+              </p>
+            </div>
+          ) : transactionsLoading ? (
+            <div className='text-center flex-col items-center justify-center py-8 w-full'>
+              <LoadingSpinner size='md' className='mx-auto' />
+              <p className='text-gray-500 mt-2'>Loading transactions...</p>
+            </div>
+          ) : transactions && transactions.length > 0 ? (
+            <div className='space-y-0 border border-gray-200 rounded-lg overflow-hidden'>
+              {transactions.slice(0, 10).map((transaction, index) => (
+                <TransactionItem
+                  key={transaction.id}
+                  transaction={transaction}
+                  showCard={false}
+                  onClick={() => router.push(`/transactions/${transaction.id}`)}
+                  className={
+                    index === transactions.length - 1 ? 'border-b-0' : ''
+                  }
+                />
+              ))}
+              {transactions.length > 10 && (
+                <div className='text-center py-3 border-t border-gray-200'>
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => router.push('/transactions')}
+                  >
+                    View All Transactions
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : statements && statements.length > 0 ? (
+            <div className='text-center py-8'>
+              <div className='text-gray-400 mb-2'>💳</div>
+              <p className='text-gray-600'>
+                No transactions yet for this card.
+              </p>
+              <p className='text-sm text-gray-500 mt-1'>
+                Transactions will appear here after uploading statements.
+              </p>
+            </div>
+          ) : (
+            <div className='text-center py-8'>
+              <div className='w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4'>
+                <Upload className='w-6 h-6 text-blue-600' />
+              </div>
+              <h3 className='text-lg font-semibold text-gray-900 mb-2'>
+                Upload Your First Statement
+              </h3>
+              <p className='text-sm text-gray-600 mb-4'>
+                Upload your statement to see credit limit and utilization
+              </p>
+              <Button
+                onClick={() => setShowUploadModal(true)}
+                className='flex items-center space-x-2 mx-auto'
+              >
+                <Upload className='w-4 h-4' />
+                <span>Upload Statement</span>
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Latest Statement Summary */}
+        {statements &&
+          statements.length > 0 &&
+          statements[0].status === 'success' && (
+            <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
+              <div className='flex items-center justify-between mb-4'>
+                <h2 className='text-lg font-semibold text-gray-900 flex items-center gap-2'>
+                  <DollarSign className='w-5 h-5 text-primary-500' />
+                  Latest Statement Summary
+                </h2>
+              </div>
+              <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+                {statements[0].creditLimit && (
+                  <div>
+                    <div className='text-sm text-gray-600 mb-1'>
+                      Credit Limit
+                    </div>
+                    <div className='text-xl font-bold text-gray-900'>
+                      ₹{statements[0].creditLimit.toLocaleString()}
+                    </div>
+                  </div>
+                )}
+                {statements[0].availableCredit != null &&
+                  statements[0].availableCredit !== undefined && (
+                    <div>
+                      <div className='text-sm text-gray-600 mb-1'>
+                        Available Credit
+                      </div>
+                      <div className='text-xl font-bold text-green-600'>
+                        ₹{(statements[0].availableCredit || 0).toLocaleString()}
+                      </div>
+                    </div>
+                  )}
+                {statements[0].minimumPayment && (
+                  <div>
+                    <div className='text-sm text-gray-600 mb-1'>
+                      Min Payment
+                    </div>
+                    <div className='text-xl font-bold text-orange-600'>
+                      ₹{statements[0].minimumPayment.toLocaleString()}
+                    </div>
+                  </div>
+                )}
+                {statements[0].dueDate && (
+                  <div>
+                    <div className='text-sm text-gray-600 mb-1'>Due Date</div>
+                    <div className='text-xl font-bold text-gray-900'>
+                      {new Date(statements[0].dueDate)
+                        .toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                        })
+                        .toUpperCase()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+        {/* Analytics Section */}
+        {statements && statements.length > 0 && (
+          <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
+            <div className='flex items-center justify-between mb-4'>
+              <h2 className='text-lg font-semibold text-gray-900 flex items-center gap-2'>
+                <BarChart3 className='w-5 h-5 text-primary-500' />
+                Analytics
+              </h2>
+            </div>
+            <AnalyticsDashboard cardId={cardId} />
+          </div>
+        )}
 
         {/* Card Stats */}
-        {card.hasStatement && (
+        {/* {card.hasStatement && (
           <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
             <h2 className='text-lg font-semibold text-gray-900 mb-4'>
               Card Information
@@ -194,7 +423,7 @@ export default function CardDetailPage() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Additional Info */}
         <div className='mt-6 border-t border-gray-200 space-y-3'>
@@ -217,100 +446,141 @@ export default function CardDetailPage() {
             </div>
           )} */}
         </div>
-        {/* Card Metadata Information */}
-        {cardMetadata && (
-          <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
-            <h2 className='text-lg font-semibold text-gray-900 mb-4'>
-              Card Details
-            </h2>
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+        {/* Card Details Information */}
+        <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
+          <h2 className='text-lg font-semibold text-gray-900 mb-4'>
+            Card Details
+          </h2>
+          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Card Type
+              </label>
+              <p className='text-gray-900 capitalize'>{card.cardType}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Network
+              </label>
+              <p className='text-gray-900 capitalize'>{card.network}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Reward Type
+              </label>
+              <p className='text-gray-900 capitalize'>{card.rewardType}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Annual Fee
+              </label>
+              <p className='text-gray-900'>
+                ₹{card.annualFee?.toLocaleString() || '0'}
+              </p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Status
+              </label>
+              <p className='text-gray-900 capitalize'>{card.status}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Currency
+              </label>
+              <p className='text-gray-900 uppercase'>{card.currency}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Bank ID
+              </label>
+              <p className='text-gray-900 uppercase'>{card.bankId}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Card Metadata ID
+              </label>
+              <p className='text-gray-900'>{card.cardMetadataId}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Is Custom
+              </label>
+              <p className='text-gray-900'>{card.isCustom ? 'Yes' : 'No'}</p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Has Statement
+              </label>
+              <p className='text-gray-900'>
+                {card.hasStatement ? 'Yes' : 'No'}
+              </p>
+            </div>
+            {card.billingDay && (
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-500'>
-                  Card Type
+                  Billing Day
                 </label>
-                <p className='text-gray-900 capitalize'>
-                  {cardMetadata.cardType}
-                </p>
+                <p className='text-gray-900'>{card.billingDay}</p>
               </div>
+            )}
+            {card.creditLimit && (
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-500'>
-                  Network
-                </label>
-                <p className='text-gray-900 capitalize'>
-                  {cardMetadata.network}
-                </p>
-              </div>
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-500'>
-                  Reward Type
-                </label>
-                <p className='text-gray-900 capitalize'>
-                  {cardMetadata.rewardType}
-                </p>
-              </div>
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-500'>
-                  Annual Fee
+                  Credit Limit
                 </label>
                 <p className='text-gray-900'>
-                  ₹{cardMetadata.annualFee.toLocaleString()}
+                  ₹{card.creditLimit.toLocaleString()}
                 </p>
               </div>
-              {cardMetadata.primaryColor && (
-                <div className='space-y-2'>
-                  <label className='text-sm font-medium text-gray-500'>
-                    Card Colors
-                  </label>
-                  <div className='flex items-center space-x-2'>
+            )}
+            {card.availableCredit && (
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-500'>
+                  Available Credit
+                </label>
+                <p className='text-gray-900'>
+                  ₹{card.availableCredit.toLocaleString()}
+                </p>
+              </div>
+            )}
+            {card.primaryColor && (
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-500'>
+                  Card Colors
+                </label>
+                <div className='flex items-center space-x-2'>
+                  <div
+                    className='w-6 h-6 rounded border border-gray-300'
+                    style={{ backgroundColor: card.primaryColor }}
+                  />
+                  {card.secondaryColor && (
                     <div
                       className='w-6 h-6 rounded border border-gray-300'
-                      style={{ backgroundColor: cardMetadata.primaryColor }}
+                      style={{ backgroundColor: card.secondaryColor }}
                     />
-                    {cardMetadata.secondaryColor && (
-                      <div
-                        className='w-6 h-6 rounded border border-gray-300'
-                        style={{ backgroundColor: cardMetadata.secondaryColor }}
-                      />
-                    )}
-                  </div>
+                  )}
                 </div>
-              )}
-              {cardMetadata.description && (
-                <div className='space-y-2 md:col-span-2 lg:col-span-3'>
-                  <label className='text-sm font-medium text-gray-500'>
-                    Description
-                  </label>
-                  <p className='text-gray-900'>{cardMetadata.description}</p>
-                </div>
-              )}
-              {cardMetadata.rewardRules &&
-                Object.keys(cardMetadata.rewardRules).length > 0 && (
-                  <div className='space-y-2 md:col-span-2 lg:col-span-3'>
-                    <label className='text-sm font-medium text-gray-500'>
-                      Reward Rules
-                    </label>
-                    <div className='space-y-2'>
-                      {Object.entries(cardMetadata.rewardRules).map(
-                        ([key, value]) => (
-                          <div
-                            key={key}
-                            className='flex justify-between text-sm'
-                          >
-                            <span className='text-gray-600 capitalize'>
-                              {key.replace(/([A-Z])/g, ' $1').trim()}:
-                            </span>
-                            <span className='text-gray-900'>
-                              {String(value)}
-                            </span>
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  </div>
-                )}
+              </div>
+            )}
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Created At
+              </label>
+              <p className='text-gray-900 text-sm'>
+                {new Date(card.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-500'>
+                Updated At
+              </label>
+              <p className='text-gray-900 text-sm'>
+                {new Date(card.updatedAt).toLocaleDateString()}
+              </p>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Custom Benefits */}
         <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6'>
@@ -379,6 +649,47 @@ export default function CardDetailPage() {
             </div>
           )}
         </div>
+
+        {/* Upload Statement Modal */}
+        {showUploadModal && (
+          <UploadStatementModal
+            isOpen={showUploadModal}
+            onClose={() => setShowUploadModal(false)}
+            cardId={card.id}
+            cardName={card.cardName}
+            bankName={card.bankName}
+            onSuccess={statementId => {
+              setShowUploadModal(false);
+              if (statementId) {
+                setParsingStatementId(statementId);
+                setShowParsingModal(true);
+              }
+              toast.success(
+                'Statement uploaded! Transactions will appear shortly.',
+              );
+            }}
+          />
+        )}
+
+        {/* Parsing Progress Modal */}
+        {showParsingModal && parsingStatementId && (
+          <ParsingProgressModal
+            isOpen={showParsingModal}
+            onClose={() => {
+              setShowParsingModal(false);
+              setParsingStatementId(null);
+            }}
+            statementId={parsingStatementId}
+            cardName={card.cardName}
+            onComplete={() => {
+              // Refresh card data and statements when parsing completes
+              fetchCards();
+              // The statements will be refreshed by the useStatements hook
+            }}
+          />
+        )}
+
+        {/* Delete Modal */}
         {showDeleteModal && (
           <Modal
             isOpen={true}

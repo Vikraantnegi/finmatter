@@ -115,21 +115,31 @@ export function createErrorResponse(
   const errorMessage = message || ErrorMessages[code];
   const statusCode = options?.statusCode || getDefaultStatusCode(code);
 
+  const error: any = {
+    code,
+    statusCode,
+    message: errorMessage,
+    details,
+    timestamp: new Date().toISOString(),
+  };
+
+  if (options?.requestId) {
+    error.requestId = options.requestId;
+  }
+
+  const meta: any = {
+    retryable: options?.retryable ?? isRetryableError(code),
+    supportUrl: 'https://finmatter.com/support',
+  };
+
+  if (options?.retryAfter !== undefined) {
+    meta.retryAfter = options.retryAfter;
+  }
+
   return {
     success: false,
-    error: {
-      code,
-      statusCode,
-      message: errorMessage,
-      details,
-      timestamp: new Date().toISOString(),
-      requestId: options?.requestId,
-    },
-    meta: {
-      retryable: options?.retryable ?? isRetryableError(code),
-      retryAfter: options?.retryAfter,
-      supportUrl: 'https://finmatter.com/support',
-    },
+    error,
+    meta,
   };
 }
 

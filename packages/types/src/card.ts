@@ -37,6 +37,7 @@ export type Card = AuditFields & {
   secondaryColor?: string; // Card's secondary color
   isCustom?: boolean; // Whether this is a custom card vs from metadata
   hasStatement?: boolean; // Whether the card has a statement uploaded
+  parsingInProgress?: boolean; // Whether any statement is currently being parsed
 };
 
 export type CardBenefit = {

@@ -10,7 +10,7 @@
  * The card_benefits table is preserved for future analytics and recommendations
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { FinMatterError } from '@finmatter/shared';
 import { createCorsResponse, handleCorsPreflight } from '@/lib/cors';
@@ -70,7 +70,7 @@ export async function GET(
       .single();
 
     if (cardError || !card) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -78,7 +78,7 @@ export async function GET(
             message: 'Card not found or access denied',
           },
         },
-        { status: 404 },
+        { status: 404, origin: origin || undefined },
       );
     }
 
@@ -93,7 +93,7 @@ export async function GET(
 
       if (metadataError) {
         console.error('Error fetching card metadata:', metadataError);
-        return NextResponse.json(
+        return createCorsResponse(
           {
             success: false,
             error: {
@@ -101,7 +101,7 @@ export async function GET(
               message: 'Failed to fetch card metadata',
             },
           },
-          { status: 500 },
+          { status: 500, origin: origin || undefined },
         );
       }
 
@@ -122,7 +122,7 @@ export async function GET(
         }),
       );
 
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: true,
           data: {
@@ -143,15 +143,12 @@ export async function GET(
             },
           },
         },
-        {
-          status: 200,
-          headers: createCorsResponse(origin || undefined).headers,
-        },
+        { status: 200, origin: origin || undefined },
       );
     }
 
     // If no metadata_id, return empty benefits (custom card)
-    return NextResponse.json(
+    return createCorsResponse(
       {
         success: true,
         data: {
@@ -161,16 +158,13 @@ export async function GET(
           benefits: [],
         },
       },
-      {
-        status: 200,
-        headers: createCorsResponse(origin || undefined).headers,
-      },
+      { status: 200, origin: origin || undefined },
     );
   } catch (error: any) {
     console.error('Get card benefits error:', error);
 
     if (error instanceof FinMatterError) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -178,14 +172,11 @@ export async function GET(
             message: error.message,
           },
         },
-        {
-          status: error.statusCode,
-          headers: createCorsResponse(origin || undefined).headers,
-        },
+        { status: error.statusCode, origin: origin || undefined },
       );
     }
 
-    return NextResponse.json(
+    return createCorsResponse(
       {
         success: false,
         error: {
@@ -193,10 +184,7 @@ export async function GET(
           message: 'An unexpected error occurred',
         },
       },
-      {
-        status: 500,
-        headers: createCorsResponse(origin || undefined).headers,
-      },
+      { status: 500, origin: origin || undefined },
     );
   }
 }

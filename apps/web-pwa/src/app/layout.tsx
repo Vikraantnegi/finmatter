@@ -6,6 +6,7 @@ import { Providers } from '@/components/providers/Providers';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SWRProvider } from '@/components/providers/SWRProvider';
+import { NotificationPermission } from '@/components/notifications/NotificationPermission';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -64,7 +65,10 @@ export default function RootLayout({
         <ErrorBoundary>
           <SWRProvider>
             <Providers>
-              <AuthProvider>{children}</AuthProvider>
+              <AuthProvider>
+                {children}
+                <NotificationPermission />
+              </AuthProvider>
             </Providers>
           </SWRProvider>
         </ErrorBoundary>

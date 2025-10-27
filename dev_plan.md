@@ -656,6 +656,16 @@ Build analytics endpoints for dashboard:
      - Category trends
      - Card usage over time
 
+   - GET /api/analytics/spending-trends
+     - Month-over-month comparisons
+     - Year-over-year comparisons
+     - Seasonal spending patterns
+
+   - GET /api/analytics/predictive-insights
+     - Spending forecasts based on historical data
+     - Budget recommendations
+     - Anomaly detection
+
 2. Optimize queries:
    - Create materialized views in Supabase
    - Use database functions for complex calculations
@@ -678,13 +688,18 @@ Build dashboard/home screen in web app:
    - Spending by category (horizontal bar chart)
    - Recent transactions (last 5)
    - Card usage breakdown (pie chart)
+   - Spending trends (month-over-month)
+   - Budget tracking widgets
+   - Predictive insights section
 
 2. Use charts:
-   - Install victory-native for React Native charts
+   - Install recharts for web charts
    - Create reusable chart components:
      - src/components/charts/SpendingPieChart.tsx
      - src/components/charts/TrendLineChart.tsx
      - src/components/charts/CategoryBarChart.tsx
+     - src/components/charts/SpendingTrendsChart.tsx
+     - src/components/charts/BudgetProgressChart.tsx
 
 3. Pull-to-refresh for latest data
 
@@ -692,10 +707,103 @@ Build dashboard/home screen in web app:
    - Tap on category chart → Filter transactions by category
    - Tap on card in pie chart → Card detail screen
    - Tap on recent transaction → Transaction detail
+   - Tap on trends → Detailed analytics page
 
 5. Add skeleton loaders for data fetching
 
+6. Export features:
+   - Export spending data to CSV/PDF
+   - Share insights via social media
+   - Generate monthly reports
+
 Design: Clean, spacious, easy to scan. Focus on key numbers.
+```
+
+---
+
+## Week 6.5: Feature 6.5 - Advanced Analytics & Export
+
+### Cursor Prompt 18.5: Spending Trends & Predictive Analytics
+
+```
+Build advanced analytics features:
+
+1. API endpoints in apps/api:
+   - GET /api/analytics/spending-trends
+     - Month-over-month spending comparisons
+     - Year-over-year comparisons
+     - Seasonal spending patterns
+     - Category-wise trend analysis
+
+   - GET /api/analytics/predictive-insights
+     - Spending forecasts for next 3 months
+     - Budget recommendations based on patterns
+     - Anomaly detection (unusual spending)
+     - Cash flow predictions
+
+   - GET /api/analytics/export
+     - Export transactions to CSV/PDF
+     - Generate monthly/yearly reports
+     - Custom date range exports
+     - Include charts and insights
+
+2. Database optimizations:
+   - Create materialized views for trend calculations
+   - Add indexes for time-series queries
+   - Implement data aggregation for faster queries
+
+3. Predictive algorithms:
+   - Simple linear regression for spending forecasts
+   - Moving averages for trend analysis
+   - Seasonal decomposition for patterns
+   - Anomaly detection using statistical methods
+```
+
+### Cursor Prompt 18.6: Export & Reporting System
+
+```
+Build data export and reporting features:
+
+1. Export API endpoints:
+   - POST /api/export/transactions
+     - Export transactions to CSV/PDF
+     - Support filtering by date, category, card
+     - Include transaction details and summaries
+
+   - POST /api/export/reports
+     - Generate monthly/yearly spending reports
+     - Include charts, trends, and insights
+     - PDF format with professional layout
+
+   - GET /api/export/templates
+     - Pre-built report templates
+     - Customizable sections
+     - Branded reports for sharing
+
+2. Frontend components:
+   - src/components/export/ExportModal.tsx
+     - Date range picker
+     - Format selection (CSV, PDF)
+     - Filter options
+     - Progress indicator
+
+   - src/components/export/ReportGenerator.tsx
+     - Report template selection
+     - Customization options
+     - Preview before export
+     - Share functionality
+
+3. Report templates:
+   - Monthly spending summary
+   - Category-wise analysis
+   - Card usage report
+   - Budget vs actual
+   - Year-end summary
+
+4. Integration with charts:
+   - Export charts as images
+   - Include in PDF reports
+   - High-resolution for printing
 ```
 
 ---
@@ -905,6 +1013,147 @@ Build AA consent flow in web app:
    - View connected institutions
 
 Make this feel secure and trustworthy. AA is still new for many users.
+```
+
+---
+
+## Week 9.5: Missing Features Implementation
+
+### Cursor Prompt 25.5: User Onboarding Flow
+
+```
+Build comprehensive onboarding experience:
+
+1. Create onboarding screens:
+   - src/app/onboarding/page.tsx
+     - Welcome screen with value propositions
+     - Feature highlights with animations
+     - Progress indicator (steps 1-5)
+
+   - src/components/onboarding/OnboardingStep.tsx
+     - Reusable step component
+     - Skip option for each step
+     - Interactive tutorials
+
+2. Onboarding steps:
+   - Step 1: Welcome & permissions (biometric, notifications)
+   - Step 2: Add first card tutorial
+   - Step 3: Upload first statement walkthrough
+   - Step 4: Explore analytics features
+   - Step 5: Set up goals and preferences
+
+3. Interactive tutorials:
+   - Highlight key UI elements
+   - Tooltip explanations
+   - Hands-on practice with dummy data
+   - "Try it now" buttons
+
+4. State management:
+   - Track onboarding completion
+   - Store user preferences
+   - Skip options for returning users
+   - Resume from last step
+
+5. Design:
+   - Smooth animations between steps
+   - Clear progress indicators
+   - Engaging illustrations
+   - Mobile-optimized layouts
+```
+
+### Cursor Prompt 25.6: Advanced Transaction Management
+
+```
+Build advanced transaction filtering and management:
+
+1. Enhanced transaction list:
+   - src/components/transactions/AdvancedTransactionList.tsx
+     - Advanced filtering options
+     - Bulk selection and actions
+     - Search with autocomplete
+     - Sort by multiple criteria
+
+2. Filter system:
+   - Date range picker (custom ranges)
+   - Multi-select category filter
+   - Amount range slider
+   - Merchant search with suggestions
+   - Card selection (multi-select)
+   - Transaction type filter
+   - Tags and notes search
+
+3. Bulk actions:
+   - Bulk categorize transactions
+   - Bulk add tags
+   - Bulk export selected
+   - Bulk delete (with confirmation)
+   - Bulk mark as recurring
+
+4. Search functionality:
+   - Real-time search as you type
+   - Search in merchant names, descriptions, notes
+   - Search by amount (exact or range)
+   - Search by date patterns
+   - Save search queries
+
+5. Advanced sorting:
+   - Sort by date, amount, merchant, category
+   - Multiple sort criteria
+   - Custom sort orders
+   - Save sort preferences
+
+6. Export options:
+   - Export filtered results
+   - Custom field selection
+   - Multiple format support (CSV, PDF, Excel)
+   - Scheduled exports
+```
+
+### Cursor Prompt 25.7: Mobile Experience Optimization
+
+```
+Optimize mobile experience across all features:
+
+1. Mobile-specific layouts:
+   - Responsive design improvements
+   - Touch-friendly interactions
+   - Swipe gestures for actions
+   - Bottom sheet modals
+   - Collapsible sections
+
+2. Performance optimizations:
+   - Lazy loading for large lists
+   - Virtual scrolling for transactions
+   - Image optimization
+   - Reduced bundle size
+   - Faster initial load
+
+3. Mobile-specific features:
+   - Pull-to-refresh
+   - Infinite scroll
+   - Haptic feedback
+   - Camera integration for receipts
+   - Offline mode support
+
+4. Navigation improvements:
+   - Bottom tab navigation
+   - Gesture-based navigation
+   - Quick actions from home screen
+   - Search from anywhere
+   - Voice input support
+
+5. Accessibility:
+   - Screen reader support
+   - High contrast mode
+   - Large text options
+   - Voice commands
+   - Keyboard navigation
+
+6. Testing:
+   - Test on various screen sizes
+   - Test on low-end devices
+   - Test with slow networks
+   - Test accessibility features
 ```
 
 ---
@@ -1279,12 +1528,17 @@ Prepare for beta launch:
 - ✅ Transaction List & Categorization
 - ✅ Credit Card Optimizer (CORE!)
 - ✅ Basic Dashboard
+- ✅ Spending Trends & Analytics
+- ✅ Export Features (CSV/PDF)
 
 ### P1 (Should Have for Beta)
 
 - ✅ AI Assistant (Basic)
 - ✅ Email Integration
 - ✅ Goals & Spending Limits
+- ✅ Predictive Insights
+- ✅ Advanced Filtering & Search
+- ✅ User Onboarding Flow
 
 ### P2 (Nice to Have, Post-Beta)
 
@@ -1293,6 +1547,8 @@ Prepare for beta launch:
 - Social sharing
 - Referral system
 - Premium features
+- Advanced reporting templates
+- Mobile app optimizations
 
 ---
 

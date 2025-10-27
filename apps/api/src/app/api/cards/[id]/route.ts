@@ -5,7 +5,7 @@
  * DELETE /api/cards/[id] - Soft delete card
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/client';
 import { FinMatterError } from '@finmatter/shared';
 import { createCorsResponse, handleCorsPreflight } from '@/lib/cors';
@@ -140,7 +140,8 @@ export async function GET(
       .select(
         `
         *,
-        card_benefits (*)
+        card_benefits (*),
+        statements (id)
       `,
       )
       .eq('id', cardId)
@@ -215,7 +216,7 @@ export async function PUT(
     const cardId = params.id;
 
     if (!cardId) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -223,7 +224,7 @@ export async function PUT(
             message: 'Card ID is required',
           },
         },
-        { status: 400 },
+        { status: 400, origin: origin || undefined },
       );
     }
 
@@ -232,7 +233,7 @@ export async function PUT(
     const validation = UpdateCardSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json(
+      return createCorsResponse(
         {
           success: false,
           error: {
@@ -241,7 +242,7 @@ export async function PUT(
             details: validation.error.errors,
           },
         },
-        { status: 400 },
+        { status: 400, origin: origin || undefined },
       );
     }
 
@@ -270,14 +271,16 @@ export async function PUT(
       updateData.currency = validatedData.currency;
     if (validatedData.status !== undefined)
       updateData.status = validatedData.status;
-    if (validatedData.issueDate !== undefined)
-      updateData.issue_date = validatedData.issueDate
-        ? new Date(validatedData.issueDate)
-        : undefined;
-    if (validatedData.expiryDate !== undefined)
-      updateData.expiry_date = validatedData.expiryDate
-        ? new Date(validatedData.expiryDate)
-        : undefined;
+    if (validatedData.issueDate !== undefined) {
+      if (validatedData.issueDate) {
+        updateData.issue_date = new Date(validatedData.issueDate);
+      }
+    }
+    if (validatedData.expiryDate !== undefined) {
+      if (validatedData.expiryDate) {
+        updateData.expiry_date = new Date(validatedData.expiryDate);
+      }
+    }
     if (validatedData.creditLimit !== undefined)
       updateData.credit_limit = validatedData.creditLimit;
     if (validatedData.availableCredit !== undefined)
@@ -311,7 +314,8 @@ export async function PUT(
       .select(
         `
         *,
-        card_benefits (*)
+        card_benefits (*),
+        statements (id)
       `,
       )
       .single();
@@ -396,6 +400,8 @@ export async function DELETE(
     await verifyCardOwnership(cardId, userId);
 
     // Soft delete by setting deleted_at timestamp
+    // This allows data recovery and maintains audit trail
+    // Users can permanently delete via admin panel after 30 days
     const { data: card, error } = await supabaseAdmin
       .from('cards')
       .update({

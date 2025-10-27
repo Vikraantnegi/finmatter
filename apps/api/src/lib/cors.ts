@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
 
+type HeadersInit =
+  | Record<string, string>
+  | [string, string][]
+  | Headers
+  | Array<[string, string]>;
+
 // Get allowed origins from environment or default to localhost for development
 const getAllowedOrigins = () => {
   const allowedOrigins = [
     'http://localhost:3000',
+    'http://localhost:3001',
     'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
     'https://finmatter-web.vercel.app',
     'https://staging-finmatter-web.vercel.app',
   ];
@@ -29,14 +37,14 @@ export function createCorsResponse(
   const response = NextResponse.json(data, {
     status: options.status || 200,
     headers: {
-      'Access-Control-Allow-Origin': allowedOrigin,
+      'Access-Control-Allow-Origin': allowedOrigin || '',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers':
         'Content-Type, Authorization, Origin, X-Requested-With, Accept',
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Max-Age': '86400',
       ...options.headers,
-    },
+    } as HeadersInit,
   });
 
   return response;
@@ -50,12 +58,12 @@ export function handleCorsPreflight(origin?: string) {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': allowedOrigin,
+      'Access-Control-Allow-Origin': allowedOrigin || '',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers':
         'Content-Type, Authorization, Origin, X-Requested-With, Accept',
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Max-Age': '86400',
-    },
+    } as HeadersInit,
   });
 }

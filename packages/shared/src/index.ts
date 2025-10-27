@@ -18,6 +18,7 @@ export {
   formatAddress,
   formatName,
   formatValidationErrors,
+  formatFileSize,
 } from './formatters';
 
 // Date utilities

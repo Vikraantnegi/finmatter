@@ -1,12 +1,13 @@
 'use client';
 
-// import { useEffect } from 'react'; // Removed since we're not using useEffect anymore
 import { useRouter } from 'next/navigation';
 import { useAuth, useCards } from '@/hooks';
 import { Button } from '@/components/ui/Button';
 import { CardVisual } from '@/components/cards/CardVisual';
 import { UtilizationAlert } from '@/components/cards/UtilizationAlert';
 import { DashboardErrorBoundary } from '@/components/ErrorBoundary';
+import { SpendingAlerts } from '@/components/transactions/SpendingAlerts';
+import { TransactionInsights } from '@/components/transactions/TransactionInsights';
 import { CreditCard, Plus, AlertCircle } from 'lucide-react';
 
 function DashboardContent() {
@@ -21,7 +22,7 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div className='min-h-screen bg-gray-50'>
+      <div className='min-h-screen bg-white'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
           <div className='mb-8'>
             <div className='h-8 w-48 bg-gray-200 rounded animate-pulse mb-2'></div>
@@ -45,7 +46,7 @@ function DashboardContent() {
   }
 
   return (
-    <div className='min-h-screen bg-gray-50'>
+    <div className='min-h-screen bg-white'>
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         {/* Welcome Header */}
         <div className='mb-8'>
@@ -58,7 +59,13 @@ function DashboardContent() {
         </div>
 
         {/* Credit Utilization Alert */}
-        <UtilizationAlert cards={cards} className='mb-8' />
+        {totalCards > 0 && <UtilizationAlert cards={cards} className='mb-8' />}
+
+        {/* Transaction Insights - Only show if user has cards */}
+        {totalCards > 0 && <TransactionInsights className='mb-8' />}
+
+        {/* Spending Alerts - Only show if user has cards */}
+        {totalCards > 0 && <SpendingAlerts className='mb-8' />}
 
         {/* Your Cards */}
         <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8'>
@@ -68,21 +75,8 @@ function DashboardContent() {
               <p className='text-sm text-gray-600 mt-1'>
                 {totalCards === 0
                   ? 'Add your first credit card to start tracking'
-                  : `You have ${totalCards} card${totalCards > 1 ? 's' : ''}`}
+                  : `You have ${totalCards} card${totalCards > 1 ? 's' : ''} in your portfolio`}
               </p>
-            </div>
-            <div className='flex items-center gap-3'>
-              <Button
-                variant='outline'
-                onClick={() => router.push('/cards')}
-                className='hidden sm:flex'
-              >
-                View All
-              </Button>
-              <Button onClick={() => router.push('/cards/add')}>
-                <Plus className='w-4 h-4 mr-2' />
-                Add Card
-              </Button>
             </div>
           </div>
 
@@ -109,9 +103,18 @@ function DashboardContent() {
                   onClick={() => router.push(`/cards/${card.id}`)}
                   className='cursor-pointer transform transition-transform hover:scale-105'
                 >
-                  <CardVisual card={card} />
+                  <CardVisual card={card} showDetails={false} />
                 </div>
               ))}
+              <div className='flex items-center gap-3 ml-auto'>
+                <Button variant='outline' onClick={() => router.push('/cards')}>
+                  View All
+                </Button>
+                <Button onClick={() => router.push('/cards/add')}>
+                  <Plus className='w-4 h-4 mr-2' />
+                  Add Card
+                </Button>
+              </div>
             </div>
           )}
         </div>

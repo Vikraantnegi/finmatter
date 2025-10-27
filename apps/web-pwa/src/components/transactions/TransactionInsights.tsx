@@ -5,11 +5,19 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useTransactionStats } from '@/hooks/useTransactions';
 import { CategoryIcon } from '@/components/transactions/CategoryIcon';
 import { formatCurrency } from '@finmatter/shared';
-import { TrendingUp, TrendingDown, AlertCircle, Target } from 'lucide-react';
+import {
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  Target,
+  BarChart3,
+  PieChart,
+} from 'lucide-react';
+import { SpendingPieChart, CategoryBarChart } from '@/components/charts';
 
 interface TransactionInsightsProps {
   className?: string;
@@ -22,6 +30,7 @@ export function TransactionInsights({
     period: 'month',
     groupBy: 'category',
   });
+  const [activeView, setActiveView] = useState<'list' | 'pie' | 'bar'>('pie');
 
   if (loading) {
     return (
@@ -53,7 +62,7 @@ export function TransactionInsights({
     );
   }
 
-  const topCategories = stats.breakdown.slice(0, 4);
+  const topCategories = stats.breakdown;
   const totalSpent = stats.summary.totalSpent;
   const avgTransaction = stats.summary.averageTransactionValue;
 
@@ -77,63 +86,99 @@ export function TransactionInsights({
             This month&apos;s transaction analysis
           </p>
         </div>
-        <div className='flex items-center space-x-2'>
-          {spendingTrend.direction === 'up' ? (
-            <TrendingUp className='w-5 h-5 text-red-500' />
-          ) : (
-            <TrendingDown className='w-5 h-5 text-green-500' />
-          )}
-          <span
-            className={`text-sm font-medium ${
-              spendingTrend.direction === 'up'
-                ? 'text-red-600'
-                : 'text-green-600'
-            }`}
-          >
-            {spendingTrend.direction === 'up' ? '+' : '-'}
-            {spendingTrend.percentage}%
-          </span>
+        <div className='flex items-center space-x-4'>
+          {/* View Toggle */}
+          <div className='flex items-center space-x-2 bg-gray-100 rounded-lg p-1'>
+            <button
+              onClick={() => setActiveView('pie')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                activeView === 'pie'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <PieChart className='w-4 h-4' />
+            </button>
+            <button
+              onClick={() => setActiveView('bar')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                activeView === 'bar'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <BarChart3 className='w-4 h-4' />
+            </button>
+            <button
+              onClick={() => setActiveView('list')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                activeView === 'list'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              List
+            </button>
+          </div>
+
+          <div className='flex items-center space-x-2'>
+            {spendingTrend.direction === 'up' ? (
+              <TrendingUp className='w-5 h-5 text-red-500' />
+            ) : (
+              <TrendingDown className='w-5 h-5 text-green-500' />
+            )}
+            <span
+              className={`text-sm font-medium ${
+                spendingTrend.direction === 'up'
+                  ? 'text-red-600'
+                  : 'text-green-600'
+              }`}
+            >
+              {spendingTrend.direction === 'up' ? '+' : '-'}
+              {spendingTrend.percentage}%
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Summary Stats */}
       <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-6'>
-        <div className='bg-gray-50 rounded-lg p-4'>
+        <div className='bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4'>
           <div className='flex items-center space-x-3'>
-            <div className='p-2 bg-blue-100 rounded-lg'>
-              <Target className='w-5 h-5 text-blue-600' />
+            <div className='p-2 bg-blue-500 rounded-lg'>
+              <Target className='w-5 h-5 text-white' />
             </div>
             <div>
               <p className='text-sm text-gray-600'>Total Spent</p>
-              <p className='text-xl font-semibold text-gray-900'>
+              <p className='text-xl font-bold text-gray-900'>
                 {formatCurrency(totalSpent, 'INR')}
               </p>
             </div>
           </div>
         </div>
 
-        <div className='bg-gray-50 rounded-lg p-4'>
+        <div className='bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4'>
           <div className='flex items-center space-x-3'>
-            <div className='p-2 bg-green-100 rounded-lg'>
-              <TrendingUp className='w-5 h-5 text-green-600' />
+            <div className='p-2 bg-green-500 rounded-lg'>
+              <TrendingUp className='w-5 h-5 text-white' />
             </div>
             <div>
               <p className='text-sm text-gray-600'>Avg Transaction</p>
-              <p className='text-xl font-semibold text-gray-900'>
+              <p className='text-xl font-bold text-gray-900'>
                 {formatCurrency(avgTransaction, 'INR')}
               </p>
             </div>
           </div>
         </div>
 
-        <div className='bg-gray-50 rounded-lg p-4'>
+        <div className='bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4'>
           <div className='flex items-center space-x-3'>
-            <div className='p-2 bg-purple-100 rounded-lg'>
-              <AlertCircle className='w-5 h-5 text-purple-600' />
+            <div className='p-2 bg-purple-500 rounded-lg'>
+              <AlertCircle className='w-5 h-5 text-white' />
             </div>
             <div>
               <p className='text-sm text-gray-600'>Transactions</p>
-              <p className='text-xl font-semibold text-gray-900'>
+              <p className='text-xl font-bold text-gray-900'>
                 {stats.summary.totalTransactions}
               </p>
             </div>
@@ -141,40 +186,60 @@ export function TransactionInsights({
         </div>
       </div>
 
-      {/* Top Categories */}
-      <div>
-        <h4 className='text-sm font-medium text-gray-900 mb-3'>
-          Top Spending Categories
-        </h4>
-        <div className='space-y-3'>
-          {topCategories.map(category => (
-            <div
-              key={category.category}
-              className='flex items-center justify-between'
-            >
-              <div className='flex items-center space-x-3'>
-                <CategoryIcon category={category.category as any} size='sm' />
-                <div>
-                  <p className='text-sm font-medium text-gray-900 capitalize'>
-                    {category.category}
+      {/* Visual Charts or List View */}
+      {activeView === 'pie' && topCategories.length > 0 && (
+        <div className='mb-6'>
+          <h4 className='text-sm font-medium text-gray-900 mb-4'>
+            Spending Distribution
+          </h4>
+          <SpendingPieChart data={topCategories} />
+        </div>
+      )}
+
+      {activeView === 'bar' && topCategories.length > 0 && (
+        <div className='mb-6'>
+          <h4 className='text-sm font-medium text-gray-900 mb-4'>
+            Category-wise Spending
+          </h4>
+          <CategoryBarChart data={topCategories} />
+        </div>
+      )}
+
+      {activeView === 'list' && (
+        <div>
+          <h4 className='text-sm font-medium text-gray-900 mb-3'>
+            Top Spending Categories
+          </h4>
+          <div className='space-y-3'>
+            {topCategories.map(category => (
+              <div
+                key={category.category}
+                className='flex items-center justify-between'
+              >
+                <div className='flex items-center space-x-3'>
+                  <CategoryIcon category={category.category as any} size='sm' />
+                  <div>
+                    <p className='text-sm font-medium text-gray-900 capitalize'>
+                      {category.category}
+                    </p>
+                    <p className='text-xs text-gray-500'>
+                      {category.count} transactions
+                    </p>
+                  </div>
+                </div>
+                <div className='text-right'>
+                  <p className='text-sm font-semibold text-gray-900'>
+                    {formatCurrency(category.amount, 'INR')}
                   </p>
                   <p className='text-xs text-gray-500'>
-                    {category.count} transactions
+                    {category.percentage.toFixed(1)}%
                   </p>
                 </div>
               </div>
-              <div className='text-right'>
-                <p className='text-sm font-semibold text-gray-900'>
-                  {formatCurrency(category.amount, 'INR')}
-                </p>
-                <p className='text-xs text-gray-500'>
-                  {category.percentage.toFixed(1)}%
-                </p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Quick Actions */}
       <div className='mt-6 pt-4 border-t border-gray-200'>

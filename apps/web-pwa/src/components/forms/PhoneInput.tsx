@@ -13,7 +13,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
     const handleChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         const inputValue = e.target.value;
-        const cleanValue = inputValue.replace(/\s/g, '');
+        const cleanValue = inputValue.replace(/\D/g, '').slice(0, 10);
 
         const syntheticEvent = {
           ...e,
@@ -31,24 +31,26 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
 
     return (
       <div className='space-y-2'>
-        <div className='relative'>
-          <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
-            <span className='text-gray-500 text-base'>🇮🇳 +91</span>
+        <div className='relative flex items-center rounded-xl border border-gray-600 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200'>
+          <div className='flex items-center justify-center px-4 py-3 bg-transparent border-r border-gray-600'>
+            <span className='text-lg mr-2'>🇮🇳</span>
+            <span className='text-base font-medium text-gray-300'>+91</span>
           </div>
           <input
             {...props}
             ref={ref}
             onChange={handleChange}
+            type='tel'
             maxLength={10}
-            placeholder='XXXXX XXXXX'
+            placeholder='1234567890'
             className={cn(
-              'input pl-20 text-gray-900',
-              error && 'border-error-500 focus:ring-error-500',
+              'flex-1 px-4 py-3 bg-transparent rounded-r-xl border-0 focus:outline-none text-white placeholder:text-gray-500',
+              error && 'text-error-400',
               className,
             )}
           />
         </div>
-        {error && <p className='text-sm text-error-600'>{error}</p>}
+        {error && <p className='text-sm text-error-400 mt-1'>{error}</p>}
       </div>
     );
   },

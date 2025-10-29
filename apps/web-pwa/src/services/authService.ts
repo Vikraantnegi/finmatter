@@ -18,8 +18,17 @@ export class AuthService {
         additionalData: { operation: 'sendOTP' },
       });
 
+      // Return error response instead of throwing
       const errorInfo = handleApiError(error);
-      throw new Error(errorInfo.message);
+      return {
+        success: false,
+        error: {
+          code: errorInfo.code,
+          message: errorInfo.message,
+          statusCode: (error as any)?.response?.status || 500,
+        },
+        timestamp: new Date().toISOString(),
+      } as SendOTPResponse;
     }
   }
 
@@ -32,7 +41,7 @@ export class AuthService {
         });
       });
       return response;
-    } catch (error) {
+    } catch (error: any) {
       logError(error, {
         endpoint: '/api/auth/verify-otp',
         phoneNumber: phone,
@@ -42,8 +51,44 @@ export class AuthService {
         },
       });
 
+      // Check if API already returned an error response structure
+      // (Sometimes axios doesn't throw, just returns error response)
+      if (error?.response?.data && typeof error.response.data === 'object') {
+        const apiResponse = error.response.data;
+
+        // If it's already in our ApiResponse format, return it
+        if ('success' in apiResponse && 'error' in apiResponse) {
+          return apiResponse as VerifyOTPResponse;
+        }
+      }
+
+      // Otherwise, construct error response from error details
       const errorInfo = handleApiError(error);
-      throw new Error(errorInfo.message);
+
+      // Also check what the actual API error structure is
+      const apiError = error?.response?.data?.error;
+      const errorCode = apiError?.code || errorInfo.code;
+      const errorMessage = apiError?.message || errorInfo.message;
+
+      console.log('AuthService verifyOTP error details:', {
+        error,
+        response: error?.response,
+        responseData: error?.response?.data,
+        apiError,
+        extractedCode: errorCode,
+        extractedMessage: errorMessage,
+      });
+
+      return {
+        success: false,
+        error: {
+          code: errorCode,
+          message: errorMessage,
+          statusCode: error?.response?.status || 500,
+          details: apiError?.details || error?.response?.data.as?.details,
+        },
+        timestamp: new Date().toISOString(),
+      } as VerifyOTPResponse;
     }
   }
 

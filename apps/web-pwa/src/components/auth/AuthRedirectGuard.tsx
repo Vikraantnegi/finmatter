@@ -23,12 +23,10 @@ export function AuthRedirectGuard({
   const { isLoading, isAuthenticated, onboardingCompleted } = useAuthStore();
 
   useEffect(() => {
-    // Wait for auth to finish loading before making decisions
     if (isLoading) {
       return;
     }
 
-    // If authenticated, use centralized routing logic
     if (isAuthenticated) {
       const redirect = getAuthRedirect({
         isAuthenticated,
@@ -40,7 +38,6 @@ export function AuthRedirectGuard({
       if (redirect) {
         router.replace(redirect);
       } else if (redirectTo) {
-        // Custom redirectTo prop takes precedence if no standard redirect
         router.replace(redirectTo);
       }
       return;
@@ -54,23 +51,20 @@ export function AuthRedirectGuard({
     redirectTo,
   ]);
 
-  // While auth is loading, show loading
   if (isLoading) {
     return (
-      <div className='min-h-screen flex items-center justify-center'>
-        <div className='text-center'>
-          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4'></div>
-          <p className='text-gray-600'>Checking authentication...</p>
+      <div className='min-h-screen bg-background-dark flex items-center justify-center px-4'>
+        <div className='text-center space-y-4'>
+          <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto'></div>
+          <p className='text-base text-gray-300'>Verifying your session...</p>
         </div>
       </div>
     );
   }
 
-  // If authenticated, don't render children (will redirect)
   if (isAuthenticated) {
     return null;
   }
 
-  // If not authenticated, render the auth page
   return <>{children}</>;
 }

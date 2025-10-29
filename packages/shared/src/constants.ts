@@ -6,7 +6,8 @@
 export const APP_CONFIG = {
   name: 'FinMatter',
   version: '1.0.0',
-  description: 'Personal finance super app for credit card optimization',
+  description:
+    'Your Smartest Financial Move - The personal finance super app to optimize credit cards, track spending, and get AI-powered insights.',
   website: 'https://finmatter.app',
   supportEmail: 'support@finmatter.app',
 } as const;
@@ -200,12 +201,14 @@ export const GOAL_PERIODS = [
 // Theme configuration
 export const THEME_CONFIG = {
   colors: {
-    primary: '#3B82F6',
+    primary: '#13a4ec', // Updated brand color
     secondary: '#8B5CF6',
     success: '#10B981',
     warning: '#F59E0B',
     error: '#EF4444',
     info: '#06B6D4',
+    backgroundLight: '#f6f7f8',
+    backgroundDark: '#101c22',
   },
   spacing: {
     xs: 4,
@@ -263,6 +266,78 @@ export const ERROR_CODES = {
   PDF_PARSING_ERROR: 'PDF_PARSING_ERROR',
   AI_SERVICE_ERROR: 'AI_SERVICE_ERROR',
   EXTERNAL_API_ERROR: 'EXTERNAL_API_ERROR',
+} as const;
+
+// Tutorial slides configuration
+export const TUTORIAL_SLIDES = [
+  {
+    image: '/images/tutorial/card-optimizer.svg',
+    icon: 'credit_card',
+    title: 'Maximize Your Rewards',
+    subtitle:
+      'Get intelligent card recommendations for every purchase. Never miss out on cashback, points, or miles again.',
+  },
+  {
+    image: '/images/tutorial/auto-categorize.svg',
+    icon: 'category',
+    title: 'Smart Transaction Sorting',
+    subtitle:
+      'Automatically categorize all your spending. Understand exactly where your money goes with zero manual effort.',
+  },
+  {
+    image: '/images/tutorial/compare-cards.svg',
+    icon: 'compare_arrows',
+    title: 'Compare Cards Side-by-Side',
+    subtitle:
+      'Make informed decisions by comparing rewards, fees, and benefits. Find the perfect card for your spending style.',
+  },
+  {
+    image: '/images/tutorial/goals-budgets.svg',
+    icon: 'track_changes',
+    title: 'Achieve Your Financial Goals',
+    subtitle:
+      'Set spending limits and savings targets. Track progress in real-time and stay on course with personalized insights.',
+  },
+  {
+    image: '/images/tutorial/ai-assistant.svg',
+    icon: 'smart_toy',
+    title: 'Your AI Financial Advisor',
+    subtitle:
+      'Ask questions, get instant insights, and navigate your financial journey with ease. Available 24/7 to help you make smarter money decisions.',
+  },
+] as const;
+
+// Tutorial CTA buttons
+export const TUTORIAL_CTA = {
+  getStarted: 'Join Finmatter today!',
+  signIn: 'Welcome back, Sign In',
+} as const;
+
+// Auth screen copies
+export const AUTH_COPIES = {
+  signup: {
+    title: 'Join Finmatter',
+    subtitle: "Enter your phone number. We'll send you a verification code.",
+    button: 'Send OTP',
+    footerText: 'Already have an account?',
+    footerLink: 'Login',
+  },
+  login: {
+    title: 'Welcome back!',
+    subtitle: "Enter your phone number. We'll send you a verification code.",
+    button: 'Send OTP',
+    footerText: "Don't have an account?",
+    footerLink: 'Join Finmatter!',
+  },
+  verifyOtp: {
+    title: 'Verify your account',
+    subtitlePrefix: 'We sent a 6-digit code to',
+    subtitleSuffix: 'Please enter it below to continue.',
+    button: 'Verify & Continue',
+    resendPrefix: "Didn't receive a code?",
+    resendLink: 'Resend',
+    changePhone: 'Change phone number',
+  },
 } as const;
 
 // Success messages

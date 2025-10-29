@@ -92,6 +92,10 @@ export async function POST(request: NextRequest) {
         additionalData: {
           otp: `${otp.substring(0, 2)}****`,
           error: error.message,
+          // Log full error structure to debug Supabase error codes
+          errorCode: error.code,
+          errorStatus: error.status,
+          fullError: JSON.stringify(error, null, 2),
         },
       });
 

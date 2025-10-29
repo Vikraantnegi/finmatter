@@ -24,8 +24,10 @@ function VerifyOtpContent() {
   const router = useRouter();
   const { verifyOTP, sendOTP } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [otp, setOtp] = useState('');
   const [phone, setPhone] = useState('');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [otpError, setOtpError] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
@@ -38,8 +40,12 @@ function VerifyOtpContent() {
 
   useEffect(() => {
     const pendingPhoneNumber = sessionStorage.getItem('pendingPhoneNumber');
+    const savedAuthMode = sessionStorage.getItem('authMode');
+
     if (pendingPhoneNumber) {
       setPhone(pendingPhoneNumber);
+      setAuthMode((savedAuthMode as 'login' | 'signup') || 'login');
+      setResendCooldown(60);
     } else {
       router.push('/auth/login');
     }
@@ -71,14 +77,64 @@ function VerifyOtpContent() {
       } else {
         setOtpError(true);
         setOtp('');
-        toast.error('Invalid OTP. Please try again.');
+
+        // Log full error response for debugging
+        console.log('OTP Verification Error:', {
+          result,
+          error: result.error,
+          errorType: typeof result.error,
+          errorKeys:
+            result.error && typeof result.error === 'object'
+              ? Object.keys(result.error)
+              : null,
+        });
+
+        const error = result.error;
+        let errorMessage = 'Failed to verify OTP. Please try again.';
+
+        if (error && typeof error === 'object') {
+          // Check for error code
+          if ('code' in error) {
+            const errorCode = String(error.code);
+            console.log('📋 Error code from API:', errorCode);
+
+            // Handle error codes - backend now defaults to INVALID_OTP for ambiguous cases (better UX)
+            if (
+              errorCode === 'INVALID_OTP' ||
+              errorCode === 'INVALID_CODE' ||
+              errorCode === 'WRONG_OTP' ||
+              errorCode === 'CODE_MISMATCH'
+            ) {
+              errorMessage = 'Invalid OTP. Please try again.';
+            } else if (
+              errorCode === 'OTP_EXPIRED' ||
+              errorCode === 'EXPIRED' ||
+              errorCode === 'TOKEN_EXPIRED'
+            ) {
+              // Pure expired case (backend should only return this if truly expired, not ambiguous)
+              errorMessage = 'OTP has expired. Please request a new one.';
+            } else if ('message' in error && error.message) {
+              // Use the API's error message
+              errorMessage = String(error.message);
+            }
+          } else if ('message' in error && error.message) {
+            // No code, but has message
+            errorMessage = String(error.message);
+          }
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        }
+
+        // Show only ONE toast with ID to prevent duplicates (React StrictMode or re-renders)
+        toast.error(errorMessage, { id: 'otp-error' });
       }
     } catch (error) {
       setOtpError(true);
       setOtp('');
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to verify OTP',
-      );
+      console.error('Unexpected error in OTP verification:', error);
+      toast.error('Something went wrong. Please try again.', {
+        id: 'otp-unexpected-error',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -92,11 +148,19 @@ function VerifyOtpContent() {
     }
   };
 
+  const handleBack = () => {
+    router.push(`/auth/login?mode=${authMode}`);
+  };
+
+  const handleHelp = () => {
+    toast('Help is coming soon!', { icon: '💡' });
+  };
+
   const handleResendOtp = async () => {
-    if (resendCooldown > 0) return;
+    if (resendCooldown > 0 || isResending) return;
 
     try {
-      setIsLoading(true);
+      setIsResending(true);
       const phoneWithCountryCode = phone.startsWith('+91')
         ? phone
         : `+91${phone}`;
@@ -107,13 +171,19 @@ function VerifyOtpContent() {
         setOtpError(false);
         setResendCooldown(60);
         toast.success('OTP sent successfully!');
+      } else {
+        // Handle error
+        const error = result.error;
+        if (error && typeof error === 'object' && 'message' in error) {
+          toast.error(error.message || 'Failed to resend OTP');
+        } else {
+          toast.error('Failed to resend OTP');
+        }
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to resend OTP',
-      );
+      toast.error('Something went wrong. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsResending(false);
     }
   };
 
@@ -128,7 +198,13 @@ function VerifyOtpContent() {
   return (
     <AuthRedirectGuard>
       <div className='min-h-screen bg-background-dark flex flex-col px-4'>
-        <Header showBackButton />
+        <Header
+          showBackButton
+          showHelpButton
+          onBack={handleBack}
+          onHelp={handleHelp}
+          className='absolute inset-0 w-full'
+        />
 
         <div className='flex-1 flex items-center justify-center px-4'>
           <div className='w-full max-w-md space-y-8'>
@@ -187,19 +263,28 @@ function VerifyOtpContent() {
               <button
                 type='button'
                 onClick={handleResendOtp}
-                disabled={isLoading || resendCooldown > 0}
-                className='text-sm text-white hover:opacity-80 disabled:text-gray-500 disabled:cursor-not-allowed transition-opacity'
+                disabled={isResending || resendCooldown > 0}
+                className='text-sm text-white hover:opacity-80 disabled:text-gray-500 disabled:cursor-not-allowed transition-opacity flex items-center justify-center gap-2 mx-auto'
               >
-                {AUTH_COPIES.verifyOtp.resendPrefix}{' '}
-                {resendCooldown > 0 ? (
-                  <span className='font-semibold'>
-                    Resend in {resendCooldown}s
-                  </span>
-                ) : (
-                  <span className='font-semibold text-primary'>
-                    {AUTH_COPIES.verifyOtp.resendLink}
-                  </span>
+                {isResending && (
+                  <span className='animate-spin rounded-full h-3 w-3 border-b-2 border-primary'></span>
                 )}
+                <span>
+                  {AUTH_COPIES.verifyOtp.resendPrefix}{' '}
+                  {resendCooldown > 0 ? (
+                    <span className='font-semibold'>
+                      Resend in {resendCooldown}s
+                    </span>
+                  ) : isResending ? (
+                    <span className='font-semibold text-primary'>
+                      Sending...
+                    </span>
+                  ) : (
+                    <span className='font-semibold text-primary'>
+                      {AUTH_COPIES.verifyOtp.resendLink}
+                    </span>
+                  )}
+                </span>
               </button>
             </div>
           </div>

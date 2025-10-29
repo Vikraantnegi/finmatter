@@ -61,12 +61,16 @@ function LoginPageContent() {
           router.replace('/auth/verify-otp');
         }, 100);
       } else {
-        toast.error(response.error?.message || 'Failed to send OTP');
+        // Handle error
+        const error = response.error;
+        if (error && typeof error === 'object' && 'message' in error) {
+          toast.error(error.message || 'Failed to send OTP');
+        } else {
+          toast.error('Failed to send OTP');
+        }
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to send OTP',
-      );
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +84,7 @@ function LoginPageContent() {
   return (
     <AuthRedirectGuard>
       <div className='min-h-screen bg-background-dark flex flex-col px-4'>
-        <Header />
+        <Header className='absolute inset-0 w-full px-0' />
 
         <div className='flex-1 flex items-center justify-center'>
           <div className='w-full max-w-md space-y-8'>

@@ -6,7 +6,8 @@
 export const APP_CONFIG = {
   name: 'FinMatter',
   version: '1.0.0',
-  description: 'Personal finance super app for credit card optimization',
+  description:
+    'Your Smartest Financial Move - The personal finance super app to optimize credit cards, track spending, and get AI-powered insights.',
   website: 'https://finmatter.app',
   supportEmail: 'support@finmatter.app',
 } as const;
@@ -200,12 +201,14 @@ export const GOAL_PERIODS = [
 // Theme configuration
 export const THEME_CONFIG = {
   colors: {
-    primary: '#3B82F6',
+    primary: '#13a4ec', // Updated brand color
     secondary: '#8B5CF6',
     success: '#10B981',
     warning: '#F59E0B',
     error: '#EF4444',
     info: '#06B6D4',
+    backgroundLight: '#f6f7f8',
+    backgroundDark: '#101c22',
   },
   spacing: {
     xs: 4,

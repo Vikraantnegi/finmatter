@@ -5,21 +5,18 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  darkMode: 'class', // Enable class-based dark mode
   theme: {
     extend: {
       colors: {
-        primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-        },
+        // Primary Brand Color (from design: #13a4ec)
+        primary: '#13a4ec',
+
+        // Background Colors (from design)
+        'background-light': '#f6f7f8',
+        'background-dark': '#101c22',
+
+        // Secondary colors (keeping existing grays)
         secondary: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -32,6 +29,8 @@ module.exports = {
           800: '#1e293b',
           900: '#0f172a',
         },
+
+        // Semantic Colors
         success: {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -70,7 +69,16 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        // Display font - Manrope (from design)
+        display: ['Manrope', 'sans-serif'],
+        // Keep Manrope as default sans as well
+        sans: ['Manrope', 'Inter', 'system-ui', 'sans-serif'],
+      },
+      borderRadius: {
+        DEFAULT: '0.5rem', // 8px
+        lg: '1rem', // 16px
+        xl: '1.5rem', // 24px
+        full: '9999px',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

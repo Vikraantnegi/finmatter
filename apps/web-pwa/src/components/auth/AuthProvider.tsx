@@ -10,7 +10,7 @@ import React, { useEffect, useState, ReactNode } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 import { initializeAuthDebug } from '@/lib/authDebug';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { SplashScreen } from '@/components/ui/SplashScreen';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -20,15 +20,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { initializeAuth, clearAuth } = useAuthStore();
   const [initialized, setInitialized] = useState(false);
 
-  // Enable periodic token refresh check
   useTokenRefresh();
 
-  // Initialize auth debugging tools in development
   useEffect(() => {
     initializeAuthDebug();
   }, []);
 
-  // Initialize auth on mount
   useEffect(() => {
     let mounted = true;
 
@@ -36,7 +33,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         await initializeAuth();
       } catch (error) {
-        // Auth initialization error - app will redirect to login via AuthGuard
+        console.log(error);
       } finally {
         if (mounted) {
           setInitialized(true);
@@ -49,16 +46,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       mounted = false;
     };
-  }, [initializeAuth]); // Run only once on mount
+  }, [initializeAuth]);
 
-  // Cross-tab synchronization - listen for auth changes in other tabs
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
-      // Only handle changes to auth storage
       if (event.key !== 'auth-storage') return;
 
       if (!event.newValue) {
-        // Auth was cleared in another tab (logout)
         clearAuth();
         window.location.href = '/auth/login';
       } else {
@@ -67,15 +61,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const newAuthState = newState.state;
 
           if (!newAuthState?.isAuthenticated) {
-            // User logged out in another tab
             clearAuth();
             window.location.href = '/auth/login';
           } else {
-            // User logged in another tab - sync state
             useAuthStore.setState(newAuthState);
           }
         } catch (error) {
-          // Invalid storage data - ignore
+          console.log(error);
         }
       }
     };
@@ -84,29 +76,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [clearAuth]);
 
-  // Visibility change sync - re-fetch user profile when tab becomes visible
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      // Only sync when tab becomes visible
       if (document.visibilityState === 'visible') {
         const { isAuthenticated, user, isLoading } = useAuthStore.getState();
 
-        // Don't re-fetch if auth is already loading or if user is not authenticated
         if (isLoading || !isAuthenticated || !user) {
           return;
         }
 
-        // Don't re-fetch if we're on onboarding page (to avoid interfering with completion flow)
         if (window.location.pathname === '/onboarding') {
           return;
         }
 
         try {
-          // Re-fetch user profile to get latest data
           const { initializeAuth } = useAuthStore.getState();
           await initializeAuth();
         } catch (error) {
-          // Failed to sync - continue with existing data
           console.error(
             'Failed to sync user state on visibility change:',
             error,
@@ -120,16 +106,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  // Show loading screen while initializing auth
-  if (!initialized) {
+  const [showSplash, setShowSplash] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    if (initialized) {
+      setAuthReady(true);
+    }
+  }, [initialized]);
+
+  if (showSplash) {
     return (
-      <div className='min-h-screen flex items-center justify-center gradient-bg'>
-        <div className='text-center flex flex-col items-center justify-center'>
-          <LoadingSpinner size='lg' className='mb-4 mx-auto' />
-          <div className='text-white text-xl font-medium'>
-            Loading FinMatter...
-          </div>
-        </div>
+      <SplashScreen
+        onComplete={() => {
+          if (authReady) {
+            setShowSplash(false);
+          }
+        }}
+        minimumDisplayTime={2000}
+      />
+    );
+  }
+
+  if (!authReady) {
+    return (
+      <div className='min-h-screen bg-background-dark flex items-center justify-center'>
+        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
       </div>
     );
   }

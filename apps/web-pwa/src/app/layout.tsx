@@ -8,7 +8,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SWRProvider } from '@/components/providers/SWRProvider';
 import { NotificationPermission } from '@/components/notifications/NotificationPermission';
 
-// Load Manrope font (matching design)
 const manrope = Manrope({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
@@ -19,7 +18,7 @@ const manrope = Manrope({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#13a4ec', // Updated to match primary brand color
+  themeColor: '#13a4ec',
 };
 
 export const metadata: Metadata = {
@@ -62,14 +61,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang='en' className='dark'>
-      {/* Default to dark mode */}
       <head>
         <link rel='manifest' href='/manifest.json' />
         <meta name='theme-color' content='#13a4ec' />
         <meta name='apple-mobile-web-app-capable' content='yes' />
         <meta name='apple-mobile-web-app-status-bar-style' content='default' />
         <meta name='apple-mobile-web-app-title' content='FinMatter' />
-        {/* Material Symbols for icons */}
         <link
           href='https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200'
           rel='stylesheet'

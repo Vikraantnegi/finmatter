@@ -268,6 +268,51 @@ export const ERROR_CODES = {
   EXTERNAL_API_ERROR: 'EXTERNAL_API_ERROR',
 } as const;
 
+// Tutorial slides configuration
+export const TUTORIAL_SLIDES = [
+  {
+    image: '/images/tutorial/card-optimizer.svg',
+    icon: 'credit_card',
+    title: 'Maximize Your Rewards',
+    subtitle:
+      'Get intelligent card recommendations for every purchase. Never miss out on cashback, points, or miles again.',
+  },
+  {
+    image: '/images/tutorial/auto-categorize.svg',
+    icon: 'category',
+    title: 'Smart Transaction Sorting',
+    subtitle:
+      'Automatically categorize all your spending. Understand exactly where your money goes with zero manual effort.',
+  },
+  {
+    image: '/images/tutorial/compare-cards.svg',
+    icon: 'compare_arrows',
+    title: 'Compare Cards Side-by-Side',
+    subtitle:
+      'Make informed decisions by comparing rewards, fees, and benefits. Find the perfect card for your spending style.',
+  },
+  {
+    image: '/images/tutorial/goals-budgets.svg',
+    icon: 'track_changes',
+    title: 'Achieve Your Financial Goals',
+    subtitle:
+      'Set spending limits and savings targets. Track progress in real-time and stay on course with personalized insights.',
+  },
+  {
+    image: '/images/tutorial/ai-assistant.svg',
+    icon: 'smart_toy',
+    title: 'Your AI Financial Advisor',
+    subtitle:
+      'Ask questions, get instant insights, and navigate your financial journey with ease. Available 24/7 to help you make smarter money decisions.',
+  },
+] as const;
+
+// Tutorial CTA buttons
+export const TUTORIAL_CTA = {
+  getStarted: 'Join Finmatter today!',
+  signIn: 'Welcome back, Sign In',
+} as const;
+
 // Success messages
 export const SUCCESS_MESSAGES = {
   CARD_ADDED: 'Card added successfully',

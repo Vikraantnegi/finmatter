@@ -20,29 +20,27 @@ export function getAuthRedirect({
   currentPath,
   returnUrl,
 }: AuthRedirectOptions): string | null {
-  // Not authenticated - redirect to login
   if (!isAuthenticated) {
-    // Already on auth pages - stay there
-    if (currentPath.startsWith('/auth')) {
+    if (currentPath.startsWith('/auth') || currentPath === '/tutorial') {
       return null;
     }
-    // Redirect to login for all other pages
-    return '/auth/login';
+
+    if (currentPath === '/') {
+      return '/tutorial';
+    }
+
+    return '/tutorial';
   }
 
-  // Authenticated but not onboarded - redirect to onboarding
   if (!onboardingCompleted) {
-    // Already on onboarding page - stay there
     if (currentPath === '/onboarding') {
       return null;
     }
 
-    // On auth pages - go to onboarding (user just logged in)
     if (currentPath.startsWith('/auth')) {
       return '/onboarding';
     }
 
-    // Trying to access protected pages without completing onboarding
     if (
       currentPath.startsWith('/dashboard') ||
       currentPath.startsWith('/cards') ||
@@ -52,28 +50,21 @@ export function getAuthRedirect({
       return '/onboarding';
     }
 
-    // Allow access to root and other public pages
     return null;
   }
 
-  // Fully authenticated and onboarded
-  // Redirect from auth pages to dashboard or return URL
   if (currentPath.startsWith('/auth')) {
     return returnUrl || '/dashboard';
   }
 
-  // Don't auto-redirect from onboarding page - let the onboarding completion handle navigation
-  // This prevents race conditions between AuthGuard and onboarding completion
   if (currentPath === '/onboarding') {
     return null;
   }
 
-  // Redirect from root to dashboard
   if (currentPath === '/') {
     return '/dashboard';
   }
 
-  // Stay on current page for all other routes
   return null;
 }
 
@@ -81,7 +72,7 @@ export function getAuthRedirect({
  * Checks if a path requires authentication
  */
 export function requiresAuth(path: string): boolean {
-  const publicPaths = ['/auth/login', '/auth/verify-otp', '/'];
+  const publicPaths = ['/auth/login', '/auth/verify-otp', '/', '/tutorial'];
   return !publicPaths.some(p => path.startsWith(p));
 }
 

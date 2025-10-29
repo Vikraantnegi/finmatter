@@ -222,6 +222,15 @@ export function logError(
  */
 export function handleSupabaseError(error: any, context?: string): AppError {
   const errorMessage = error?.message || 'Unknown Supabase error';
+  const errorCode = error?.code || error?.status || '';
+
+  // Log full error for debugging
+  console.log('🔍 Supabase Error Details:', {
+    message: errorMessage,
+    code: errorCode,
+    status: error?.status,
+    fullError: error,
+  });
 
   // Twilio specific error codes
   if (errorMessage.includes('21211')) {
@@ -259,15 +268,14 @@ export function handleSupabaseError(error: any, context?: string): AppError {
     );
   }
 
-  if (errorMessage.includes('expired') || errorMessage.includes('timeout')) {
-    return new AppError(
-      ErrorCodes.OTP_EXPIRED,
-      'OTP has expired. Please request a new one.',
-      400,
-    );
-  }
+  const lowerMessage = errorMessage.toLowerCase();
 
-  if (errorMessage.includes('invalid') || errorMessage.includes('incorrect')) {
+  if (
+    lowerMessage.includes('invalid') &&
+    !lowerMessage.includes('expired or invalid') &&
+    !lowerMessage.includes('has expired or is invalid')
+  ) {
+    // Pure invalid case
     return new AppError(
       ErrorCodes.INVALID_OTP,
       'Invalid OTP. Please check and try again.',
@@ -275,7 +283,58 @@ export function handleSupabaseError(error: any, context?: string): AppError {
     );
   }
 
-  // Generic Supabase error
+  if (lowerMessage.includes('incorrect') || lowerMessage.includes('wrong')) {
+    return new AppError(
+      ErrorCodes.INVALID_OTP,
+      'Invalid OTP. Please check and try again.',
+      400,
+    );
+  }
+
+  if (lowerMessage.includes('expired') || lowerMessage.includes('timeout')) {
+    if (lowerMessage.includes('expired') && lowerMessage.includes('invalid')) {
+      const invalidIndex = lowerMessage.indexOf('invalid');
+      const expiredIndex = lowerMessage.indexOf('expired');
+
+      if (
+        lowerMessage.includes('invalid token') ||
+        lowerMessage.includes('invalid code') ||
+        lowerMessage.includes('incorrect token') ||
+        lowerMessage.includes('incorrect code') ||
+        (invalidIndex > -1 &&
+          expiredIndex > -1 &&
+          invalidIndex < expiredIndex + 10)
+      ) {
+        return new AppError(
+          ErrorCodes.INVALID_OTP,
+          'Invalid OTP. Please check and try again.',
+          400,
+        );
+      }
+
+      console.warn(
+        '⚠️ Ambiguous Supabase error - both expired and invalid mentioned:',
+        {
+          errorMessage,
+          errorCode,
+          suggestion:
+            'Cannot differentiate - defaulting to INVALID_OTP for better UX. User can retry or resend.',
+        },
+      );
+      return new AppError(
+        ErrorCodes.INVALID_OTP,
+        'Invalid OTP. Please check and try again.',
+        400,
+      );
+    }
+
+    return new AppError(
+      ErrorCodes.OTP_EXPIRED,
+      'OTP has expired. Please request a new one.',
+      400,
+    );
+  }
+
   return new AppError(
     ErrorCodes.VERIFICATION_FAILED,
     `OTP ${context || 'verification'} failed. Please try again.`,

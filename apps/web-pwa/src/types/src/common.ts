@@ -28,18 +28,20 @@ export type PaginatedResponse<T> = {
   };
 };
 
+export type ApiError = {
+  code: string;
+  statusCode?: number;
+  message: string;
+  details?: Record<string, any>;
+  timestamp?: string;
+};
+
 export type ApiResponse<T = any> = {
   success: boolean;
   data?: T;
-  error?: string;
+  error?: ApiError | string;
   message?: string;
   timestamp: string;
-};
-
-export type ApiError = {
-  code: string;
-  message: string;
-  details?: Record<string, any>;
 };
 
 export type DateRange = {

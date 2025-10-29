@@ -15,7 +15,6 @@ export default function HomePage() {
   const { isAuthenticated, onboardingCompleted } = useAuthStore();
 
   useEffect(() => {
-    // Use centralized routing logic
     const redirect = getAuthRedirect({
       isAuthenticated,
       onboardingCompleted,
@@ -27,7 +26,5 @@ export default function HomePage() {
     }
   }, [isAuthenticated, onboardingCompleted, pathname, router]);
 
-  // This page just redirects - no UI needed
-  // AuthProvider shows loading screen during initialization
   return null;
 }

@@ -32,20 +32,8 @@ export function useAuth() {
         setLoading(true);
         const response = await authService.sendOTP(phoneNumber);
 
-        if (response.success) {
-          toast.success('OTP sent successfully!');
-          return { success: true };
-        } else {
-          toast.error(
-            typeof response.error === 'string'
-              ? response.error
-              : 'Failed to send OTP',
-          );
-          return { success: false, error: response.error };
-        }
-      } catch (error) {
-        toast.error('Failed to send OTP. Please try again.');
-        return { success: false, error };
+        // Return response without showing toast - let component handle UI
+        return response;
       } finally {
         setLoading(false);
       }
@@ -75,21 +63,19 @@ export function useAuth() {
           apiClient.setAuthToken(response.data.session.token);
 
           // Fetch complete user profile data from our API
-          // IMPORTANT: Wait for profile fetch before navigating
           try {
             const profileResponse = await authService.getCurrentUser(
               initialUser.id,
             );
 
             if (profileResponse.success && profileResponse.data?.user) {
-              // Use the complete profile data
               const completeUser = profileResponse.data.user;
               setUser(completeUser);
               setOnboardingCompleted(completeUser.onboardingCompleted || false);
 
               toast.success('Welcome to FinMatter!');
 
-              // Navigate based on VERIFIED profile data
+              // Navigate based on profile data
               if (!completeUser.onboardingCompleted) {
                 router.push('/onboarding');
               } else {
@@ -99,11 +85,9 @@ export function useAuth() {
 
               return { success: true, user: completeUser };
             } else {
-              // Profile fetch failed - treat as error
               throw new Error('Failed to load user profile');
             }
           } catch (profileError) {
-            // Profile fetch failed - clear auth and redirect to login
             console.error('Profile fetch error:', profileError);
             clearAuth();
             toast.error('Failed to load profile. Please try logging in again.');
@@ -111,14 +95,9 @@ export function useAuth() {
             return { success: false, error: profileError };
           }
         } else {
-          toast.error(
-            typeof response.error === 'string' ? response.error : 'Invalid OTP',
-          );
-          return { success: false, error: response.error };
+          // Return error without toast - let component handle UI
+          return response;
         }
-      } catch (error) {
-        toast.error('Failed to verify OTP. Please try again.');
-        return { success: false, error };
       } finally {
         setLoading(false);
       }

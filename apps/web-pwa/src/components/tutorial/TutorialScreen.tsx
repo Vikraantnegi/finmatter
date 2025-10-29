@@ -6,6 +6,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
 import { TUTORIAL_SLIDES, TUTORIAL_CTA } from '@finmatter/shared/src/constants';
+import { Header } from '@/components/layout/Header';
 
 import 'swiper/css';
 
@@ -17,35 +18,19 @@ export function TutorialScreen() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const handleGetStarted = () => {
-    router.push('/auth/login');
+    router.push('/auth/login?mode=signup');
   };
 
   const handleSignIn = () => {
-    router.push('/auth/login');
+    router.push('/auth/login?mode=login');
   };
 
   return (
     <div className='min-h-screen bg-background-dark flex flex-col'>
-      <header className='flex h-20 w-full shrink-0 items-center justify-start px-4 z-10'>
-        <div className='flex items-center gap-2'>
-          <span
-            className='material-symbols-outlined text-primary'
-            style={{
-              fontSize: 'clamp(2rem, 5vw, 3rem)',
-              lineHeight: '1',
-              display: 'inline-block',
-            }}
-          >
-            savings
-          </span>
-          <span className='text-2xl md:text-3xl font-bold text-white'>
-            FinMatter
-          </span>
-        </div>
-      </header>
+      <Header />
 
-      <main className='flex-1 flex flex-col justify-between w-full max-w-4xl mx-auto px-4 py-8'>
-        <div className='flex-1 flex items-center justify-center'>
+      <main className='flex-1 flex flex-col justify-between w-full max-w-4xl mx-auto px-4 pb-8'>
+        <div className='flex-1 flex justify-center'>
           <Swiper
             onSwiper={setSwiper}
             onSlideChange={swiper => {
@@ -98,7 +83,6 @@ export function TutorialScreen() {
             <button
               key={index}
               onClick={() => {
-                // In loop mode, use slideToLoop to properly navigate
                 if (swiper) {
                   swiper.slideToLoop(index);
                 }

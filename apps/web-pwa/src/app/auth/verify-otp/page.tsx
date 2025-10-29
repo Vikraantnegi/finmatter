@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { AuthRedirectGuard } from '@/components/auth/AuthRedirectGuard';
 import { useAuth } from '@/hooks/useAuth';
-// import { AuthGuard } from '@/components/auth/AuthGuard';
+import { AUTH_COPIES } from '@finmatter/shared/src/constants';
+import { Header } from '@/components/layout/Header';
 
 const otpSchema = z.object({
   otp: z.string().min(6, 'Please enter the complete 6-digit OTP'),
@@ -25,6 +26,8 @@ function VerifyOtpContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [otp, setOtp] = useState('');
   const [phone, setPhone] = useState('');
+  const [otpError, setOtpError] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const {
     handleSubmit,
@@ -34,30 +37,45 @@ function VerifyOtpContent() {
   });
 
   useEffect(() => {
-    // Get phone number from session storage instead of URL
     const pendingPhoneNumber = sessionStorage.getItem('pendingPhoneNumber');
     if (pendingPhoneNumber) {
       setPhone(pendingPhoneNumber);
     } else {
-      // If no phone number in session, redirect to login
       router.push('/auth/login');
     }
   }, [router]);
 
+  const maskedPhone = phone
+    ? `${phone.slice(0, 3)} ${'X'.repeat(4)} ${phone.slice(-3)}`
+    : '';
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
   const onSubmit = async (data: OtpFormData) => {
     try {
       setIsLoading(true);
+      setOtpError(false);
 
       const result = await verifyOTP(phone, data.otp);
 
       if (result.success) {
-        // Clear the pending phone number from session storage
         sessionStorage.removeItem('pendingPhoneNumber');
-        // The useAuth hook handles routing automatically based on onboarding status
+        sessionStorage.removeItem('authMode');
       } else {
-        toast.error('Invalid OTP');
+        setOtpError(true);
+        setOtp('');
+        toast.error('Invalid OTP. Please try again.');
       }
     } catch (error) {
+      setOtpError(true);
+      setOtp('');
       toast.error(
         error instanceof Error ? error.message : 'Failed to verify OTP',
       );
@@ -68,12 +86,15 @@ function VerifyOtpContent() {
 
   const handleOtpChange = (value: string) => {
     setOtp(value);
+    setOtpError(false);
     if (value.length === 6) {
       onSubmit({ otp: value });
     }
   };
 
   const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+
     try {
       setIsLoading(true);
       const phoneWithCountryCode = phone.startsWith('+91')
@@ -83,8 +104,10 @@ function VerifyOtpContent() {
 
       if (result.success) {
         setOtp('');
+        setOtpError(false);
+        setResendCooldown(60);
+        toast.success('OTP sent successfully!');
       }
-      // Toast messages are handled by the useAuth hook
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Failed to resend OTP',
@@ -96,7 +119,7 @@ function VerifyOtpContent() {
 
   if (!phone) {
     return (
-      <div className='min-h-screen flex items-center justify-center'>
+      <div className='min-h-screen flex items-center justify-center bg-background-dark'>
         <LoadingSpinner size='lg' />
       </div>
     );
@@ -104,89 +127,80 @@ function VerifyOtpContent() {
 
   return (
     <AuthRedirectGuard>
-      <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4'>
-        <div className='max-w-md w-full space-y-8'>
-          <div className='text-center'>
-            <h2 className='mt-6 text-3xl font-bold text-gray-900'>
-              Verify Your Phone
-            </h2>
-            <p className='mt-2 text-sm text-gray-600'>
-              We sent a 6-digit code to{' '}
-              <span className='font-medium'>{phone}</span>
-            </p>
-          </div>
+      <div className='min-h-screen bg-background-dark flex flex-col px-4'>
+        <Header showBackButton />
 
-          <div className='card'>
+        <div className='flex-1 flex items-center justify-center px-4'>
+          <div className='w-full max-w-md space-y-8'>
+            <div className='text-center space-y-2'>
+              <h1 className='text-3xl md:text-4xl font-extrabold text-white tracking-tight'>
+                {AUTH_COPIES.verifyOtp.title}
+              </h1>
+              <p className='text-base text-gray-300 max-w-sm mx-auto'>
+                {AUTH_COPIES.verifyOtp.subtitlePrefix} {maskedPhone}.{' '}
+                {AUTH_COPIES.verifyOtp.subtitleSuffix}
+              </p>
+            </div>
+
             <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-700'>
-                  Enter OTP
-                </label>
-                <div className='flex justify-center'>
-                  <OtpInput
-                    value={otp}
-                    onChange={handleOtpChange}
-                    numInputs={6}
-                    renderInput={props => (
-                      <input
-                        {...props}
-                        className='text-gray-900 bg-white border-gray-300 focus:border-primary-500 focus:ring-primary-500'
-                      />
-                    )}
-                    inputStyle={{
-                      width: '3rem',
-                      height: '3rem',
-                      margin: '0 0.25rem',
-                      fontSize: '1.25rem',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      textAlign: 'center' as const,
-                      color: '#111827',
-                      backgroundColor: '#ffffff',
-                    }}
-                    containerStyle={{
-                      justifyContent: 'center',
-                    }}
-                    shouldAutoFocus
-                  />
-                </div>
-                {errors.otp && (
-                  <p className='text-sm text-error-600'>{errors.otp.message}</p>
-                )}
+              <div className='flex justify-center'>
+                <OtpInput
+                  value={otp}
+                  onChange={handleOtpChange}
+                  numInputs={6}
+                  renderInput={props => (
+                    <input
+                      {...props}
+                      className='w-12 h-12 text-center text-xl font-bold rounded-xl border-2 bg-gray-800 text-white focus:outline-none focus:border-primary transition-colors'
+                      style={{
+                        borderColor: otpError ? '#EF4444' : '#4B5563',
+                      }}
+                    />
+                  )}
+                  containerStyle={{
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                  }}
+                  shouldAutoFocus
+                />
               </div>
+
+              {errors.otp && (
+                <p className='text-sm text-error-400 text-center'>
+                  {errors.otp.message}
+                </p>
+              )}
 
               <Button
                 type='submit'
                 disabled={otp.length !== 6 || isLoading}
-                className='w-full'
-                size='lg'
+                className='w-full h-12 bg-primary hover:opacity-90 text-white font-bold rounded-xl disabled:opacity-50'
               >
                 {isLoading ? (
                   <LoadingSpinner size='sm' className='mr-2' />
                 ) : null}
-                {isLoading ? 'Verifying...' : 'Verify OTP'}
+                {isLoading ? 'Verifying...' : AUTH_COPIES.verifyOtp.button}
               </Button>
             </form>
 
-            <div className='mt-6 text-center space-y-4'>
+            <div className='text-center space-y-4'>
               <button
                 type='button'
                 onClick={handleResendOtp}
-                disabled={isLoading}
-                className='text-sm text-primary-600 hover:text-primary-500 disabled:text-gray-400'
+                disabled={isLoading || resendCooldown > 0}
+                className='text-sm text-white hover:opacity-80 disabled:text-gray-500 disabled:cursor-not-allowed transition-opacity'
               >
-                Didn&apos;t receive the code? Resend OTP
+                {AUTH_COPIES.verifyOtp.resendPrefix}{' '}
+                {resendCooldown > 0 ? (
+                  <span className='font-semibold'>
+                    Resend in {resendCooldown}s
+                  </span>
+                ) : (
+                  <span className='font-semibold text-primary'>
+                    {AUTH_COPIES.verifyOtp.resendLink}
+                  </span>
+                )}
               </button>
-
-              <div>
-                <button
-                  type='button'
-                  onClick={() => router.push('/auth/login')}
-                  className='text-sm text-gray-600 hover:text-gray-500'
-                >
-                  Change phone number
-                </button>
-              </div>
             </div>
           </div>
         </div>

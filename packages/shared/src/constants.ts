@@ -313,6 +313,33 @@ export const TUTORIAL_CTA = {
   signIn: 'Welcome back, Sign In',
 } as const;
 
+// Auth screen copies
+export const AUTH_COPIES = {
+  signup: {
+    title: 'Join Finmatter',
+    subtitle: "Enter your phone number. We'll send you a verification code.",
+    button: 'Send OTP',
+    footerText: 'Already have an account?',
+    footerLink: 'Login',
+  },
+  login: {
+    title: 'Welcome back!',
+    subtitle: "Enter your phone number. We'll send you a verification code.",
+    button: 'Send OTP',
+    footerText: "Don't have an account?",
+    footerLink: 'Join Finmatter!',
+  },
+  verifyOtp: {
+    title: 'Verify your account',
+    subtitlePrefix: 'We sent a 6-digit code to',
+    subtitleSuffix: 'Please enter it below to continue.',
+    button: 'Verify & Continue',
+    resendPrefix: "Didn't receive a code?",
+    resendLink: 'Resend',
+    changePhone: 'Change phone number',
+  },
+} as const;
+
 // Success messages
 export const SUCCESS_MESSAGES = {
   CARD_ADDED: 'Card added successfully',

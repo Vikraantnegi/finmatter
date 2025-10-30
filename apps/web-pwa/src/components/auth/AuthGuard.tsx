@@ -90,7 +90,7 @@ export function AuthGuard({
         <div className='text-center space-y-4'>
           <LoadingSpinner size='lg' className='mx-auto' />
           <p className='text-base text-gray-300'>
-            {isAuthenticated ? 'Setting up your dashboard...' : 'Loading...'}
+            {isAuthenticated ? 'Curating your dashboard...' : 'Loading...'}
           </p>
         </div>
       </div>

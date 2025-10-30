@@ -155,13 +155,14 @@ export function useAuth() {
           router.replace('/dashboard');
           router.refresh();
 
-          // Return success but don't clear loading state yet
-          // Loading state will be cleared by the component
+          // Return success but don't clear loading state
+          // Loading will stay true during navigation to prevent flashing
           return { success: true, keepLoading: true };
         } else {
           const errorMessage =
             response.error?.message || 'Failed to complete onboarding';
           toast.error(errorMessage);
+          setLoading(false);
           return { success: false, error: response.error };
         }
       } catch (error) {
@@ -189,9 +190,8 @@ export function useAuth() {
         }
 
         toast.error(errorMessage);
-        return { success: false, error };
-      } finally {
         setLoading(false);
+        return { success: false, error };
       }
     },
     [setUser, setOnboardingCompleted, setLoading, router],

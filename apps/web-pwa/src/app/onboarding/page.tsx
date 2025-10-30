@@ -3,6 +3,7 @@
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { useAuth } from '@/hooks/useAuth';
 
 // Import onboarding steps
 import ProfileSetup from '@/components/onboarding/ProfileSetup';
@@ -12,6 +13,7 @@ import SMSPermissionStep from '@/components/onboarding/SMSPermissionStep';
 
 function OnboardingContent() {
   const { currentStep, isLoading, nextStep, updateFormData } = useOnboarding();
+  const { onboardingCompleted } = useAuth();
 
   const renderCurrentStep = () => {
     switch (currentStep) {
@@ -53,8 +55,9 @@ function OnboardingContent() {
     }
   };
 
-  // Show full-screen loading during onboarding completion to prevent any flashing
-  if (isLoading) {
+  // Show full-screen loading during onboarding completion or if already completed
+  // This prevents flashing of onboarding screens during redirect
+  if (isLoading || onboardingCompleted) {
     return (
       <div className='min-h-screen bg-background-dark flex items-center justify-center px-4'>
         <div className='text-center space-y-4'>

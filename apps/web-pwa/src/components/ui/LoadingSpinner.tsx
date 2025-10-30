@@ -21,7 +21,7 @@ export function LoadingSpinner({
   return (
     <motion.div
       className={cn(
-        'rounded-full border-2 border-gray-300 border-t-primary-600',
+        'rounded-full border-2 border-gray-300 border-t-primary',
         sizeClasses[size],
         className,
       )}

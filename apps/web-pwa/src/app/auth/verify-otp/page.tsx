@@ -30,6 +30,7 @@ function VerifyOtpContent() {
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [otpError, setOtpError] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const {
     handleSubmit,
@@ -74,11 +75,11 @@ function VerifyOtpContent() {
       if (result.success) {
         sessionStorage.removeItem('pendingPhoneNumber');
         sessionStorage.removeItem('authMode');
+        setIsRedirecting(true);
       } else {
         setOtpError(true);
         setOtp('');
 
-        // Log full error response for debugging
         console.log('OTP Verification Error:', {
           result,
           error: result.error,
@@ -195,6 +196,17 @@ function VerifyOtpContent() {
     );
   }
 
+  if (isRedirecting) {
+    return (
+      <div className='min-h-screen flex items-center justify-center bg-background-dark'>
+        <div className='text-center space-y-4'>
+          <LoadingSpinner size='lg' className='mx-auto' />
+          <p className='text-base text-gray-300'>Curating your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <AuthRedirectGuard>
       <div className='min-h-screen bg-background-dark flex flex-col px-4'>
@@ -266,9 +278,7 @@ function VerifyOtpContent() {
                 disabled={isResending || resendCooldown > 0}
                 className='text-sm text-white hover:opacity-80 disabled:text-gray-500 disabled:cursor-not-allowed transition-opacity flex items-center justify-center gap-2 mx-auto'
               >
-                {isResending && (
-                  <span className='animate-spin rounded-full h-3 w-3 border-b-2 border-primary'></span>
-                )}
+                {isResending && <LoadingSpinner size='sm' />}
                 <span>
                   {AUTH_COPIES.verifyOtp.resendPrefix}{' '}
                   {resendCooldown > 0 ? (

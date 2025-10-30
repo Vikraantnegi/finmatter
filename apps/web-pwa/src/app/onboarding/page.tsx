@@ -40,7 +40,7 @@ function OnboardingContent() {
   // Show full-screen loading during onboarding completion to prevent any flashing
   if (isLoading) {
     return (
-      <div className='min-h-screen gradient-bg flex items-center justify-center'>
+      <div className='min-h-screen bg-background-dark flex items-center justify-center'>
         <div className='bg-white rounded-2xl p-8 max-w-sm mx-4 shadow-2xl'>
           <div className='flex flex-col items-center space-y-4'>
             <LoadingSpinner size='lg' />

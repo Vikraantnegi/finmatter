@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { getAuthRedirect } from '@/lib/routing';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface AuthRedirectGuardProps {
   children: React.ReactNode;
@@ -55,7 +56,7 @@ export function AuthRedirectGuard({
     return (
       <div className='min-h-screen bg-background-dark flex items-center justify-center px-4'>
         <div className='text-center space-y-4'>
-          <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto'></div>
+          <LoadingSpinner size='lg' className='mx-auto' />
           <p className='text-base text-gray-300'>Verifying your session...</p>
         </div>
       </div>

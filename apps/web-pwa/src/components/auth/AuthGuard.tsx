@@ -29,12 +29,10 @@ export function AuthGuard({
         return;
       }
 
-      // Initialize auth if not done yet
       if (user === null && !isLoading) {
         return;
       }
 
-      // Use centralized routing logic
       const returnUrl = getReturnUrl();
       const redirect = getAuthRedirect({
         isAuthenticated,
@@ -44,7 +42,6 @@ export function AuthGuard({
       });
 
       if (redirect) {
-        // Save return URL if we're redirecting to login
         if (redirect === '/auth/login' && requireAuth) {
           saveReturnUrl();
         }
@@ -52,8 +49,6 @@ export function AuthGuard({
         return;
       }
 
-      // Additional checks for custom guard requirements
-      // Handle authentication requirements
       if (requireAuth && !isAuthenticated) {
         if (pathname !== '/auth/login' && pathname !== '/auth/verify-otp') {
           saveReturnUrl();
@@ -62,7 +57,6 @@ export function AuthGuard({
         return;
       }
 
-      // Handle onboarding requirements
       if (requireOnboarding && isAuthenticated && !onboardingCompleted) {
         if (pathname !== '/onboarding') {
           router.push('/onboarding');
@@ -85,23 +79,24 @@ export function AuthGuard({
     getReturnUrl,
   ]);
 
-  // Show loading spinner while checking auth OR when redirecting
   if (isLoading || (requireAuth && !isAuthenticated)) {
-    // Trigger redirect immediately when not loading and not authenticated
     if (!isLoading && requireAuth && !isAuthenticated) {
       saveReturnUrl();
       router.push('/auth/login');
     }
 
     return (
-      <div className='min-h-screen flex items-center justify-center gradient-bg'>
-        <LoadingSpinner size='lg' />
+      <div className='min-h-screen flex items-center justify-center bg-background-dark'>
+        <div className='text-center space-y-4'>
+          <LoadingSpinner size='lg' className='mx-auto' />
+          <p className='text-base text-gray-300'>
+            {isAuthenticated ? 'Setting up your dashboard...' : 'Loading...'}
+          </p>
+        </div>
       </div>
     );
   }
 
-  // Show loading spinner if onboarding requirements not met
-  // BUT only if we're not already on the onboarding page
   if (
     requireOnboarding &&
     isAuthenticated &&
@@ -109,8 +104,13 @@ export function AuthGuard({
     pathname !== '/onboarding'
   ) {
     return (
-      <div className='min-h-screen flex items-center justify-center gradient-bg'>
-        <LoadingSpinner size='lg' />
+      <div className='min-h-screen flex items-center justify-center bg-background-dark'>
+        <div className='text-center space-y-4'>
+          <LoadingSpinner size='lg' className='mx-auto' />
+          <p className='text-base text-gray-300'>
+            Preparing your onboarding...
+          </p>
+        </div>
       </div>
     );
   }

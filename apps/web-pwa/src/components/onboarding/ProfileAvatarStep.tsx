@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Upload, ChevronLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { storageService } from '@/services/storageService';
 import { useAuthStore } from '@/stores/authStore';
+import { Avatar } from '@/components/ui/Avatar';
 
 interface ProfileAvatarStepProps {
   onNext: (avatar?: string) => void;
@@ -146,33 +146,30 @@ export default function ProfileAvatarStep({
             Personalize your profile
           </h1>
           <p className='text-base text-gray-400'>
-            Add a profile photo to help others recognize you
+            Choose an avatar or upload your photo
+          </p>
+          <p className='text-sm text-gray-500'>
+            We&apos;ll use your initials if you skip this step
           </p>
         </div>
 
         {/* Avatar Preview */}
         <div className='flex justify-center'>
           <div className='relative'>
-            <div className='w-32 h-32 rounded-full bg-gray-800 border-4 border-gray-700 flex items-center justify-center overflow-hidden relative'>
-              {displayAvatar ? (
-                uploadedImage ? (
-                  <Image
-                    src={uploadedImage}
-                    alt='Profile'
-                    fill
-                    className='object-cover'
-                  />
-                ) : (
-                  <span className='text-6xl'>{selectedAvatar}</span>
-                )
-              ) : (
-                <span className='text-6xl text-gray-600'>👤</span>
-              )}
+            <div className='p-1 bg-gradient-to-br from-primary to-blue-400 rounded-full'>
+              <div className='bg-background-dark rounded-full p-1'>
+                <Avatar
+                  name={currentName}
+                  avatar={uploadedImageUrl || selectedAvatar}
+                  size='2xl'
+                  className='w-28 h-28 text-5xl'
+                />
+              </div>
             </div>
-            {displayAvatar && (
+            {(uploadedImageUrl || selectedAvatar) && (
               <button
                 onClick={handleRemoveAvatar}
-                className='absolute -bottom-1 -right-1 w-8 h-8 bg-error-500 hover:bg-error-600 rounded-full flex items-center justify-center text-white transition-colors'
+                className='absolute bottom-0 right-0 w-8 h-8 bg-error-500 hover:bg-error-600 rounded-full flex items-center justify-center text-white transition-colors shadow-lg'
                 disabled={isLoading}
               >
                 ×

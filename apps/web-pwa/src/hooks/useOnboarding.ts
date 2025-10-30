@@ -6,7 +6,7 @@ import { useAuth } from './useAuth';
 
 export type OnboardingStep =
   | 'welcome'
-  | 'name'
+  | 'profile'
   | 'permissions'
   | 'tutorial'
   | 'addCard';
@@ -19,20 +19,23 @@ export function useOnboarding() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    avatar: '',
     notificationsEnabled: false,
+    locationEnabled: false,
+    smsEnabled: false,
   });
   const [isLoading, setIsLoading] = useState(false);
 
   const { completeOnboarding } = useAuth();
 
   const steps: OnboardingStep[] = useMemo(
-    () => ['welcome', 'tutorial', 'name', 'permissions', 'addCard'],
+    () => ['welcome', 'tutorial', 'profile', 'permissions', 'addCard'],
     [],
   );
 
   // Define which steps are required
   const requiredSteps: OnboardingStep[] = useMemo(
-    () => ['welcome', 'name'],
+    () => ['welcome', 'profile'],
     [],
   );
 
@@ -42,7 +45,7 @@ export function useOnboarding() {
     // Validate required fields
     if (!formData.firstName.trim()) {
       toast.error('First name is required');
-      setCurrentStep('name');
+      setCurrentStep('profile');
       return;
     }
 
@@ -62,7 +65,10 @@ export function useOnboarding() {
       const result = await completeOnboarding({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName?.trim() || undefined,
+        avatar: formData.avatar || undefined,
         notificationsEnabled: formData.notificationsEnabled,
+        locationEnabled: formData.locationEnabled,
+        smsEnabled: formData.smsEnabled,
       });
 
       if (result.success) {
@@ -116,8 +122,8 @@ export function useOnboarding() {
 
   const canProceed = useCallback(() => {
     switch (currentStep) {
-      case 'name':
-        return formData.firstName.trim().length > 0;
+      case 'profile':
+        return formData.firstName.trim().length >= 2;
       case 'permissions':
       case 'tutorial':
         return true;

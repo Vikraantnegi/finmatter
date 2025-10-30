@@ -134,7 +134,10 @@ export function useAuth() {
     async (userData: {
       firstName: string;
       lastName?: string;
+      avatar?: string;
       notificationsEnabled: boolean;
+      locationEnabled?: boolean;
+      smsEnabled?: boolean;
     }) => {
       try {
         setLoading(true);

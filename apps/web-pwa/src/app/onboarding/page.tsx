@@ -5,10 +5,8 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useOnboarding } from '@/hooks/useOnboarding';
 
 // Import onboarding steps
-import WelcomeStep from '@/components/onboarding/WelcomeStep';
 import ProfileSetup from '@/components/onboarding/ProfileSetup';
 import UnifiedPermissionsStep from '@/components/onboarding/UnifiedPermissionsStep';
-import TutorialStep from '@/components/onboarding/TutorialStep';
 import AddFirstCardStep from '@/components/onboarding/AddFirstCardStep';
 
 function OnboardingContent() {
@@ -16,10 +14,6 @@ function OnboardingContent() {
 
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 'welcome':
-        return <WelcomeStep onNext={nextStep} />;
-      case 'tutorial':
-        return <TutorialStep onNext={nextStep} onSkip={nextStep} />;
       case 'profile':
         return (
           <ProfileSetup
@@ -38,7 +32,12 @@ function OnboardingContent() {
       case 'addCard':
         return <AddFirstCardStep onComplete={nextStep} onSkip={nextStep} />;
       default:
-        return <WelcomeStep onNext={nextStep} />;
+        return (
+          <ProfileSetup
+            onComplete={nextStep}
+            onUpdateFormData={updateFormData}
+          />
+        );
     }
   };
 
@@ -48,9 +47,7 @@ function OnboardingContent() {
       <div className='min-h-screen bg-background-dark flex items-center justify-center px-4'>
         <div className='text-center space-y-4'>
           <LoadingSpinner size='lg' className='mx-auto' />
-          <p className='text-base text-gray-300'>
-            Setting up your dashboard...
-          </p>
+          <p className='text-base text-gray-300'>Curating your dashboard...</p>
         </div>
       </div>
     );

@@ -26,13 +26,10 @@ export default function ProfileNameStep({ onNext }: ProfileNameStepProps) {
     register,
     handleSubmit,
     formState: { errors, isValid },
-    watch,
   } = useForm<NameFormData>({
     resolver: zodResolver(nameSchema),
     mode: 'onChange',
   });
-
-  const fullName = watch('fullName');
 
   const onSubmit = async (data: NameFormData) => {
     try {
@@ -51,8 +48,8 @@ export default function ProfileNameStep({ onNext }: ProfileNameStepProps) {
   };
 
   return (
-    <div className='flex items-center justify-center px-4 min-h-[calc(100vh-6rem)]'>
-      <div className='max-w-md w-full space-y-8'>
+    <div className='flex items-center justify-center min-h-[calc(100vh-6rem)]'>
+      <div className='max-w-lg w-full space-y-8'>
         {/* Header */}
         <div className='text-center space-y-3'>
           <h1 className='text-3xl font-bold text-white'>
@@ -69,7 +66,7 @@ export default function ProfileNameStep({ onNext }: ProfileNameStepProps) {
             <input
               {...register('fullName')}
               type='text'
-              placeholder='First and last name'
+              placeholder='Name'
               className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
               autoFocus
             />
@@ -89,14 +86,6 @@ export default function ProfileNameStep({ onNext }: ProfileNameStepProps) {
             {isLoading ? 'Saving...' : 'Continue'}
           </Button>
         </form>
-
-        {/* Visual Preview - Show name as it's typed */}
-        {fullName && fullName.trim().length > 0 && (
-          <div className='mt-6 p-4 bg-gray-800/30 rounded-xl border border-gray-700'>
-            <p className='text-xs text-gray-500 mb-1'>Preview</p>
-            <p className='text-lg text-white font-medium'>{fullName}</p>
-          </div>
-        )}
       </div>
     </div>
   );

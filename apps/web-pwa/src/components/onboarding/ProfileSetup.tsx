@@ -20,6 +20,10 @@ export default function ProfileSetup({
   onUpdateFormData,
 }: ProfileSetupProps) {
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+  const [stepCompleted, setStepCompleted] = useState({
+    step1: false,
+    step2: false,
+  });
   const [formData, setFormData] = useState<ProfileFormData>({
     firstName: '',
     lastName: '',
@@ -33,6 +37,7 @@ export default function ProfileSetup({
     const updated = { ...formData, ...data };
     setFormData(updated);
     onUpdateFormData(updated);
+    setStepCompleted(prev => ({ ...prev, step1: true }));
     setCurrentStep(2);
   };
 
@@ -40,6 +45,7 @@ export default function ProfileSetup({
     const updated = { ...formData, avatar };
     setFormData(updated);
     onUpdateFormData(updated);
+    setStepCompleted(prev => ({ ...prev, step2: true }));
     onComplete(updated);
   };
 
@@ -49,40 +55,40 @@ export default function ProfileSetup({
     }
   };
 
-  return (
-    <div className='min-h-screen bg-background-dark'>
-      {/* Progress Indicator */}
-      <div className='fixed top-0 left-0 right-0 z-10 bg-gray-900/95 backdrop-blur-sm'>
-        <div className='max-w-2xl mx-auto px-6 py-6'>
-          <div className='bg-gray-800/50 rounded-2xl p-6 border border-gray-700/50'>
-            <div className='flex items-center justify-between mb-4'>
-              <h3 className='text-lg font-semibold text-white'>
-                Profile Setup
-              </h3>
-              <span className='text-base font-medium text-gray-300'>
-                Step {currentStep}/2
-              </span>
-            </div>
+  // Calculate progress: 0 → 50 → 100
+  const progress = stepCompleted.step2 ? 100 : stepCompleted.step1 ? 50 : 0;
 
-            {/* Progress Bar */}
-            <div className='relative h-2 bg-gray-700 rounded-full overflow-hidden'>
-              <div
-                className='absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-blue-400 rounded-full transition-all duration-500 ease-out'
-                style={{ width: `${(currentStep / 2) * 100}%` }}
-              />
-            </div>
+  return (
+    <div className='min-h-screen bg-background-dark relative px-8'>
+      {/* Progress Indicator - Sleek & Simple */}
+      <div className='absolute inset-x-0 top-0 z-10'>
+        <div className='px-8 py-6'>
+          {/* Progress Bar */}
+          <div className='relative h-1.5 bg-gray-800 rounded-full overflow-hidden mb-2'>
+            <div
+              className='absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-blue-400 rounded-full transition-all duration-700 ease-out'
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          {/* Step Counter - Below Progress Bar */}
+          <div className='flex items-center justify-end'>
+            <span className='text-xs font-medium text-gray-500'>
+              {currentStep}/2
+            </span>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className='pt-32'>
+      <div className='h-screen'>
         {currentStep === 1 && <ProfileNameStep onNext={handleNameComplete} />}
         {currentStep === 2 && (
           <ProfileAvatarStep
             onNext={handleAvatarComplete}
             onBack={handleBack}
-            currentName={formData.firstName}
+            firstName={formData.firstName}
+            lastName={formData.lastName}
           />
         )}
       </div>

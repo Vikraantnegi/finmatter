@@ -4,15 +4,10 @@ import { useState, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from './useAuth';
 
-export type OnboardingStep =
-  | 'welcome'
-  | 'profile'
-  | 'permissions'
-  | 'tutorial'
-  | 'addCard';
+export type OnboardingStep = 'profile' | 'permissions' | 'addCard';
 
 export function useOnboarding() {
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>('profile');
   const [completedSteps, setCompletedSteps] = useState<Set<OnboardingStep>>(
     new Set(),
   );
@@ -29,15 +24,12 @@ export function useOnboarding() {
   const { completeOnboarding } = useAuth();
 
   const steps: OnboardingStep[] = useMemo(
-    () => ['welcome', 'tutorial', 'profile', 'permissions', 'addCard'],
+    () => ['profile', 'permissions', 'addCard'],
     [],
   );
 
   // Define which steps are required
-  const requiredSteps: OnboardingStep[] = useMemo(
-    () => ['welcome', 'profile'],
-    [],
-  );
+  const requiredSteps: OnboardingStep[] = useMemo(() => ['profile'], []);
 
   const currentStepIndex = steps.indexOf(currentStep);
 
@@ -111,8 +103,8 @@ export function useOnboarding() {
     setCurrentStep(step);
   }, []);
 
-  const skipTutorial = useCallback(() => {
-    // Skip to add card step
+  const skipToAddCard = useCallback(() => {
+    // Skip permissions to add card step
     setCurrentStep('addCard');
   }, []);
 
@@ -125,10 +117,8 @@ export function useOnboarding() {
       case 'profile':
         return formData.firstName.trim().length >= 2;
       case 'permissions':
-      case 'tutorial':
-        return true;
       case 'addCard':
-        return true; // Optional step
+        return true; // Optional steps
       default:
         return true;
     }
@@ -150,7 +140,7 @@ export function useOnboarding() {
     nextStep,
     prevStep,
     goToStep,
-    skipTutorial,
+    skipToAddCard,
     updateFormData,
     completeOnboardingFlow,
 

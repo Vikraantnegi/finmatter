@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Upload, ChevronLeft } from 'lucide-react';
+import { Upload, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { storageService } from '@/services/storageService';
 import { useAuthStore } from '@/stores/authStore';
@@ -11,53 +11,28 @@ import { Avatar } from '@/components/ui/Avatar';
 interface ProfileAvatarStepProps {
   onNext: (avatar?: string) => void;
   onBack: () => void;
-  currentName: string;
+  firstName: string;
+  lastName?: string;
 }
 
-// Preset avatar options (using emojis as placeholders - can be replaced with actual avatar images)
-const PRESET_AVATARS = [
-  '👨‍💼',
-  '👩‍💼',
-  '👨‍🎓',
-  '👩‍🎓',
-  '👨‍💻',
-  '👩‍💻',
-  '👨‍🔬',
-  '👩‍🔬',
-  '🧑‍🚀',
-  '👨‍🎨',
-  '👩‍🎨',
-  '🧑‍🍳',
-  '👨‍⚕️',
-  '👩‍⚕️',
-  '🧑‍🏫',
-  '👨‍🌾',
-  '👩‍🌾',
-  '🧑‍🔧',
-  '👨‍🏭',
-  '👩‍🏭',
-  '🧑‍💼',
-  '👨‍✈️',
-  '👩‍✈️',
-  '🧑‍🚒',
-];
+// Preset avatar options (3 male, 3 female)
+const PRESET_AVATARS = ['👨‍💼', '👨‍🎓', '👨‍💻', '👩‍💼', '👩‍🎓', '👩‍💻'];
 
 export default function ProfileAvatarStep({
   onNext,
   onBack,
-  currentName,
+  firstName,
+  lastName,
 }: ProfileAvatarStepProps) {
   const { user } = useAuthStore();
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
-  const [uploadedImage, setUploadedImage] = useState<string>('');
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>(''); // CDN URL
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAvatarSelect = (avatar: string) => {
     setSelectedAvatar(avatar);
-    setUploadedImage(''); // Clear uploaded image if preset is selected
-    setUploadedImageUrl('');
+    setUploadedImageUrl(''); // Clear uploaded image if preset is selected
   };
 
   const handleImageUpload = async (
@@ -81,14 +56,6 @@ export default function ProfileAvatarStep({
     try {
       setIsLoading(true);
 
-      // Show preview while uploading
-      const reader = new FileReader();
-      reader.onload = e => {
-        const result = e.target?.result as string;
-        setUploadedImage(result);
-      };
-      reader.readAsDataURL(file);
-
       // Upload to Supabase Storage
       const avatarUrl = await storageService.uploadAvatar(user.id, file);
 
@@ -96,14 +63,10 @@ export default function ProfileAvatarStep({
         setUploadedImageUrl(avatarUrl);
         setSelectedAvatar(''); // Clear preset selection
         toast.success('Avatar uploaded successfully!');
-      } else {
-        // Clear preview on failure
-        setUploadedImage('');
       }
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload image');
-      setUploadedImage('');
     } finally {
       setIsLoading(false);
     }
@@ -116,53 +79,29 @@ export default function ProfileAvatarStep({
     onNext(avatar);
   };
 
-  const handleSkip = () => {
-    onNext(); // Continue without avatar
-  };
-
   const handleRemoveAvatar = () => {
     setSelectedAvatar('');
-    setUploadedImage('');
     setUploadedImageUrl('');
   };
 
-  const displayAvatar = uploadedImage || selectedAvatar;
+  const fullName = lastName ? `${firstName} ${lastName}` : firstName;
 
   return (
-    <div className='flex items-center justify-center px-4 min-h-[calc(100vh-6rem)]'>
-      <div className='max-w-md w-full space-y-8'>
-        {/* Back Button */}
-        <button
-          onClick={onBack}
-          className='flex items-center gap-2 text-gray-400 hover:text-white transition-colors'
-        >
-          <ChevronLeft className='w-5 h-5' />
-          <span className='text-sm'>Back</span>
-        </button>
-
-        {/* Header */}
-        <div className='text-center space-y-3'>
-          <h1 className='text-3xl font-bold text-white'>
-            Personalize your profile
-          </h1>
-          <p className='text-base text-gray-400'>
-            Choose an avatar or upload your photo
-          </p>
-          <p className='text-sm text-gray-500'>
-            We&apos;ll use your initials if you skip this step
-          </p>
+    <div className='max-w-lg w-full space-y-6 flex flex-col items-center justify-between h-full pt-24'>
+      <div className='flex flex-col items-center justify-center h-full space-y-6'>
+        <div className='text-center'>
+          <h1 className='text-3xl font-bold text-white'>Choose your avatar!</h1>
         </div>
 
-        {/* Avatar Preview */}
         <div className='flex justify-center'>
           <div className='relative'>
             <div className='p-1 bg-gradient-to-br from-primary to-blue-400 rounded-full'>
               <div className='bg-background-dark rounded-full p-1'>
                 <Avatar
-                  name={currentName}
+                  name={fullName}
                   avatar={uploadedImageUrl || selectedAvatar}
                   size='2xl'
-                  className='w-28 h-28 text-5xl'
+                  className='w-24 h-24 text-4xl'
                 />
               </div>
             </div>
@@ -172,77 +111,91 @@ export default function ProfileAvatarStep({
                 className='absolute bottom-0 right-0 w-8 h-8 bg-error-500 hover:bg-error-600 rounded-full flex items-center justify-center text-white transition-colors shadow-lg'
                 disabled={isLoading}
               >
-                ×
+                <Trash2 className='w-4 h-4' />
               </button>
             )}
           </div>
         </div>
 
-        {/* Preview Name */}
-        {currentName && (
-          <div className='text-center'>
-            <p className='text-lg text-white font-medium'>{currentName}</p>
-          </div>
-        )}
-
-        {/* Upload Options */}
-        <div className='space-y-4'>
-          <Button
+        <div className='flex justify-center'>
+          <button
             onClick={() => fileInputRef.current?.click()}
-            variant='outline'
             disabled={isLoading}
-            className='w-full h-14 border-2 border-gray-700 hover:border-primary bg-transparent text-white rounded-xl flex items-center justify-center gap-3 disabled:opacity-50'
+            className='h-12 px-6 border-2 border-gray-700 hover:border-primary bg-gray-900 text-white rounded-xl flex items-center justify-center gap-3 disabled:opacity-50 transition-colors'
           >
             <Upload className='w-5 h-5' />
-            <span>{isLoading ? 'Uploading...' : 'Upload Photo'}</span>
-          </Button>
+            <span className='text-sm font-medium'>
+              {isLoading ? 'Uploading...' : 'Upload Photo'}
+            </span>
+          </button>
           <input
             ref={fileInputRef}
             type='file'
             accept='image/*'
             onChange={handleImageUpload}
             className='hidden'
+            disabled={isLoading}
           />
         </div>
 
-        {/* Preset Avatars Grid */}
-        <div>
-          <p className='text-sm text-gray-400 mb-3'>Or choose an avatar</p>
-          <div className='grid grid-cols-6 gap-3 max-h-64 overflow-y-auto rounded-xl bg-gray-800/30 p-4 border border-gray-700'>
-            {PRESET_AVATARS.map((avatar, index) => (
-              <button
-                key={index}
-                onClick={() => handleAvatarSelect(avatar)}
-                className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all ${
-                  selectedAvatar === avatar
-                    ? 'bg-primary scale-110 ring-2 ring-primary'
-                    : 'bg-gray-700 hover:bg-gray-600 hover:scale-105'
-                }`}
-              >
-                {avatar}
-              </button>
-            ))}
+        <div className='space-y-6'>
+          <p className='text-md text-white text-center'>Or choose an avatar</p>
+          <div className='flex flex-col items-center gap-3'>
+            <div className='flex gap-4'>
+              {PRESET_AVATARS.slice(0, 4).map((avatar, index) => (
+                <button
+                  key={index}
+                  type='button'
+                  onClick={() => handleAvatarSelect(avatar)}
+                  disabled={isLoading}
+                  className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl transition-all ${
+                    selectedAvatar === avatar
+                      ? 'bg-primary/20 ring-2 ring-primary scale-110'
+                      : 'bg-gray-800 hover:bg-gray-700 hover:scale-105'
+                  } disabled:opacity-50`}
+                >
+                  {avatar}
+                </button>
+              ))}
+            </div>
+            <div className='flex gap-4'>
+              {PRESET_AVATARS.slice(4, 6).map((avatar, index) => (
+                <button
+                  key={index + 4}
+                  type='button'
+                  onClick={() => handleAvatarSelect(avatar)}
+                  disabled={isLoading}
+                  className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl transition-all ${
+                    selectedAvatar === avatar
+                      ? 'bg-primary/20 ring-2 ring-primary scale-110'
+                      : 'bg-gray-800 hover:bg-gray-700 hover:scale-105'
+                  } disabled:opacity-50`}
+                >
+                  {avatar}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Action Buttons */}
-        <div className='space-y-3 pt-4'>
-          <Button
-            onClick={handleContinue}
-            disabled={!displayAvatar || isLoading}
-            className='w-full h-14 bg-primary hover:opacity-90 text-white font-semibold rounded-xl disabled:opacity-40 transition-all'
-          >
-            {isLoading ? 'Uploading...' : 'Continue'}
-          </Button>
+      <div className='flex gap-3 py-6 w-full px-4'>
+        <Button
+          variant='outline'
+          onClick={onBack}
+          disabled={isLoading}
+          className='flex-1 h-14 border-2 border-gray-700 hover:border-gray-600 bg-transparent text-gray-300 font-semibold rounded-xl disabled:opacity-40 transition-all'
+        >
+          Back
+        </Button>
 
-          <Button
-            variant='outline'
-            onClick={handleSkip}
-            className='w-full h-14 border-2 border-gray-700 hover:border-gray-600 bg-transparent text-gray-300 rounded-xl'
-          >
-            Skip for now
-          </Button>
-        </div>
+        <Button
+          onClick={handleContinue}
+          disabled={isLoading}
+          className='flex-1 h-14 bg-primary hover:opacity-90 text-white font-semibold rounded-xl disabled:opacity-40 transition-all'
+        >
+          {isLoading ? 'Saving...' : 'Continue'}
+        </Button>
       </div>
     </div>
   );

@@ -66,7 +66,7 @@ export function TutorialScreen() {
                       </div>
                     </div>
 
-                    <h1 className='text-gray-900 dark:text-white tracking-tight text-2xl font-extrabold leading-tight text-center w-3/4'>
+                    <h1 className='text-gray-900 dark:text-white tracking-tight text-2xl font-extrabold leading-tight text-center'>
                       {slide.title}
                     </h1>
 

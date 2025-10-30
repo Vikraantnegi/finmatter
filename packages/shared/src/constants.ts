@@ -287,7 +287,7 @@ export const TUTORIAL_SLIDES = [
   {
     image: '/images/tutorial/compare-cards.svg',
     icon: 'compare_arrows',
-    title: 'Compare Cards Side-by-Side',
+    title: 'Compare Cards',
     subtitle:
       'Make informed decisions by comparing rewards, fees, and benefits. Find the perfect card for your spending style.',
   },

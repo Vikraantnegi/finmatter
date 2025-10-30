@@ -4,37 +4,32 @@ import { useState, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from './useAuth';
 
-export type OnboardingStep =
-  | 'welcome'
-  | 'name'
-  | 'permissions'
-  | 'tutorial'
-  | 'addCard';
+export type OnboardingStep = 'profile' | 'location' | 'notification' | 'sms';
 
 export function useOnboarding() {
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>('profile');
   const [completedSteps, setCompletedSteps] = useState<Set<OnboardingStep>>(
     new Set(),
   );
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    avatar: '',
     notificationsEnabled: false,
+    locationEnabled: false,
+    smsEnabled: false,
   });
   const [isLoading, setIsLoading] = useState(false);
 
   const { completeOnboarding } = useAuth();
 
   const steps: OnboardingStep[] = useMemo(
-    () => ['welcome', 'tutorial', 'name', 'permissions', 'addCard'],
+    () => ['profile', 'location', 'notification', 'sms'],
     [],
   );
 
   // Define which steps are required
-  const requiredSteps: OnboardingStep[] = useMemo(
-    () => ['welcome', 'name'],
-    [],
-  );
+  const requiredSteps: OnboardingStep[] = useMemo(() => ['profile'], []);
 
   const currentStepIndex = steps.indexOf(currentStep);
 
@@ -42,7 +37,7 @@ export function useOnboarding() {
     // Validate required fields
     if (!formData.firstName.trim()) {
       toast.error('First name is required');
-      setCurrentStep('name');
+      setCurrentStep('profile');
       return;
     }
 
@@ -62,7 +57,10 @@ export function useOnboarding() {
       const result = await completeOnboarding({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName?.trim() || undefined,
+        avatar: formData.avatar || undefined,
         notificationsEnabled: formData.notificationsEnabled,
+        locationEnabled: formData.locationEnabled,
+        smsEnabled: formData.smsEnabled,
       });
 
       if (result.success) {
@@ -105,24 +103,18 @@ export function useOnboarding() {
     setCurrentStep(step);
   }, []);
 
-  const skipTutorial = useCallback(() => {
-    // Skip to add card step
-    setCurrentStep('addCard');
-  }, []);
-
   const updateFormData = useCallback((updates: Partial<typeof formData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
   }, []);
 
   const canProceed = useCallback(() => {
     switch (currentStep) {
-      case 'name':
-        return formData.firstName.trim().length > 0;
-      case 'permissions':
-      case 'tutorial':
-        return true;
-      case 'addCard':
-        return true; // Optional step
+      case 'profile':
+        return formData.firstName.trim().length >= 2;
+      case 'location':
+      case 'notification':
+      case 'sms':
+        return true; // Optional steps
       default:
         return true;
     }
@@ -144,7 +136,6 @@ export function useOnboarding() {
     nextStep,
     prevStep,
     goToStep,
-    skipTutorial,
     updateFormData,
     completeOnboardingFlow,
 

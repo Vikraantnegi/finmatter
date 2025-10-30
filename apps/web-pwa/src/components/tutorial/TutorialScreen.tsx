@@ -30,71 +30,73 @@ export function TutorialScreen() {
       <Header />
 
       <main className='flex-1 flex flex-col justify-between w-full max-w-4xl mx-auto px-4 pb-8'>
-        <div className='flex-1 flex justify-center'>
-          <Swiper
-            onSwiper={setSwiper}
-            onSlideChange={swiper => {
-              setCurrentSlide(swiper.realIndex);
-            }}
-            modules={[Autoplay]}
-            spaceBetween={30}
-            slidesPerView={1}
-            autoplay={{
-              delay: 4000,
-              disableOnInteraction: false,
-              pauseOnMouseEnter: true,
-            }}
-            loop={true}
-            className='w-full h-full'
-          >
-            {TUTORIAL_SLIDES.map((slide: TutorialSlide, index: number) => (
-              <SwiperSlide key={index}>
-                <div className='flex flex-col items-center justify-center h-full gap-6 px-4'>
-                  <div className='relative flex w-full justify-center px-4 py-3'>
-                    <div className='flex h-[320px] w-full max-w-xs items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800'>
-                      <span
-                        className='material-symbols-outlined text-primary text-8xl'
-                        style={{
-                          fontSize: 'clamp(6rem, 15vw, 10rem)',
-                          lineHeight: '1',
-                          display: 'inline-block',
-                        }}
-                      >
-                        {slide.icon}
-                      </span>
-                    </div>
-                  </div>
-
-                  <h1 className='text-gray-900 dark:text-white tracking-tight text-3xl font-extrabold leading-tight text-center w-3/4'>
-                    {slide.title}
-                  </h1>
-
-                  <p className='-mt-1 max-w-sm text-center text-base font-normal leading-normal text-gray-600 dark:text-gray-300'>
-                    {slide.subtitle}
-                  </p>
-                </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
-
-        <div className='flex items-center justify-center gap-2 py-4'>
-          {TUTORIAL_SLIDES.map((_: TutorialSlide, index: number) => (
-            <button
-              key={index}
-              onClick={() => {
-                if (swiper) {
-                  swiper.slideToLoop(index);
-                }
+        <div className='flex flex-col h-[60vh]'>
+          <div className='flex-1 flex justify-center'>
+            <Swiper
+              onSwiper={setSwiper}
+              onSlideChange={swiper => {
+                setCurrentSlide(swiper.realIndex);
               }}
-              className={`h-2 w-2 rounded-full transition-all ${
-                index === currentSlide
-                  ? 'bg-primary'
-                  : 'bg-gray-300 dark:bg-gray-700'
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
+              modules={[Autoplay]}
+              spaceBetween={30}
+              slidesPerView={1}
+              autoplay={{
+                delay: 4000,
+                disableOnInteraction: false,
+                pauseOnMouseEnter: true,
+              }}
+              loop={true}
+              className='flex-1 w-full h-full'
+            >
+              {TUTORIAL_SLIDES.map((slide: TutorialSlide, index: number) => (
+                <SwiperSlide key={index}>
+                  <div className='flex flex-1 flex-col items-center justify-center h-full gap-6 px-4'>
+                    <div className='flex-1 relative flex w-full justify-center px-4 py-3'>
+                      <div className='flex-1 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800'>
+                        <span
+                          className='material-symbols-outlined text-primary text-8xl'
+                          style={{
+                            fontSize: 'clamp(6rem, 15vw, 10rem)',
+                            lineHeight: '1',
+                            display: 'inline-block',
+                          }}
+                        >
+                          {slide.icon}
+                        </span>
+                      </div>
+                    </div>
+
+                    <h1 className='text-gray-900 dark:text-white tracking-tight text-2xl font-extrabold leading-tight text-center w-3/4'>
+                      {slide.title}
+                    </h1>
+
+                    <p className='-mt-1 max-w-sm text-center text-base font-normal leading-normal text-gray-600 dark:text-gray-300'>
+                      {slide.subtitle}
+                    </p>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+
+          <div className='flex items-center justify-center gap-2 py-4'>
+            {TUTORIAL_SLIDES.map((_: TutorialSlide, index: number) => (
+              <button
+                key={index}
+                onClick={() => {
+                  if (swiper) {
+                    swiper.slideToLoop(index);
+                  }
+                }}
+                className={`h-2 w-2 rounded-full transition-all ${
+                  index === currentSlide
+                    ? 'bg-primary'
+                    : 'bg-gray-300 dark:bg-gray-700'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
 
         <div className='flex w-full flex-col items-stretch gap-3 px-4 py-3'>

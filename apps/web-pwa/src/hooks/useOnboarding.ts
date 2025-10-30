@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from './useAuth';
 
-export type OnboardingStep = 'profile' | 'permissions' | 'addCard';
+export type OnboardingStep = 'profile' | 'location' | 'notification' | 'sms';
 
 export function useOnboarding() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('profile');
@@ -24,7 +24,7 @@ export function useOnboarding() {
   const { completeOnboarding } = useAuth();
 
   const steps: OnboardingStep[] = useMemo(
-    () => ['profile', 'permissions', 'addCard'],
+    () => ['profile', 'location', 'notification', 'sms'],
     [],
   );
 
@@ -103,11 +103,6 @@ export function useOnboarding() {
     setCurrentStep(step);
   }, []);
 
-  const skipToAddCard = useCallback(() => {
-    // Skip permissions to add card step
-    setCurrentStep('addCard');
-  }, []);
-
   const updateFormData = useCallback((updates: Partial<typeof formData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
   }, []);
@@ -116,8 +111,9 @@ export function useOnboarding() {
     switch (currentStep) {
       case 'profile':
         return formData.firstName.trim().length >= 2;
-      case 'permissions':
-      case 'addCard':
+      case 'location':
+      case 'notification':
+      case 'sms':
         return true; // Optional steps
       default:
         return true;
@@ -140,7 +136,6 @@ export function useOnboarding() {
     nextStep,
     prevStep,
     goToStep,
-    skipToAddCard,
     updateFormData,
     completeOnboardingFlow,
 

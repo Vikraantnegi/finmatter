@@ -67,7 +67,11 @@ export default function ProfileNameStep({ onNext }: ProfileNameStepProps) {
               {...register('fullName')}
               type='text'
               placeholder='Name'
-              className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
+              className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors autofill:bg-gray-800/50 autofill:text-white'
+              style={{
+                WebkitTextFillColor: 'white',
+                WebkitBoxShadow: '0 0 0px 1000px rgb(31 41 55 / 0.5) inset',
+              }}
               autoFocus
             />
             {errors.fullName && (

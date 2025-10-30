@@ -6,8 +6,9 @@ import { useOnboarding } from '@/hooks/useOnboarding';
 
 // Import onboarding steps
 import ProfileSetup from '@/components/onboarding/ProfileSetup';
-import UnifiedPermissionsStep from '@/components/onboarding/UnifiedPermissionsStep';
-import AddFirstCardStep from '@/components/onboarding/AddFirstCardStep';
+import LocationPermissionStep from '@/components/onboarding/LocationPermissionStep';
+import NotificationPermissionStep from '@/components/onboarding/NotificationPermissionStep';
+import SMSPermissionStep from '@/components/onboarding/SMSPermissionStep';
 
 function OnboardingContent() {
   const { currentStep, isLoading, nextStep, updateFormData } = useOnboarding();
@@ -21,16 +22,27 @@ function OnboardingContent() {
             onUpdateFormData={updateFormData}
           />
         );
-      case 'permissions':
+      case 'location':
         return (
-          <UnifiedPermissionsStep
+          <LocationPermissionStep
             onNext={nextStep}
-            onSkip={nextStep}
             onUpdateFormData={updateFormData}
           />
         );
-      case 'addCard':
-        return <AddFirstCardStep onComplete={nextStep} onSkip={nextStep} />;
+      case 'notification':
+        return (
+          <NotificationPermissionStep
+            onNext={nextStep}
+            onUpdateFormData={updateFormData}
+          />
+        );
+      case 'sms':
+        return (
+          <SMSPermissionStep
+            onNext={nextStep}
+            onUpdateFormData={updateFormData}
+          />
+        );
       default:
         return (
           <ProfileSetup

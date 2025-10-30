@@ -3,63 +3,73 @@
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { useAuth } from '@/hooks/useAuth';
 
 // Import onboarding steps
-import WelcomeStep from '@/components/onboarding/WelcomeStep';
-import NameStep from '@/components/onboarding/NameStep';
-import PermissionsStep from '@/components/onboarding/PermissionsStep';
-import TutorialStep from '@/components/onboarding/TutorialStep';
-import AddFirstCardStep from '@/components/onboarding/AddFirstCardStep';
+import ProfileSetup from '@/components/onboarding/ProfileSetup';
+import LocationPermissionStep from '@/components/onboarding/LocationPermissionStep';
+import NotificationPermissionStep from '@/components/onboarding/NotificationPermissionStep';
+import SMSPermissionStep from '@/components/onboarding/SMSPermissionStep';
 
 function OnboardingContent() {
   const { currentStep, isLoading, nextStep, updateFormData } = useOnboarding();
+  const { onboardingCompleted } = useAuth();
 
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 'welcome':
-        return <WelcomeStep onNext={nextStep} />;
-      case 'tutorial':
-        return <TutorialStep onNext={nextStep} onSkip={nextStep} />;
-      case 'name':
-        return <NameStep onNext={nextStep} onUpdateFormData={updateFormData} />;
-      case 'permissions':
+      case 'profile':
         return (
-          <PermissionsStep
-            onNext={nextStep}
-            onSkip={nextStep}
+          <ProfileSetup
+            onComplete={nextStep}
             onUpdateFormData={updateFormData}
           />
         );
-      case 'addCard':
-        return <AddFirstCardStep onComplete={nextStep} onSkip={nextStep} />;
+      case 'location':
+        return (
+          <LocationPermissionStep
+            onNext={nextStep}
+            onUpdateFormData={updateFormData}
+          />
+        );
+      case 'notification':
+        return (
+          <NotificationPermissionStep
+            onNext={nextStep}
+            onUpdateFormData={updateFormData}
+          />
+        );
+      case 'sms':
+        return (
+          <SMSPermissionStep
+            onNext={nextStep}
+            onUpdateFormData={updateFormData}
+          />
+        );
       default:
-        return <WelcomeStep onNext={nextStep} />;
+        return (
+          <ProfileSetup
+            onComplete={nextStep}
+            onUpdateFormData={updateFormData}
+          />
+        );
     }
   };
 
-  // Show full-screen loading during onboarding completion to prevent any flashing
-  if (isLoading) {
+  // Show full-screen loading during onboarding completion or if already completed
+  // This prevents flashing of onboarding screens during redirect
+  if (isLoading || onboardingCompleted) {
     return (
-      <div className='min-h-screen gradient-bg flex items-center justify-center'>
-        <div className='bg-white rounded-2xl p-8 max-w-sm mx-4 shadow-2xl'>
-          <div className='flex flex-col items-center space-y-4'>
-            <LoadingSpinner size='lg' />
-            <div className='text-center'>
-              <h3 className='text-xl font-semibold text-gray-900 mb-2'>
-                Setting up your account
-              </h3>
-              <p className='text-gray-600 text-sm'>
-                Please wait while we complete your onboarding...
-              </p>
-            </div>
-          </div>
+      <div className='min-h-screen bg-background-dark flex items-center justify-center px-4'>
+        <div className='text-center space-y-4'>
+          <LoadingSpinner size='lg' className='mx-auto' />
+          <p className='text-base text-gray-300'>Curating your dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 relative'>
+    <div className='min-h-screen bg-background-dark relative'>
       {renderCurrentStep()}
     </div>
   );

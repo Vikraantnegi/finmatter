@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 import { initializeAuthDebug } from '@/lib/authDebug';
 import { SplashScreen } from '@/components/ui/SplashScreen';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -131,7 +132,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   if (!authReady) {
     return (
       <div className='min-h-screen bg-background-dark flex items-center justify-center'>
-        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
+        <div className='text-center space-y-4'>
+          <LoadingSpinner size='lg' className='mx-auto' />
+          <p className='text-base text-gray-300'>Initializing app...</p>
+        </div>
       </div>
     );
   }

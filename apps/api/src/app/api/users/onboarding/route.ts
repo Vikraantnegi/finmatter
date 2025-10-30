@@ -18,7 +18,10 @@ import { z } from 'zod';
 const CompleteOnboardingSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(50),
   lastName: z.string().max(50).optional(),
+  avatar: z.string().optional(),
   notificationsEnabled: z.boolean().optional().default(false),
+  locationEnabled: z.boolean().optional().default(false),
+  smsEnabled: z.boolean().optional().default(false),
 });
 
 /**
@@ -94,7 +97,14 @@ export async function PUT(request: NextRequest) {
       });
     }
 
-    const { firstName, lastName, notificationsEnabled } = validation.data;
+    const {
+      firstName,
+      lastName,
+      avatar,
+      notificationsEnabled,
+      locationEnabled,
+      smsEnabled,
+    } = validation.data;
 
     // Check if user has already completed onboarding (idempotency)
     const { data: currentUser, error: fetchError } = await supabaseAdmin
@@ -165,7 +175,10 @@ export async function PUT(request: NextRequest) {
         profile_data: {
           firstName,
           lastName: lastName || '',
+          avatar: avatar || '',
           notificationsEnabled: notificationsEnabled || false,
+          locationEnabled: locationEnabled || false,
+          smsEnabled: smsEnabled || false,
         },
         updated_at: new Date().toISOString(),
       })

@@ -1,733 +1,477 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { CardVisual } from '@/components/cards/CardVisual';
-import { UploadStatementModal } from '@/components/statements/UploadStatementModal';
-import { ParsingProgressModal } from '@/components/statements/ParsingProgressModal';
-import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
-import { TransactionItem } from '@/components/transactions/TransactionItem';
-import { Modal } from '@/components/ui/Modal';
-import { useCardStore } from '@/stores/cardStore';
-import { cardService } from '@/services/cardService';
-import { useStatements } from '@/hooks/useStatements';
-import { useTransactions } from '@/hooks/useTransactions';
-import type {
-  CardBenefitResponse,
-  CardMetadataResponse,
-} from '@finmatter/types';
-import { Card } from '@finmatter/types';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import {
   ArrowLeft,
-  Edit,
-  Trash2,
+  Settings,
+  TrendingUp,
+  Award,
   Gift,
-  Calendar,
-  Upload,
-  BarChart3,
-  DollarSign,
-  Receipt,
+  Sparkles,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Avatar } from '@/components/ui/Avatar';
 
-export default function CardDetailPage() {
+// This will be replaced with actual data from API
+const MOCK_CARD = {
+  id: '1',
+  cardName: 'HDFC Regalia',
+  bankName: 'HDFC Bank',
+  network: 'Visa' as const,
+  lastFourDigits: '8049',
+  creditLimit: 500000,
+  availableCredit: 485000,
+  currentBalance: 15000,
+  statementDate: '2024-11-25',
+  dueDate: '2024-12-05',
+  rewardsBalance: 12500,
+  rewardsValue: 125.0,
+  cardNumber: '4234567890128049',
+  cardholderName: 'Vikrant Negi',
+  expiryDate: '12/28',
+
+  // Comprehensive metadata
+  metadata: {
+    annualFee: 2500,
+    joiningFee: 2500,
+    annualFeeWaiver: 'Spend ₹3L in a year',
+    welcomeBonus: '10,000 bonus points on first transaction',
+    loungeAccess: 'Domestic: 6 free, International: 3 free per year',
+    features: [
+      'Complimentary airport lounge access',
+      '4 reward points per ₹150 spent',
+      'Fuel surcharge waiver',
+      'Zero lost card liability',
+    ],
+    rewards: {
+      base: '2.67%',
+      categories: [
+        { name: 'Travel', rate: '4%', icon: '✈️' },
+        { name: 'Dining', rate: '3.3%', icon: '🍽️' },
+        { name: 'Shopping', rate: '2.67%', icon: '🛍️' },
+        { name: 'Others', rate: '2.67%', icon: '💳' },
+      ],
+    },
+  },
+
+  // Recent offers
+  offers: [
+    {
+      id: '1',
+      title: '10% back at Starbucks',
+      description: 'Valid till Nov 30',
+      icon: '☕',
+      status: 'active' as const,
+      expiryDate: '2024-11-30',
+    },
+    {
+      id: '2',
+      title: '5x Points on United',
+      description: 'Book flights by Dec 15',
+      icon: '✈️',
+      status: 'activated' as const,
+      expiryDate: '2024-12-15',
+    },
+  ],
+
+  // Recent transactions
+  recentTransactions: [
+    {
+      id: '1',
+      merchant: 'Apple Store',
+      category: 'Shopping',
+      amount: -99900,
+      date: '2024-10-15',
+      icon: '🛍️',
+    },
+    {
+      id: '2',
+      merchant: 'The Daily Grind',
+      category: 'Dining',
+      amount: -575,
+      date: '2024-10-14',
+      icon: '🍽️',
+    },
+    {
+      id: '3',
+      merchant: 'City Transit',
+      category: 'Transport',
+      amount: -275,
+      date: '2024-10-14',
+      icon: '🚌',
+    },
+  ],
+
+  // Spending by category (for chart)
+  spending: [
+    { category: 'Dining', amount: 4500, percentage: 30 },
+    { category: 'Shopping', amount: 5500, percentage: 37 },
+    { category: 'Travel', amount: 3000, percentage: 20 },
+    { category: 'Entertainment', amount: 2000, percentage: 13 },
+  ],
+};
+
+export default function CardDetailsPage() {
   const router = useRouter();
-  const params = useParams();
-  const cardId = params.id as string;
+  const [activeTab, setActiveTab] = useState<
+    'offers' | 'benefits' | 'analytics'
+  >('offers');
 
-  console.log('CardDetailPage render:', { cardId });
+  const card = MOCK_CARD; // Replace with actual data from API
 
-  const { cards, isLoading: loading, fetchCards, deleteCard } = useCardStore();
-  const [card, setCard] = useState<Card | null>(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [showParsingModal, setShowParsingModal] = useState(false);
-  const [parsingStatementId, setParsingStatementId] = useState<string | null>(
-    null,
-  );
-  const [deleting, setDeleting] = useState(false);
-  const [benefits, setBenefits] = useState<CardBenefitResponse[]>([]);
-  const [benefitsLoading, setBenefitsLoading] = useState(false);
-  const [_cardMetadata, setCardMetadata] =
-    useState<CardMetadataResponse | null>(null);
-  const benefitsFetched = useRef<string | null>(null);
-
-  // Fetch statements for this card
-  const { statements, isLoading: statementsLoading } = useStatements({
-    cardId,
-  });
-
-  // Fetch recent transactions for this card
-  const { transactions, loading: transactionsLoading } = useTransactions({
-    filters: { cardId },
-    limit: 10,
-    groupBy: 'none',
-  });
-
-  // Fetch card details
-  useEffect(() => {
-    const fetchCardDetails = async () => {
-      try {
-        const cardData = await cardService.getCardById(cardId);
-        setCard(cardData);
-      } catch (error) {
-        console.error('Failed to fetch card details:', error);
-        // Don't fallback to cards store to avoid dependency loops
-        // Just set card to null if fetch fails
-        setCard(null);
-      }
-    };
-
-    if (cardId) {
-      fetchCardDetails();
-    }
-  }, [cardId]); // Only depend on cardId
-
-  // Fetch benefits from database
-  useEffect(() => {
-    const fetchBenefits = async () => {
-      if (!card || benefitsFetched.current === card.id) {
-        console.log(
-          'Skipping benefits fetch - already fetched for card:',
-          card?.id,
-        );
-        return;
-      }
-
-      setBenefitsLoading(true);
-      benefitsFetched.current = card.id;
-
-      try {
-        console.log('Fetching benefits for card:', card.id);
-        // Fetch benefits and metadata from database API
-        const { benefits: dbBenefits, metadata } =
-          await cardService.getCardBenefitsWithMetadata(card.id);
-
-        if (dbBenefits.length > 0) {
-          setBenefits(dbBenefits);
-          setCardMetadata(metadata || null);
-        } else {
-          // No benefits found in database
-          setBenefits([]);
-        }
-      } catch (error) {
-        console.error('Error fetching benefits:', error);
-        setBenefits([]);
-        benefitsFetched.current = null; // Reset on error to allow retry
-      } finally {
-        setBenefitsLoading(false);
-      }
-    };
-
-    fetchBenefits();
-  }, [card]);
-
-  const handleEdit = () => {
-    router.push(`/cards/${cardId}/edit`);
-  };
-
-  const handleDelete = async () => {
-    setDeleting(true);
-    try {
-      await deleteCard(cardId);
-      toast.success('Card deleted successfully');
-      router.push('/cards');
-    } catch (error) {
-      // Error handled by toast
-      toast.error('Failed to delete card');
-    } finally {
-      setDeleting(false);
-      setShowDeleteModal(false);
-    }
-  };
-
-  if (loading || !card) {
-    return (
-      <div className='min-h-screen flex items-center justify-center'>
-        <LoadingSpinner size='lg' />
-      </div>
-    );
-  }
+  const utilization =
+    ((card.creditLimit - card.availableCredit) / card.creditLimit) * 100;
 
   return (
-    <div className='min-h-screen bg-white'>
+    <div className='min-h-screen bg-background-dark pb-20'>
       {/* Header */}
-      <div className='bg-white border-b border-gray-200 sticky top-0 z-30'>
-        <div className='max-w-4xl mx-auto px-4 sm:px-6 lg:px-8'>
-          <div className='flex items-center justify-between py-4'>
-            <div className='flex items-center'>
-              <button
-                onClick={() => router.back()}
-                className='mr-4 p-2 hover:bg-gray-100 rounded-lg transition-colors'
-              >
-                <ArrowLeft className='w-5 h-5 text-gray-600' />
-              </button>
-              <h1 className='text-xl font-bold text-gray-900'>Card Details</h1>
-            </div>
-            <div className='flex space-x-2'>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={handleEdit}
-                className='flex items-center space-x-2'
-              >
-                <Edit className='w-4 h-4' />
-                <span>Edit</span>
-              </Button>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => setShowDeleteModal(true)}
-                className='flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50'
-              >
-                <Trash2 className='w-4 h-4' />
-                <span>Delete</span>
-              </Button>
-            </div>
-          </div>
+      <div className='sticky top-0 z-20 bg-background-dark/95 backdrop-blur-sm border-b border-gray-800'>
+        <div className='flex items-center justify-between px-4 py-4'>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => router.back()}
+            className='flex items-center justify-center w-10 h-10 rounded-full bg-gray-800/50 hover:bg-gray-800 transition-colors'
+          >
+            <ArrowLeft className='w-5 h-5 text-white' />
+          </motion.button>
+
+          <h1 className='text-lg font-semibold text-white'>{card.cardName}</h1>
+
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => router.push(`/cards/${card.id}/edit`)}
+            className='flex items-center justify-center w-10 h-10 rounded-full bg-gray-800/50 hover:bg-gray-800 transition-colors'
+          >
+            <Settings className='w-5 h-5 text-white' />
+          </motion.button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className='max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6'>
+      <div className='px-6 py-6 space-y-6'>
         {/* Card Visual */}
-        <CardVisual card={card} showDetails={false} />
-
-        {/* Recent Transactions Section */}
-        <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
-          <div className='flex items-center justify-between mb-4'>
-            <h2 className='text-lg font-semibold text-gray-900 flex items-center gap-2'>
-              <Receipt className='w-5 h-5 text-primary-500' />
-              Recent Transactions
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className='flex justify-center'
+        >
+          <div className='w-80'>
+            <Avatar
+              name={card.cardName}
+              avatar={undefined}
+              size='2xl'
+              className='mx-auto mb-4'
+            />
+            <h2 className='text-xl font-bold text-white text-center'>
+              {card.cardName}
             </h2>
-            <Button
-              onClick={() => router.push(`/cards/${cardId}/statements`)}
-              size='sm'
-              variant='outline'
-            >
-              View All Statements
-            </Button>
-            {statements && statements.length > 0 && (
-              <Button
-                onClick={() => setShowUploadModal(true)}
-                className='flex items-center gap-2'
-                size='sm'
-              >
-                <Upload className='w-4 h-4' />
-                Upload Statement
-              </Button>
-            )}
+            <p className='text-sm text-gray-400 text-center'>
+              Credit Limit: ₹{(card.creditLimit / 100000).toFixed(1)}L
+            </p>
           </div>
+        </motion.div>
 
-          {statementsLoading ? (
-            <div className='text-center flex-col items-center justify-center py-8 w-full'>
-              <LoadingSpinner size='md' className='mx-auto' />
-              <p className='text-gray-500 mt-2'>Loading statements...</p>
-            </div>
-          ) : card.parsingInProgress ? (
-            <div className='text-center py-8'>
-              <div className='w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center'>
-                <LoadingSpinner size='md' />
-              </div>
-              <h3 className='text-lg font-semibold text-gray-900 mb-2'>
-                Parsing Statement
-              </h3>
-              <p className='text-gray-600 mb-4'>
-                We&apos;re processing your statement. This usually takes 30-60
-                seconds.
-              </p>
-              <p className='text-sm text-gray-500'>
-                You&apos;ll be notified once it&apos;s ready.
-              </p>
-            </div>
-          ) : transactionsLoading ? (
-            <div className='text-center flex-col items-center justify-center py-8 w-full'>
-              <LoadingSpinner size='md' className='mx-auto' />
-              <p className='text-gray-500 mt-2'>Loading transactions...</p>
-            </div>
-          ) : transactions && transactions.length > 0 ? (
-            <div className='space-y-0 border border-gray-200 rounded-lg overflow-hidden'>
-              {transactions.slice(0, 10).map((transaction, index) => (
-                <TransactionItem
-                  key={transaction.id}
-                  transaction={transaction}
-                  showCard={false}
-                  onClick={() => router.push(`/transactions/${transaction.id}`)}
-                  className={
-                    index === transactions.length - 1 ? 'border-b-0' : ''
-                  }
-                />
-              ))}
-              {transactions.length > 10 && (
-                <div className='text-center py-3 border-t border-gray-200'>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    onClick={() => router.push('/transactions')}
-                  >
-                    View All Transactions
-                  </Button>
-                </div>
-              )}
-            </div>
-          ) : statements && statements.length > 0 ? (
-            <div className='text-center py-8'>
-              <div className='text-gray-400 mb-2'>💳</div>
-              <p className='text-gray-600'>
-                No transactions yet for this card.
-              </p>
-              <p className='text-sm text-gray-500 mt-1'>
-                Transactions will appear here after uploading statements.
-              </p>
-            </div>
-          ) : (
-            <div className='text-center py-8'>
-              <div className='w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4'>
-                <Upload className='w-6 h-6 text-blue-600' />
-              </div>
-              <h3 className='text-lg font-semibold text-gray-900 mb-2'>
-                Upload Your First Statement
-              </h3>
-              <p className='text-sm text-gray-600 mb-4'>
-                Upload your statement to see credit limit and utilization
-              </p>
-              <Button
-                onClick={() => setShowUploadModal(true)}
-                className='flex items-center space-x-2 mx-auto'
-              >
-                <Upload className='w-4 h-4' />
-                <span>Upload Statement</span>
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* Latest Statement Summary */}
-        {statements &&
-          statements.length > 0 &&
-          statements[0].status === 'success' && (
-            <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
-              <div className='flex items-center justify-between mb-4'>
-                <h2 className='text-lg font-semibold text-gray-900 flex items-center gap-2'>
-                  <DollarSign className='w-5 h-5 text-primary-500' />
-                  Latest Statement Summary
-                </h2>
-              </div>
-              <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
-                {statements[0].creditLimit && (
-                  <div>
-                    <div className='text-sm text-gray-600 mb-1'>
-                      Credit Limit
-                    </div>
-                    <div className='text-xl font-bold text-gray-900'>
-                      ₹{statements[0].creditLimit.toLocaleString()}
-                    </div>
-                  </div>
-                )}
-                {statements[0].availableCredit != null &&
-                  statements[0].availableCredit !== undefined && (
-                    <div>
-                      <div className='text-sm text-gray-600 mb-1'>
-                        Available Credit
-                      </div>
-                      <div className='text-xl font-bold text-green-600'>
-                        ₹{(statements[0].availableCredit || 0).toLocaleString()}
-                      </div>
-                    </div>
-                  )}
-                {statements[0].minimumPayment && (
-                  <div>
-                    <div className='text-sm text-gray-600 mb-1'>
-                      Min Payment
-                    </div>
-                    <div className='text-xl font-bold text-orange-600'>
-                      ₹{statements[0].minimumPayment.toLocaleString()}
-                    </div>
-                  </div>
-                )}
-                {statements[0].dueDate && (
-                  <div>
-                    <div className='text-sm text-gray-600 mb-1'>Due Date</div>
-                    <div className='text-xl font-bold text-gray-900'>
-                      {new Date(statements[0].dueDate)
-                        .toLocaleDateString('en-IN', {
-                          day: '2-digit',
-                          month: 'short',
-                        })
-                        .toUpperCase()}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-        {/* Analytics Section */}
-        {statements && statements.length > 0 && (
-          <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
-            <div className='flex items-center justify-between mb-4'>
-              <h2 className='text-lg font-semibold text-gray-900 flex items-center gap-2'>
-                <BarChart3 className='w-5 h-5 text-primary-500' />
-                Analytics
-              </h2>
-            </div>
-            <AnalyticsDashboard cardId={cardId} />
-          </div>
-        )}
-
-        {/* Card Stats */}
-        {/* {card.hasStatement && (
-          <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
-            <h2 className='text-lg font-semibold text-gray-900 mb-4'>
-              Card Information
-            </h2>
-            <div className='grid grid-cols-2 gap-4'>
-              <div>
-                <div className='text-sm text-gray-600 mb-1'>Credit Limit</div>
-                <div className='text-xl font-bold text-gray-900'>
-                  ₹{card.creditLimit?.toLocaleString() || '0'}
-                </div>
-              </div>
-              <div>
-                <div className='text-sm text-gray-600 mb-1'>
-                  Available Credit
-                </div>
-                <div className='text-xl font-bold text-green-600'>
-                  ₹{card.availableCredit?.toLocaleString() || '0'}
-                </div>
-              </div>
-              <div>
-                <div className='text-sm text-gray-600 mb-1'>Used Credit</div>
-                <div className='text-xl font-bold text-red-600'>
-                  ₹
-                  {card.creditLimit && card.availableCredit
-                    ? (card.creditLimit - card.availableCredit).toLocaleString()
-                    : '0'}
-                </div>
-              </div>
-              <div>
-                <div className='text-sm text-gray-600 mb-1'>Utilization</div>
-                <div className='text-xl font-bold text-gray-900'>
-                  {card.creditLimit && card.availableCredit
-                    ? (
-                        ((card.creditLimit - card.availableCredit) /
-                          card.creditLimit) *
-                        100
-                      ).toFixed(1)
-                    : '0'}
-                  %
-                </div>
-              </div>
-            </div>
-          </div>
-        )} */}
-
-        {/* Additional Info */}
-        <div className='mt-6 border-t border-gray-200 space-y-3'>
-          {card.billingDay && (
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center space-x-2 text-gray-600'>
-                <Calendar className='w-4 h-4' />
-                <span className='text-sm'>Billing Day</span>
-              </div>
-              <span className='font-medium'>{card.billingDay}</span>
-            </div>
-          )}
-          {/* {card.rewardType && (
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center space-x-2 text-gray-600'>
-                <Gift className='w-4 h-4' />
-                <span className='text-sm'>Reward Type</span>
-              </div>
-              <span className='font-medium capitalize'>{card.rewardType}</span>
-            </div>
-          )} */}
-        </div>
-        {/* Card Details Information */}
-        <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
-          <h2 className='text-lg font-semibold text-gray-900 mb-4'>
-            Card Details
-          </h2>
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-500'>
-                Card Type
-              </label>
-              <p className='text-gray-900 capitalize'>{card.cardType}</p>
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-500'>
-                Network
-              </label>
-              <p className='text-gray-900 capitalize'>{card.network}</p>
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-500'>
-                Reward Type
-              </label>
-              <p className='text-gray-900 capitalize'>{card.rewardType}</p>
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-500'>
-                Annual Fee
-              </label>
-              <p className='text-gray-900'>
-                ₹{card.annualFee?.toLocaleString() || '0'}
-              </p>
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-500'>
-                Status
-              </label>
-              <p className='text-gray-900 capitalize'>{card.status}</p>
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-500'>
-                Currency
-              </label>
-              <p className='text-gray-900 uppercase'>{card.currency}</p>
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-500'>
-                Bank ID
-              </label>
-              <p className='text-gray-900 uppercase'>{card.bankId}</p>
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-500'>
-                Card Metadata ID
-              </label>
-              <p className='text-gray-900'>{card.cardMetadataId}</p>
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-500'>
-                Is Custom
-              </label>
-              <p className='text-gray-900'>{card.isCustom ? 'Yes' : 'No'}</p>
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-500'>
-                Has Statement
-              </label>
-              <p className='text-gray-900'>
-                {card.hasStatement ? 'Yes' : 'No'}
-              </p>
-            </div>
-            {card.billingDay && (
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-500'>
-                  Billing Day
-                </label>
-                <p className='text-gray-900'>{card.billingDay}</p>
-              </div>
-            )}
-            {card.creditLimit && (
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-500'>
-                  Credit Limit
-                </label>
-                <p className='text-gray-900'>
-                  ₹{card.creditLimit.toLocaleString()}
-                </p>
-              </div>
-            )}
-            {card.availableCredit && (
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-500'>
-                  Available Credit
-                </label>
-                <p className='text-gray-900'>
-                  ₹{card.availableCredit.toLocaleString()}
-                </p>
-              </div>
-            )}
-            {card.primaryColor && (
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-500'>
-                  Card Colors
-                </label>
-                <div className='flex items-center space-x-2'>
-                  <div
-                    className='w-6 h-6 rounded border border-gray-300'
-                    style={{ backgroundColor: card.primaryColor }}
-                  />
-                  {card.secondaryColor && (
-                    <div
-                      className='w-6 h-6 rounded border border-gray-300'
-                      style={{ backgroundColor: card.secondaryColor }}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-500'>
-                Created At
-              </label>
-              <p className='text-gray-900 text-sm'>
-                {new Date(card.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-500'>
-                Updated At
-              </label>
-              <p className='text-gray-900 text-sm'>
-                {new Date(card.updatedAt).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Custom Benefits */}
-        <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6'>
-          <div className='flex items-center justify-between mb-4'>
-            <h2 className='text-lg font-semibold text-gray-900'>
-              Card Benefits
-            </h2>
-          </div>
-
-          {benefitsLoading ? (
-            <div className='text-center flex-col items-center justify-center py-8 w-full'>
-              <LoadingSpinner size='md' className='mx-auto' />
-              <p className='text-gray-500 mt-2'>Loading benefits...</p>
-            </div>
-          ) : benefits && benefits.length > 0 ? (
-            <div className='space-y-3'>
-              {benefits.map((benefit, index) => (
-                <div
-                  key={benefit.id || index}
-                  className='flex items-start p-4 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors'
-                >
-                  <Gift className='w-5 h-5 text-primary-500 mt-0.5 mr-3 flex-shrink-0' />
-                  <div className='flex-1'>
-                    <div className='text-sm text-gray-900'>
-                      {benefit.description}
-                    </div>
-                    <div className='flex flex-wrap items-center gap-2 mt-1'>
-                      {benefit.rewardRate > 0 &&
-                        benefit.rewardType !== 'none' && (
-                          <span className='text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full'>
-                            {benefit.rewardRate}% {benefit.rewardType}
-                          </span>
-                        )}
-                      {benefit.rewardCap && (
-                        <span className='text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full'>
-                          {benefit.rewardType === 'none' ? (
-                            <>
-                              Up to {benefit.rewardCap} visits
-                              {benefit.capPeriod && `/${benefit.capPeriod}`}
-                            </>
-                          ) : (
-                            <>
-                              Up to ₹{benefit.rewardCap.toLocaleString()}
-                              {benefit.capPeriod && `/${benefit.capPeriod}`}
-                            </>
-                          )}
-                        </span>
-                      )}
-                    </div>
-                    {benefit.conditions.length > 0 && (
-                      <div className='text-xs text-gray-500 mt-1'>
-                        {benefit.conditions.join(', ')}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className='text-center py-8 text-gray-500'>
-              <Gift className='w-12 h-12 mx-auto mb-3 text-gray-300' />
-              <p>No benefits available</p>
-              <p className='text-sm mt-1'>
-                Benefits are automatically loaded from card database
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Upload Statement Modal */}
-        {showUploadModal && (
-          <UploadStatementModal
-            isOpen={showUploadModal}
-            onClose={() => setShowUploadModal(false)}
-            cardId={card.id}
-            cardName={card.cardName}
-            bankName={card.bankName}
-            onSuccess={statementId => {
-              setShowUploadModal(false);
-              if (statementId) {
-                setParsingStatementId(statementId);
-                setShowParsingModal(true);
-              }
-              toast.success(
-                'Statement uploaded! Transactions will appear shortly.',
-              );
-            }}
-          />
-        )}
-
-        {/* Parsing Progress Modal */}
-        {showParsingModal && parsingStatementId && (
-          <ParsingProgressModal
-            isOpen={showParsingModal}
-            onClose={() => {
-              setShowParsingModal(false);
-              setParsingStatementId(null);
-            }}
-            statementId={parsingStatementId}
-            cardName={card.cardName}
-            onComplete={() => {
-              // Refresh card data and statements when parsing completes
-              fetchCards();
-              // The statements will be refreshed by the useStatements hook
-            }}
-          />
-        )}
-
-        {/* Delete Modal */}
-        {showDeleteModal && (
-          <Modal
-            isOpen={true}
-            onClose={() => setShowDeleteModal(false)}
-            title='Delete Card'
+        {/* Balance Cards */}
+        <div className='grid grid-cols-2 gap-4'>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className='p-4 bg-gray-800/30 rounded-xl border border-gray-800'
           >
-            <div className='space-y-4'>
-              <p className='text-gray-600'>
-                Are you sure you want to delete <strong>{card.cardName}</strong>
-                ? This action cannot be undone.
+            <p className='text-xs text-gray-400 mb-1'>Current Balance</p>
+            <p className='text-2xl font-bold text-white'>
+              ₹{(card.currentBalance / 100).toFixed(2)}
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className='p-4 bg-gray-800/30 rounded-xl border border-gray-800'
+          >
+            <p className='text-xs text-gray-400 mb-1'>Available Credit</p>
+            <p className='text-2xl font-bold text-white'>
+              ₹{(card.availableCredit / 100).toFixed(2)}
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Utilization Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className='p-4 bg-gray-800/30 rounded-xl border border-gray-800'
+        >
+          <div className='flex justify-between items-center mb-2'>
+            <span className='text-sm text-gray-400'>Credit Utilization</span>
+            <span className='text-sm font-semibold text-white'>
+              {utilization.toFixed(1)}%
+            </span>
+          </div>
+          <div className='h-2 bg-gray-700 rounded-full overflow-hidden'>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${utilization}%` }}
+              transition={{ duration: 1, ease: 'easeOut' }}
+              className={`h-full ${
+                utilization < 30
+                  ? 'bg-green-500'
+                  : utilization < 70
+                    ? 'bg-yellow-500'
+                    : 'bg-red-500'
+              }`}
+            />
+          </div>
+        </motion.div>
+
+        {/* Tabs */}
+        <div className='flex gap-2 p-1 bg-gray-800/30 rounded-xl'>
+          {[
+            { key: 'offers', label: 'Offers', icon: Gift },
+            { key: 'benefits', label: 'Benefits', icon: Award },
+            { key: 'analytics', label: 'Analytics', icon: TrendingUp },
+          ].map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key as any)}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all ${
+                activeTab === key
+                  ? 'bg-primary text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Icon className='w-4 h-4' />
+              <span className='text-sm font-medium'>{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'offers' && (
+          <motion.div
+            key='offers'
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className='space-y-4'
+          >
+            <div className='flex items-center justify-between'>
+              <h3 className='text-lg font-semibold text-white'>
+                Current Offers
+              </h3>
+              <span className='text-sm text-primary'>
+                {card.offers.length} active
+              </span>
+            </div>
+
+            {card.offers.map((offer, index) => (
+              <motion.div
+                key={offer.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className='flex items-center gap-4 p-4 bg-gray-800/30 hover:bg-gray-800/50 rounded-xl border border-gray-800 transition-colors group cursor-pointer'
+              >
+                <div className='w-12 h-12 flex items-center justify-center bg-primary/10 rounded-xl text-2xl'>
+                  {offer.icon}
+                </div>
+                <div className='flex-1'>
+                  <p className='font-semibold text-white'>{offer.title}</p>
+                  <p className='text-sm text-gray-400'>{offer.description}</p>
+                </div>
+                {offer.status === 'activated' ? (
+                  <div className='w-8 h-8 flex items-center justify-center bg-green-500/20 rounded-full'>
+                    <div className='w-2 h-2 bg-green-500 rounded-full' />
+                  </div>
+                ) : (
+                  <button className='px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-medium rounded-lg transition-colors'>
+                    Activate
+                  </button>
+                )}
+              </motion.div>
+            ))}
+
+            {/* Rewards Progress */}
+            <div className='mt-6 p-6 bg-gradient-to-br from-primary/10 to-purple-900/10 rounded-2xl border border-primary/30'>
+              <div className='flex items-center justify-between mb-4'>
+                <h4 className='text-lg font-semibold text-white'>
+                  Rewards Progress
+                </h4>
+                <span className='text-2xl font-bold text-primary'>
+                  {card.rewardsBalance.toLocaleString()} pts
+                </span>
+              </div>
+              <div className='h-2 bg-gray-800 rounded-full overflow-hidden mb-2'>
+                <div className='h-full w-3/4 bg-gradient-to-r from-primary to-blue-400' />
+              </div>
+              <p className='text-sm text-gray-400'>
+                Equivalent to ₹{card.rewardsValue.toFixed(2)}
               </p>
-              <div className='flex space-x-3'>
-                <Button
-                  variant='outline'
-                  onClick={() => setShowDeleteModal(false)}
-                  className='flex-1'
-                  disabled={deleting}
+              <button className='mt-4 w-full px-4 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors'>
+                Redeem
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'benefits' && (
+          <motion.div
+            key='benefits'
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className='space-y-4'
+          >
+            <h3 className='text-lg font-semibold text-white'>Card Benefits</h3>
+
+            {/* Key Features */}
+            <div className='grid gap-3'>
+              {card.metadata.features.map((feature, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className='flex items-start gap-3 p-4 bg-gray-800/30 rounded-xl border border-gray-800'
                 >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className='flex-1 bg-red-600 hover:bg-red-700'
-                >
-                  {deleting ? (
-                    <div className='flex items-center justify-center gap-2'>
-                      <LoadingSpinner size='sm' />
-                      <span>Deleting...</span>
+                  <div className='w-8 h-8 flex-shrink-0 flex items-center justify-center bg-primary/10 rounded-lg'>
+                    <Sparkles className='w-4 h-4 text-primary' />
+                  </div>
+                  <p className='text-sm text-gray-300'>{feature}</p>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Rewards by Category */}
+            <div className='mt-6'>
+              <h4 className='text-base font-semibold text-white mb-3'>
+                Reward Categories
+              </h4>
+              <div className='space-y-3'>
+                {card.metadata.rewards.categories.map((cat, index) => (
+                  <div
+                    key={index}
+                    className='flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-gray-800'
+                  >
+                    <div className='flex items-center gap-3'>
+                      <span className='text-2xl'>{cat.icon}</span>
+                      <span className='text-white font-medium'>{cat.name}</span>
                     </div>
-                  ) : (
-                    'Delete'
-                  )}
-                </Button>
+                    <span className='text-primary font-semibold'>
+                      {cat.rate}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
-          </Modal>
+
+            {/* Fees */}
+            <div className='mt-6 p-4 bg-gray-800/30 rounded-xl border border-gray-800'>
+              <h4 className='text-base font-semibold text-white mb-3'>
+                Fees & Charges
+              </h4>
+              <div className='space-y-2 text-sm'>
+                <div className='flex justify-between'>
+                  <span className='text-gray-400'>Annual Fee</span>
+                  <span className='text-white font-medium'>
+                    ₹{card.metadata.annualFee}
+                  </span>
+                </div>
+                <div className='flex justify-between'>
+                  <span className='text-gray-400'>Fee Waiver</span>
+                  <span className='text-white text-xs'>
+                    {card.metadata.annualFeeWaiver}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         )}
+
+        {activeTab === 'analytics' && (
+          <motion.div
+            key='analytics'
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className='space-y-4'
+          >
+            <h3 className='text-lg font-semibold text-white'>
+              Spending by Category
+            </h3>
+
+            {/* Spending bars */}
+            {card.spending.map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className='space-y-2'
+              >
+                <div className='flex justify-between text-sm'>
+                  <span className='text-gray-400'>{item.category}</span>
+                  <span className='text-white font-medium'>₹{item.amount}</span>
+                </div>
+                <div className='h-3 bg-gray-800 rounded-full overflow-hidden'>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${item.percentage}%` }}
+                    transition={{ duration: 1, delay: index * 0.1 }}
+                    className='h-full bg-primary'
+                  />
+                </div>
+              </motion.div>
+            ))}
+
+            {/* Recent Transactions */}
+            <div className='mt-6'>
+              <div className='flex items-center justify-between mb-4'>
+                <h4 className='text-base font-semibold text-white'>
+                  Recent Activity
+                </h4>
+                <button className='text-sm text-primary'>View All</button>
+              </div>
+
+              <div className='space-y-3'>
+                {card.recentTransactions.map((txn, index) => (
+                  <motion.div
+                    key={txn.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className='flex items-center gap-3 p-3 bg-gray-800/30 rounded-xl'
+                  >
+                    <div className='w-10 h-10 flex items-center justify-center bg-gray-800 rounded-lg text-xl'>
+                      {txn.icon}
+                    </div>
+                    <div className='flex-1'>
+                      <p className='text-sm font-medium text-white'>
+                        {txn.merchant}
+                      </p>
+                      <p className='text-xs text-gray-400'>
+                        {txn.category} • {txn.date}
+                      </p>
+                    </div>
+                    <span className='text-base font-semibold text-white'>
+                      ₹{Math.abs(txn.amount / 100).toFixed(2)}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Payment Actions */}
+        <div className='grid grid-cols-2 gap-4 pt-4'>
+          <button className='px-6 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl transition-colors'>
+            Make Payment
+          </button>
+          <button className='px-6 py-3 bg-gray-800/50 hover:bg-gray-800 text-white font-semibold rounded-xl transition-colors'>
+            View Statement
+          </button>
+        </div>
       </div>
     </div>
   );

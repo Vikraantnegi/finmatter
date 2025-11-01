@@ -201,7 +201,7 @@ function VerifyOtpContent() {
       <div className='min-h-screen flex items-center justify-center bg-background-dark'>
         <div className='text-center space-y-4'>
           <LoadingSpinner size='lg' className='mx-auto' />
-          <p className='text-base text-gray-300'>Curating your dashboard...</p>
+          <p className='text-base text-gray-300'>Setting up your profile...</p>
         </div>
       </div>
     );

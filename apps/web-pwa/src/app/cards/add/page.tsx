@@ -20,6 +20,8 @@ import {
   formatCardNumber,
   CardDetectionResult,
 } from '@/services/cardDetectionService';
+import { cardService } from '@/services/cardService';
+import { apiClient } from '@/lib/apiClient';
 import toast from 'react-hot-toast';
 
 export default function AddCardPage() {
@@ -111,24 +113,46 @@ export default function AddCardPage() {
     try {
       setIsSubmitting(true);
 
-      // TODO: Call API to add card
+      // Fetch metadata from BIN lookup
+      const bin = cardNumber.replace(/\s/g, '').slice(0, 8);
+      let cardMetadata: any = null;
+
+      try {
+        const binResponse: any = await apiClient.get(
+          `/api/cards/bin-lookup?bin=${bin}`,
+        );
+        if (binResponse.success && binResponse.data?.found) {
+          cardMetadata = binResponse.data;
+        }
+      } catch (error) {
+        console.warn('BIN lookup failed, continuing with defaults:', error);
+      }
+
+      // Prepare card data with metadata if available
       const cardData = {
-        cardNumber: cardNumber.replace(/\s/g, ''),
-        cardholderName,
-        expiryDate: `20${expiryYear}-${expiryMonth.padStart(2, '0')}-01`,
-        network: detection.network,
-        bankName: detection.bankName || 'Unknown Bank',
-        cardBrand: detection.cardBrand,
+        bankName:
+          cardMetadata?.bankName || detection.bankName || 'Unknown Bank',
+        cardName:
+          cardMetadata?.cardBrand || detection.cardBrand || 'Credit Card',
         lastFourDigits: cardNumber.slice(-4),
+        cardType: cardMetadata?.cardType || 'credit',
+        network: detection.network.toLowerCase(),
+        rewardType: cardMetadata?.cardMetadata?.reward_type || 'none',
+        annualFee: cardMetadata?.cardMetadata?.annual_fee || 0,
+        cardMetadataId:
+          cardMetadata?.cardMetadataId || cardMetadata?.cardMetadata?.id,
+        primaryColor: cardMetadata?.cardMetadata?.primary_color,
+        secondaryColor: cardMetadata?.cardMetadata?.secondary_color,
+        expiryDate: `${expiryMonth.padStart(2, '0')}/${expiryYear}`,
+        isCustom: !cardMetadata?.cardMetadataId,
+        currency: 'INR',
       };
 
-      console.log('Adding card:', cardData);
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Call real API to create card
+      const card = await cardService.createCard(cardData);
 
       toast.success('Card added successfully!');
-      router.push('/cards');
+      router.push(`/cards/${card.id}`);
     } catch (error) {
       console.error('Error adding card:', error);
       toast.error(

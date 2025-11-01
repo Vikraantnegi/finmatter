@@ -24,7 +24,6 @@ function DashboardContent() {
     );
   }
 
-  // No cards - show empty state
   if (cards.length === 0) {
     return (
       <div className='min-h-screen flex flex-col'>

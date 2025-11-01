@@ -32,9 +32,9 @@ export function Skeleton({ className = '' }: SkeletonProps) {
  */
 export function CardsStackLoader() {
   return (
-    <div className='space-y-4'>
+    <div>
       {/* Header */}
-      <div className='px-6'>
+      <div className='px-6 mb-6'>
         <div className='flex items-center justify-between'>
           <div className='flex items-center gap-2'>
             <Skeleton className='w-24 h-6' />
@@ -46,21 +46,29 @@ export function CardsStackLoader() {
 
       {/* Card Stack */}
       <div className='px-6'>
-        <div className='relative h-[200px]'>
+        <div className='relative h-[280px] pt-6'>
           {[0, 1, 2].map(index => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{
                 opacity: 1,
-                y: index * 12,
-                scale: 1 - index * 0.05,
+                y: index * 18,
+                scale: 1 - index * 0.03,
               }}
               transition={{ delay: index * 0.1 }}
-              className='absolute inset-0'
-              style={{ zIndex: 3 - index }}
+              className='absolute top-0 left-0 right-0 h-[230px]'
+              style={{
+                zIndex: 3 - index,
+                transformOrigin: 'top center',
+                filter: index > 0 ? `brightness(${1 - index * 0.08})` : 'none',
+                boxShadow:
+                  index === 0
+                    ? '0 20px 40px rgba(0, 0, 0, 0.4)'
+                    : `0 ${8 + index * 4}px ${16 + index * 8}px rgba(0, 0, 0, 0.3)`,
+              }}
             >
-              <div className='w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6'>
+              <div className='w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border border-white/10'>
                 {/* Top */}
                 <div className='flex justify-between items-start mb-8'>
                   <div className='space-y-2'>
@@ -161,7 +169,7 @@ export function SpendingChartLoader() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className='bg-gray-900/50 rounded-2xl border border-gray-800 p-6'
+        className='bg-gray-900/50 rounded-2xl border border-gray-800 p-6 -mt-4'
       >
         {/* Header */}
         <div className='flex items-center justify-between mb-6'>
@@ -282,7 +290,7 @@ export function DashboardLoader() {
   return (
     <div className='space-y-6 pb-6'>
       {/* Header Loader */}
-      <div className='px-6 py-4'>
+      <div className='px-6 py-4 bg-gradient-to-b from-gray-900/50 to-transparent mb-2'>
         <div className='flex items-center justify-between'>
           <div className='flex items-center gap-3'>
             <Skeleton className='w-12 h-12 rounded-full' />

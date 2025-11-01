@@ -154,6 +154,28 @@ export class AuthService {
     const response = await apiClient.put('/api/users/onboarding', userData);
     return response;
   }
+
+  async updateProfile(data: {
+    firstName?: string;
+    lastName?: string;
+    displayName?: string;
+    avatar?: string;
+    phoneNumber?: string;
+    dateOfBirth?: string;
+    preferences?: {
+      notifications?: {
+        push?: {
+          enabled?: boolean;
+        };
+        email?: {
+          enabled?: boolean;
+        };
+      };
+    };
+  }): Promise<any> {
+    const response = await apiClient.put('/api/users/profile', data);
+    return response;
+  }
 }
 
 export const authService = new AuthService();

@@ -148,3 +148,16 @@ export class StorageService {
 }
 
 export const storageService = new StorageService();
+
+// Export helper functions for easier use
+export const uploadAvatar = (file: File, userId: string) =>
+  storageService.uploadAvatar(userId, file);
+
+export const deleteUserAvatars = (userId: string) =>
+  storageService.deleteUserAvatars(userId);
+
+export const validateImageFile = (file: File) =>
+  storageService.validateImageFile(file);
+
+export const getAvatarUrl = (avatarPath: string) =>
+  storageService.getAvatarUrl(avatarPath);

@@ -1,479 +1,329 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  X,
+  CreditCard,
+  Calendar,
+  Lock,
+  User,
+  Check,
+  AlertCircle,
+} from 'lucide-react';
+import { PageHeader } from '@/components/common/PageHeader';
+import { Card3DPreview } from '@/components/cards/Card3DPreview';
 import { Button } from '@/components/ui/Button';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { cardSearchService } from '@finmatter/cc-engine';
-import type { CardMetadata, BankMetadata } from '@finmatter/cc-engine';
-import { ArrowLeft, Search, CreditCard, Building2 } from 'lucide-react';
-import { cardService } from '@/services/cardService';
+import {
+  detectCard,
+  formatCardNumber,
+  CardDetectionResult,
+} from '@/services/cardDetectionService';
 import toast from 'react-hot-toast';
-
-type SelectionStep = 'bank' | 'card' | 'form';
-
-interface FormData {
-  cardHolderName: string;
-  lastFourDigits: string;
-  expiryDate: string;
-  bankName: string;
-}
-
-interface FormErrors {
-  cardHolderName?: string;
-  lastFourDigits?: string;
-  expiryDate?: string;
-  submit?: string;
-}
 
 export default function AddCardPage() {
   const router = useRouter();
 
-  // Step management
-  const [step, setStep] = useState<SelectionStep>('bank');
-  const [selectedBank, setSelectedBank] = useState<BankMetadata | null>(null);
-  const [selectedCard, setSelectedCard] = useState<CardMetadata | null>(null);
+  // Form state
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardholderName, setCardholderName] = useState('');
+  const [expiryMonth, setExpiryMonth] = useState('');
+  const [expiryYear, setExpiryYear] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Search
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Form data
-  const [formData, setFormData] = useState<FormData>({
-    cardHolderName: '',
-    lastFourDigits: '',
-    expiryDate: '',
-    bankName: '',
+  // Detection state
+  const [detection, setDetection] = useState<CardDetectionResult>({
+    network: 'Unknown',
+    isValid: false,
+    formatted: '',
   });
 
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<FormErrors>({});
+  // Auto-detect card as user types
+  useEffect(() => {
+    if (cardNumber.length >= 6) {
+      const result = detectCard(cardNumber);
+      setDetection(result);
+    } else {
+      setDetection({
+        network: 'Unknown',
+        isValid: false,
+        formatted: '',
+      });
+    }
+  }, [cardNumber]);
 
-  // Get banks
-  const banks = cardSearchService.getAllBanks();
-
-  // Filter banks by search
-  const filteredBanks = searchQuery
-    ? banks.filter(bank =>
-        bank.name.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : banks;
-
-  // Get cards for selected bank
-  const availableCards = selectedBank
-    ? cardSearchService.getCardsByBank(selectedBank.id)
-    : [];
-
-  // Filter cards by search
-  const filteredCards = searchQuery
-    ? availableCards.filter(card =>
-        card.cardName.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : availableCards;
-
-  const handleBankSelect = (bank: BankMetadata) => {
-    setSelectedBank(bank);
-    setSearchQuery('');
-    setStep('card');
-  };
-
-  const handleCardSelect = (card: CardMetadata) => {
-    setSelectedCard(card);
-    setFormData(prev => ({
-      ...prev,
-      cardHolderName: '', // Reset to empty for user input
-      bankName: selectedBank?.name || '',
-    }));
-    setStep('form');
-  };
-
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-    // Clear error when user starts typing
-    if (errors[field as keyof FormErrors]) {
-      setErrors((prev: FormErrors) => ({
-        ...prev,
-        [field as keyof FormErrors]: undefined,
-      }));
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\s/g, '');
+    if (/^\d*$/.test(value) && value.length <= 16) {
+      setCardNumber(value);
     }
   };
 
-  const validateForm = () => {
-    const newErrors: FormErrors = {};
-
-    if (!formData.cardHolderName.trim()) {
-      newErrors.cardHolderName = 'Card holder name is required';
+  const handleExpiryChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: 'month' | 'year',
+  ) => {
+    const value = e.target.value.replace(/\D/g, '');
+    if (type === 'month') {
+      if (value.length <= 2 && (value === '' || parseInt(value) <= 12)) {
+        setExpiryMonth(value);
+      }
+    } else {
+      if (value.length <= 2) {
+        setExpiryYear(value);
+      }
     }
-
-    if (!formData.lastFourDigits.trim()) {
-      newErrors.lastFourDigits = 'Last 4 digits are required';
-    } else if (!/^\d{4}$/.test(formData.lastFourDigits)) {
-      newErrors.lastFourDigits = 'Must be exactly 4 digits';
-    }
-
-    // Validate expiry date format (MM/YY)
-    if (formData.expiryDate && !/^\d{2}\/\d{2}$/.test(formData.expiryDate)) {
-      newErrors.expiryDate = 'Must be in MM/YY format';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
+  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    if (value.length <= (detection.network === 'Amex' ? 4 : 3)) {
+      setCvv(value);
+    }
+  };
 
-    setLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!detection.isValid) {
+      toast.error('Please enter a valid card number');
+      return;
+    }
+
+    if (!cardholderName.trim()) {
+      toast.error('Please enter cardholder name');
+      return;
+    }
+
+    if (!expiryMonth || !expiryYear) {
+      toast.error('Please enter expiry date');
+      return;
+    }
+
+    if (!cvv) {
+      toast.error('Please enter CVV');
+      return;
+    }
+
     try {
-      // Create card object with proper type mapping
-      const newCardData = {
-        cardName: formData.cardHolderName, // Map cardHolderName to cardName for API
-        lastFourDigits: formData.lastFourDigits,
-        cardType: 'credit' as const,
-        network: (selectedCard?.network || 'visa') as
-          | 'visa'
-          | 'mastercard'
-          | 'rupay'
-          | 'amex'
-          | 'discover',
-        rewardType: (selectedCard?.rewardType || 'cashback') as
-          | 'cashback'
-          | 'points'
-          | 'miles'
-          | 'none',
-        bankName: formData.bankName,
-        annualFee: selectedCard?.annualFee || 0,
-        currency: 'INR',
-        // These will be fetched from statements, so set default values
-        creditLimit: 0,
-        availableCredit: 0,
-        expiryDate: formData.expiryDate || undefined,
-        // Include metadata from selected card
-        cardMetadataId: selectedCard?.id,
-        bankId: selectedCard?.bankId,
-        primaryColor: selectedCard?.primaryColor,
-        secondaryColor: selectedCard?.secondaryColor,
-        isCustom: !selectedCard, // Custom if no card selected
+      setIsSubmitting(true);
+
+      // TODO: Call API to add card
+      const cardData = {
+        cardNumber: cardNumber.replace(/\s/g, ''),
+        cardholderName,
+        expiryDate: `20${expiryYear}-${expiryMonth.padStart(2, '0')}-01`,
+        network: detection.network,
+        bankName: detection.bankName || 'Unknown Bank',
+        cardBrand: detection.cardBrand,
+        lastFourDigits: cardNumber.slice(-4),
       };
 
-      // Call API to create card
-      const response = await cardService.createCard(newCardData);
+      console.log('Adding card:', cardData);
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       toast.success('Card added successfully!');
-
-      // Redirect to card details or cards list
-      router.push(`/cards/${response.id}`);
-    } catch (error: any) {
-      console.error('Failed to create card:', error);
-
-      // Check for specific error codes from API
-      const errorData = error.response?.data?.error || error.error;
-
-      if (errorData?.code === 'CARD_ALREADY_EXISTS') {
-        // Duplicate card error
-        setErrors({
-          lastFourDigits: errorData.message,
-          submit: errorData.suggestion || 'This card already exists.',
-        });
-        toast.error(errorData.message);
-      } else if (errorData?.code === 'VALIDATION_ERROR') {
-        // Validation errors - map to form fields
-        const details = errorData.details;
-        if (Array.isArray(details)) {
-          const fieldErrors: FormErrors = {};
-          details.forEach((err: { path?: string[]; message?: string }) => {
-            if (err.path && err.path.length > 0) {
-              const fieldName = err.path[0] as keyof FormErrors;
-              if (fieldName in fieldErrors || fieldName === 'submit') {
-                (fieldErrors as any)[fieldName] = err.message;
-              }
-            }
-          });
-          setErrors(fieldErrors);
-          toast.error('Please check your input and try again.');
-        } else {
-          setErrors({ submit: errorData.message });
-          toast.error(errorData.message);
-        }
-      } else if (errorData?.code === 'USER_NOT_FOUND') {
-        // Session expired
-        toast.error(errorData.message);
-        // Redirect to login after a delay
-        setTimeout(() => {
-          window.location.href = '/auth/login';
-        }, 2000);
-      } else {
-        // Generic error
-        const errorMessage =
-          errorData?.message || 'Failed to create card. Please try again.';
-        setErrors({ submit: errorMessage });
-        toast.error(errorMessage);
-      }
+      router.push('/cards');
+    } catch (error) {
+      console.error('Error adding card:', error);
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to add card',
+      );
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleBack = () => {
-    if (step === 'card') {
-      setStep('bank');
-      setSelectedBank(null);
-      setSelectedCard(null);
-    } else if (step === 'form') {
-      setStep('card');
-      setSelectedCard(null);
-    } else {
-      router.back();
-    }
-  };
-
-  const renderBankSelection = () => (
-    <div className='space-y-6'>
-      <div className='text-center'>
-        <Building2 className='w-12 h-12 text-primary-500 mx-auto mb-4' />
-        <h2 className='text-xl font-bold text-gray-900 mb-2'>
-          Select Your Bank
-        </h2>
-        <p className='text-gray-600'>
-          Choose the bank that issued your credit card
-        </p>
-      </div>
-
-      <div className='relative'>
-        <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4' />
-        <input
-          type='text'
-          placeholder='Search banks...'
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className='w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent'
-        />
-      </div>
-
-      <div className='grid gap-3'>
-        {filteredBanks.map(bank => (
-          <button
-            key={bank.id}
-            onClick={() => handleBankSelect(bank)}
-            className='flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors text-left'
-          >
-            <div className='flex items-center space-x-3'>
-              <div className='w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center'>
-                <Building2 className='w-5 h-5 text-primary-600' />
-              </div>
-              <div>
-                <div className='font-medium text-gray-900'>{bank.name}</div>
-                <div className='text-sm text-gray-500'>
-                  {cardSearchService.getCardsByBank(bank.id).length} cards
-                  available
-                </div>
-              </div>
-            </div>
-            <div className='text-gray-400'>
-              <ArrowLeft className='w-4 h-4 rotate-180' />
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderCardSelection = () => (
-    <div className='space-y-6'>
-      <div className='text-center'>
-        <CreditCard className='w-12 h-12 text-primary-500 mx-auto mb-4' />
-        <h2 className='text-xl font-bold text-gray-900 mb-2'>
-          Select Your Card
-        </h2>
-        <p className='text-gray-600'>
-          Choose from {selectedBank?.name}&apos;s available cards
-        </p>
-      </div>
-
-      <div className='relative'>
-        <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4' />
-        <input
-          type='text'
-          placeholder='Search cards...'
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className='w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent'
-        />
-      </div>
-
-      <div className='grid gap-3'>
-        {filteredCards.map(card => (
-          <button
-            key={card.id}
-            onClick={() => handleCardSelect(card)}
-            className='flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors text-left'
-          >
-            <div className='flex items-center space-x-3'>
-              <div
-                className='w-10 h-10 rounded-lg flex items-center justify-center text-white'
-                style={{
-                  background: `linear-gradient(135deg, ${card.primaryColor || '#3b82f6'}, ${card.secondaryColor || '#1d4ed8'})`,
-                }}
-              >
-                <CreditCard className='w-5 h-5' />
-              </div>
-              <div>
-                <div className='font-medium text-gray-900'>{card.cardName}</div>
-                <div className='text-sm text-gray-500 capitalize'>
-                  {card.rewardType} • {card.network}
-                </div>
-              </div>
-            </div>
-            <div className='text-gray-400'>
-              <ArrowLeft className='w-4 h-4 rotate-180' />
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderForm = () => (
-    <div className='space-y-6'>
-      <div className='text-center'>
-        <CreditCard className='w-12 h-12 text-primary-500 mx-auto mb-4' />
-        <h2 className='text-xl font-bold text-gray-900 mb-2'>Card Details</h2>
-        <p className='text-gray-600'>
-          {selectedCard
-            ? `Fill in details for ${selectedCard.cardName}`
-            : 'Enter your card information'}
-        </p>
-      </div>
-
-      <div className='space-y-4'>
-        <div>
-          <label className='block text-sm font-medium text-gray-700 mb-1'>
-            Card Holder Name *
-          </label>
-          <input
-            type='text'
-            value={formData.cardHolderName}
-            onChange={e => handleInputChange('cardHolderName', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 ${
-              errors.cardHolderName ? 'border-red-300' : 'border-gray-300'
-            }`}
-            placeholder='e.g., John Doe'
-          />
-          {errors.cardHolderName && (
-            <p className='text-red-500 text-sm mt-1'>{errors.cardHolderName}</p>
-          )}
-        </div>
-
-        <div>
-          <label className='block text-sm font-medium text-gray-700 mb-1'>
-            Last 4 Digits *
-          </label>
-          <input
-            type='text'
-            value={formData.lastFourDigits}
-            onChange={e =>
-              handleInputChange(
-                'lastFourDigits',
-                e.target.value.replace(/\D/g, '').slice(0, 4),
-              )
-            }
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 ${
-              errors.lastFourDigits ? 'border-red-300' : 'border-gray-300'
-            }`}
-            placeholder='1234'
-          />
-          {errors.lastFourDigits && (
-            <p className='text-red-500 text-sm mt-1'>{errors.lastFourDigits}</p>
-          )}
-        </div>
-
-        <div>
-          <label className='block text-sm font-medium text-gray-700 mb-1'>
-            Expiry Date
-          </label>
-          <input
-            type='text'
-            value={formData.expiryDate}
-            onChange={e => {
-              const value = e.target.value.replace(/\D/g, '');
-              const formatted =
-                value.length >= 2
-                  ? `${value.slice(0, 2)}/${value.slice(2, 4)}`
-                  : value;
-              handleInputChange('expiryDate', formatted);
-            }}
-            className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900'
-            placeholder='MM/YY'
-            maxLength={5}
-          />
-          {errors.expiryDate && (
-            <p className='text-red-500 text-sm mt-1'>{errors.expiryDate}</p>
-          )}
-        </div>
-
-        <div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
-          <p className='text-blue-800 text-sm flex items-center gap-2'>
-            <span>💡</span>
-            <span>
-              Credit limit, available credit, and billing day will be
-              automatically fetched from your statements.
-            </span>
-          </p>
-        </div>
-
-        {errors.submit && (
-          <div className='p-3 bg-red-50 border border-red-200 rounded-lg'>
-            <p className='text-red-600 text-sm'>{errors.submit}</p>
-          </div>
-        )}
-      </div>
-
-      <div className='flex space-x-3'>
-        <Button variant='outline' onClick={handleBack} className='flex-1'>
-          Back
-        </Button>
-        <Button onClick={handleSubmit} disabled={loading} className='flex-1'>
-          {loading ? (
-            <div className='flex items-center justify-center gap-2'>
-              <LoadingSpinner size='sm' />
-              <span>Adding Card...</span>
-            </div>
-          ) : (
-            'Add Card'
-          )}
-        </Button>
-      </div>
-    </div>
-  );
+  const expiryDisplay =
+    expiryMonth && expiryYear
+      ? `${expiryMonth.padStart(2, '0')}/${expiryYear}`
+      : '';
 
   return (
-    <div className='min-h-screen bg-white'>
-      {/* Header */}
-      <div className='bg-white border-b border-gray-200 sticky top-0 z-30'>
-        <div className='max-w-2xl mx-auto px-4 sm:px-6 lg:px-8'>
-          <div className='flex items-center py-4'>
-            <button
-              onClick={handleBack}
-              className='mr-4 p-2 hover:bg-gray-100 rounded-lg transition-colors'
-            >
-              <ArrowLeft className='w-5 h-5 text-gray-600' />
-            </button>
-            <h1 className='text-xl font-bold text-gray-900'>
-              {step === 'bank' && 'Select Bank'}
-              {step === 'card' && 'Select Card'}
-              {step === 'form' && 'Add Card'}
-            </h1>
-          </div>
-        </div>
-      </div>
+    <div className='min-h-screen bg-background-dark pb-20'>
+      <PageHeader
+        title='Add Card'
+        action={
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => router.back()}
+            className='w-10 h-10 flex items-center justify-center rounded-full bg-gray-800/50 hover:bg-gray-800 transition-colors'
+          >
+            <X className='w-5 h-5 text-white' />
+          </motion.button>
+        }
+      />
 
-      {/* Content */}
-      <div className='max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
-        {step === 'bank' && renderBankSelection()}
-        {step === 'card' && renderCardSelection()}
-        {step === 'form' && renderForm()}
+      <div className='px-6 py-6 space-y-6'>
+        {/* 3D Card Preview */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card3DPreview
+            cardNumber={formatCardNumber(cardNumber)}
+            cardholderName={cardholderName}
+            expiryDate={expiryDisplay}
+            network={detection.network}
+            bankName={detection.bankName}
+            isFlipped={isFlipped}
+          />
+        </motion.div>
+
+        {/* Detection Info */}
+        <AnimatePresence>
+          {detection.bankName && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className='flex items-center justify-center gap-2 p-3 bg-primary/10 border border-primary/30 rounded-xl'
+            >
+              <Check className='w-5 h-5 text-primary' />
+              <span className='text-sm text-primary font-medium'>
+                {detection.bankName} {detection.network} detected
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Form */}
+        <motion.form
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          onSubmit={handleSubmit}
+          className='space-y-4'
+        >
+          {/* Card Number */}
+          <div>
+            <label className='block text-sm font-medium text-gray-400 mb-2'>
+              Card Number
+            </label>
+            <div className='relative'>
+              <CreditCard className='absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500' />
+              <input
+                type='text'
+                value={formatCardNumber(cardNumber)}
+                onChange={handleCardNumberChange}
+                placeholder='1234 5678 9012 3456'
+                className='w-full pl-12 pr-12 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
+                maxLength={19}
+                autoComplete='cc-number'
+              />
+              {cardNumber.length >= 13 && (
+                <div className='absolute right-4 top-1/2 -translate-y-1/2'>
+                  {detection.isValid ? (
+                    <Check className='w-5 h-5 text-green-500' />
+                  ) : (
+                    <AlertCircle className='w-5 h-5 text-red-500' />
+                  )}
+                </div>
+              )}
+            </div>
+            {cardNumber.length >= 13 && !detection.isValid && (
+              <p className='mt-1 text-xs text-red-500'>Invalid card number</p>
+            )}
+          </div>
+
+          {/* Cardholder Name */}
+          <div>
+            <label className='block text-sm font-medium text-gray-400 mb-2'>
+              Cardholder Name
+            </label>
+            <div className='relative'>
+              <User className='absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500' />
+              <input
+                type='text'
+                value={cardholderName}
+                onChange={e => setCardholderName(e.target.value)}
+                placeholder='JOHN DOE'
+                className='w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 uppercase focus:outline-none focus:border-primary transition-colors'
+                autoComplete='cc-name'
+              />
+            </div>
+          </div>
+
+          {/* Expiry & CVV */}
+          <div className='grid grid-cols-2 gap-4'>
+            {/* Expiry Date */}
+            <div>
+              <label className='block text-sm font-medium text-gray-400 mb-2'>
+                Expiry Date
+              </label>
+              <div className='flex gap-2'>
+                <div className='relative flex-1'>
+                  <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500' />
+                  <input
+                    type='text'
+                    value={expiryMonth}
+                    onChange={e => handleExpiryChange(e, 'month')}
+                    placeholder='MM'
+                    className='w-full pl-10 pr-2 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-center focus:outline-none focus:border-primary transition-colors'
+                    maxLength={2}
+                    autoComplete='cc-exp-month'
+                  />
+                </div>
+                <span className='text-gray-500 text-2xl'>/</span>
+                <input
+                  type='text'
+                  value={expiryYear}
+                  onChange={e => handleExpiryChange(e, 'year')}
+                  placeholder='YY'
+                  className='flex-1 px-2 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-center focus:outline-none focus:border-primary transition-colors'
+                  maxLength={2}
+                  autoComplete='cc-exp-year'
+                />
+              </div>
+            </div>
+
+            {/* CVV */}
+            <div>
+              <label className='block text-sm font-medium text-gray-400 mb-2'>
+                CVV
+              </label>
+              <div className='relative'>
+                <Lock className='absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500' />
+                <input
+                  type='text'
+                  value={cvv}
+                  onChange={handleCvvChange}
+                  onFocus={() => setIsFlipped(true)}
+                  onBlur={() => setIsFlipped(false)}
+                  placeholder='123'
+                  className='w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-center focus:outline-none focus:border-primary transition-colors'
+                  maxLength={detection.network === 'Amex' ? 4 : 3}
+                  autoComplete='cc-csc'
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <Button
+            type='submit'
+            disabled={!detection.isValid || isSubmitting}
+            className='w-full mt-6 bg-primary hover:bg-primary/90 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-colors'
+          >
+            {isSubmitting ? 'Adding Card...' : 'Add Card'}
+          </Button>
+        </motion.form>
+
+        {/* Security Note */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className='text-xs text-gray-500 text-center'
+        >
+          🔒 Your card information is encrypted and secure
+        </motion.p>
       </div>
     </div>
   );

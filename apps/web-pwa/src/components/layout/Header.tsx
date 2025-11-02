@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import React from 'react';
-import { Logo } from '@/components/branding/Logo';
+import Logo from '@/components/branding/Logo';
 
 interface HeaderProps {
   showBackButton?: boolean;
@@ -16,13 +16,13 @@ interface HeaderProps {
  * Common header component for auth flows, tutorial, and onboarding screens
  * Features the FinMatter piggy bank logo and app name
  */
-export function Header({
+export const Header = ({
   showBackButton = false,
   showHelpButton = false,
   onBack,
   onHelp,
   className = '',
-}: HeaderProps) {
+}: HeaderProps) => {
   const router = useRouter();
 
   const handleBack = () => {
@@ -72,4 +72,4 @@ export function Header({
       )}
     </header>
   );
-}
+};

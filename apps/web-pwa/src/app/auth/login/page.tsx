@@ -10,7 +10,7 @@ import { PhoneInput } from '@/components/forms/PhoneInput';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { authService } from '@/services/authService';
-import { AuthRedirectGuard } from '@/components/auth/AuthRedirectGuard';
+import AuthRedirectGuard from '@/components/auth/AuthRedirectGuard';
 import { AUTH_COPIES } from '@finmatter/shared/src/constants';
 import { Header } from '@/components/layout/Header';
 
@@ -24,7 +24,7 @@ const phoneSchema = z.object({
 
 type PhoneFormData = z.infer<typeof phoneSchema>;
 
-function LoginPageContent() {
+const LoginPageContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -154,7 +154,7 @@ function LoginPageContent() {
       </div>
     </AuthRedirectGuard>
   );
-}
+};
 
 export default function LoginPage() {
   return (

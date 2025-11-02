@@ -1,10 +1,14 @@
 'use client';
 
 import React from 'react';
-import { AuthGuard } from '@/components/auth/AuthGuard';
+import AuthGuard from '@/components/auth/AuthGuard';
 import { BottomNavigation } from '@/components/navigation/BottomNavigation';
 
-function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
+const DashboardLayoutContent = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   return (
     <div className='min-h-screen bg-background-dark pb-20'>
       {/* Page content */}
@@ -14,16 +18,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       <BottomNavigation />
     </div>
   );
-}
+};
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <AuthGuard requireAuth={true} requireOnboarding={true}>
-      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>;
     </AuthGuard>
   );
-}
+};
+
+export default DashboardLayout;

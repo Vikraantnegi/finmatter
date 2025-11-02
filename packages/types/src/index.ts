@@ -1,20 +1,16 @@
-// Database types
-export * from './database';
+/**
+ * FinMatter Types Package
+ * Shared types for web-pwa and api
+ */
 
 // User types
 export * from './user';
 
-// Auth types (Phone Authentication)
+// Auth types
 export * from './auth';
 
 // Card types
 export * from './card';
 
-// Transaction types
-export * from './transaction';
-
-// Common types
-export * from './common';
-
-// API types - export everything from api.ts
-export * from './api';
+// Database types
+export * from './database';

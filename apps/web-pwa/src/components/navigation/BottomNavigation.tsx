@@ -26,7 +26,7 @@ const navItems: NavItem[] = [
   { name: 'Finny', href: '/finny', icon: Bot, label: 'Finny' },
 ];
 
-export function BottomNavigation() {
+export const BottomNavigation = () => {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -88,4 +88,4 @@ export function BottomNavigation() {
       <div className='h-safe-area-inset-bottom bg-background-dark' />
     </nav>
   );
-}
+};

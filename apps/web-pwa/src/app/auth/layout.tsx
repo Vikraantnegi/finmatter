@@ -3,11 +3,7 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+const AuthLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
 
   return (
@@ -15,4 +11,6 @@ export default function AuthLayout({
       {children}
     </div>
   );
-}
+};
+
+export default AuthLayout;

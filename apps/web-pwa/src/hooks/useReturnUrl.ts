@@ -18,7 +18,7 @@ const EXCLUDED_PATHS = [
   '/', // Root page (redirects anyway)
 ];
 
-export function useReturnUrl() {
+export const useReturnUrl = () => {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -87,4 +87,4 @@ export function useReturnUrl() {
     navigateToReturnUrl,
     hasReturnUrl,
   };
-}
+};

@@ -16,13 +16,13 @@ interface SkeletonProps {
 /**
  * Base Skeleton component
  */
-export function Skeleton({
+export const Skeleton = ({
   className = '',
   variant = 'text',
   width,
   height,
   animation = 'pulse',
-}: SkeletonProps) {
+}: SkeletonProps) => {
   const getVariantClasses = () => {
     switch (variant) {
       case 'circular':
@@ -58,12 +58,12 @@ export function Skeleton({
       style={style}
     />
   );
-}
+};
 
 /**
  * Card Skeleton - Mimics CardVisual component
  */
-export function CardSkeleton({ className = '' }: { className?: string }) {
+export const CardSkeleton = ({ className = '' }: { className?: string }) => {
   return (
     <div
       className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${className}`}
@@ -99,12 +99,12 @@ export function CardSkeleton({ className = '' }: { className?: string }) {
       </div>
     </div>
   );
-}
+};
 
 /**
  * Card List Skeleton - Shows multiple card skeletons
  */
-export function CardListSkeleton({ count = 3 }: { count?: number }) {
+export const CardListSkeleton = ({ count = 3 }: { count?: number }) => {
   return (
     <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
       {Array.from({ length: count }).map((_, i) => (
@@ -112,12 +112,12 @@ export function CardListSkeleton({ count = 3 }: { count?: number }) {
       ))}
     </div>
   );
-}
+};
 
 /**
  * Stats Card Skeleton - For dashboard stats
  */
-export function StatsCardSkeleton() {
+export const StatsCardSkeleton = () => {
   return (
     <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
       <div className='flex items-center justify-between mb-4'>
@@ -128,12 +128,12 @@ export function StatsCardSkeleton() {
       <Skeleton width='80%' height={32} />
     </div>
   );
-}
+};
 
 /**
  * Table Row Skeleton - For transaction lists
  */
-export function TableRowSkeleton() {
+export const TableRowSkeleton = () => {
   return (
     <div className='flex items-center gap-4 py-4 border-b border-gray-200'>
       <Skeleton variant='circular' width={40} height={40} />
@@ -144,12 +144,12 @@ export function TableRowSkeleton() {
       <Skeleton width={80} height={20} />
     </div>
   );
-}
+};
 
 /**
  * Page Skeleton - Full page loading state
  */
-export function PageSkeleton() {
+export const PageSkeleton = () => {
   return (
     <div className='min-h-screen bg-white p-4'>
       {/* Header */}
@@ -170,4 +170,4 @@ export function PageSkeleton() {
       </div>
     </div>
   );
-}
+};

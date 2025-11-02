@@ -17,7 +17,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
+const AuthProvider = ({ children }: AuthProviderProps) => {
   const { initializeAuth, clearAuth } = useAuthStore();
   const [initialized, setInitialized] = useState(false);
 
@@ -141,4 +141,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   return <>{children}</>;
-}
+};
+
+export default AuthProvider;

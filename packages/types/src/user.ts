@@ -1,44 +1,32 @@
-import type { AuditFields, Currency } from './common';
-
 /**
- * User-related types for FinMatter
- * Updated to align with phone authentication and database schema
+ * User types for FinMatter
+ * Phone-based authentication system
  */
 
-export type UserRole = 'user' | 'admin' | 'beta_tester';
+export enum OnboardingSteps {
+  PROFILE = 'profile',
+  LOCATION = 'location',
+  NOTIFICATION = 'notification',
+  SMS = 'sms',
+}
 
-export type UserStatus =
-  | 'active'
-  | 'inactive'
-  | 'suspended'
-  | 'pending_verification';
-
-// Custom Users Table (matches our Supabase users table)
-export type CustomUsersTableUser = {
-  id: string; // UUID
-  phone_number: string;
-  created_at: string;
-  last_login?: string;
-  biometric_enabled: boolean;
-  is_verified: boolean;
-  profile_data?: UserProfileData; // Source of truth for firstName/lastName
-  updated_at: string;
-  email?: string; // Reserved for future implementation
-  notifications_enabled?: boolean;
-  onboarding_completed?: boolean;
-  last_otp_verification?: string; // ISO date string of last OTP verification
-};
-
-// Application User (transformed from database)
 export type User = {
   id: string;
   phoneNumber: string;
-  createdAt: string;
-  lastLogin?: string;
-  biometricEnabled: boolean;
   isVerified: boolean;
+  biometricEnabled: boolean;
+  onboardingCompleted?: boolean;
+  notificationsEnabled?: boolean;
+  locationEnabled?: boolean;
+  smsEnabled?: boolean;
   profileData?: UserProfileData;
+  createdAt: string;
   updatedAt: string;
+  lastLogin?: string;
+  // Extended fields
+  firstName?: string;
+  lastName?: string;
+  name?: string;
 };
 
 export type UserProfileData = {
@@ -48,35 +36,6 @@ export type UserProfileData = {
   avatar?: string;
   dateOfBirth?: string;
   preferences?: UserPreferences;
-  subscription?: UserSubscription;
-};
-
-// Legacy User type for backward compatibility (deprecated)
-export type LegacyUser = AuditFields & {
-  id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  displayName?: string;
-  avatar?: string;
-  role: UserRole;
-  status: UserStatus;
-  lastLoginAt?: Date;
-  emailVerified: boolean;
-  phoneNumber?: string;
-  phoneVerified: boolean;
-  dateOfBirth?: Date;
-  preferences: UserPreferences;
-  subscription?: UserSubscription;
-};
-
-export type UserPreferences = {
-  currency: Currency;
-  timezone: string;
-  language: string;
-  notifications: NotificationPreferences;
-  privacy: PrivacyPreferences;
-  ui: UIPreferences;
 };
 
 export type NotificationPreferences = {
@@ -101,79 +60,32 @@ export type NotificationPreferences = {
   };
 };
 
-export type PrivacyPreferences = {
-  hideCardNumbers: boolean;
-  shareAnalytics: boolean;
-  allowPersonalization: boolean;
-  dataRetention: '1_year' | '2_years' | '5_years' | 'indefinite';
-};
-
-export type UIPreferences = {
-  theme: 'light' | 'dark' | 'system';
-  compactMode: boolean;
-  showTutorials: boolean;
-  hapticFeedback: boolean;
-};
-
-export type UserSubscription = {
-  plan: 'free' | 'premium' | 'enterprise';
-  status: 'active' | 'cancelled' | 'expired' | 'trial';
-  startDate: Date;
-  endDate?: Date;
-  features: string[];
-  limits: SubscriptionLimits;
-};
-
-export type SubscriptionLimits = {
-  cards: number;
-  transactions: number;
-  aiQueries: number;
-  statements: number;
-  goals: number;
-};
-
-export type UserProfile = Pick<
-  User,
-  | 'id'
-  | 'phoneNumber'
-  | 'isVerified'
-  | 'biometricEnabled'
-  | 'profileData'
-  | 'createdAt'
-  | 'lastLogin'
->;
-
-// Extended user type for API responses that include onboarding status
-export type UserWithOnboarding = User & {
-  onboardingCompleted?: boolean;
-  firstName?: string;
-  lastName?: string;
-  name?: string;
-};
-
-export type CreateUserRequest = {
-  phoneNumber: string;
-  profileData?: Partial<UserProfileData>;
-};
-
-export type UpdateUserRequest = {
-  profileData?: Partial<UserProfileData>;
-  biometricEnabled?: boolean;
-};
-
-export type UserSession = {
-  id: string;
-  userId: string;
-  token: string;
-  refreshToken: string;
-  expiresAt: Date;
-  deviceInfo?: {
-    platform: string;
-    version: string;
-    deviceId: string;
+export type UserPreferences = {
+  currency?: string;
+  timezone?: string;
+  language?: string;
+  theme?: 'light' | 'dark' | 'system';
+  notifications?: NotificationPreferences;
+  privacy?: {
+    hideCardNumbers?: boolean;
+    shareAnalytics?: boolean;
+    allowPersonalization?: boolean;
   };
-  ipAddress?: string;
-  userAgent?: string;
-  createdAt: Date;
-  lastUsedAt: Date;
+};
+
+// Database user type (snake_case from Supabase)
+export type DatabaseUser = {
+  id: string;
+  phone_number: string;
+  created_at: string;
+  last_login?: string;
+  last_otp_verification?: string;
+  biometric_enabled: boolean;
+  is_verified: boolean;
+  notifications_enabled: boolean;
+  location_enabled: boolean;
+  sms_enabled: boolean;
+  profile_data?: UserProfileData;
+  updated_at: string;
+  onboarding_completed?: boolean;
 };

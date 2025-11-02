@@ -15,10 +15,10 @@ interface AuthRedirectGuardProps {
  * Component that redirects authenticated users away from auth pages (login, verify-otp)
  * If user is authenticated, they should be redirected to dashboard or onboarding
  */
-export function AuthRedirectGuard({
+const AuthRedirectGuard = ({
   children,
   redirectTo,
-}: AuthRedirectGuardProps) {
+}: AuthRedirectGuardProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const { isLoading, isAuthenticated, onboardingCompleted } = useAuthStore();
@@ -68,4 +68,6 @@ export function AuthRedirectGuard({
   }
 
   return <>{children}</>;
-}
+};
+
+export default AuthRedirectGuard;

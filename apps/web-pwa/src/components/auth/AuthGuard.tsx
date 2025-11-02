@@ -13,11 +13,11 @@ interface AuthGuardProps {
   requireOnboarding?: boolean;
 }
 
-export function AuthGuard({
+const AuthGuard = ({
   children,
   requireAuth = true,
   requireOnboarding = false,
-}: AuthGuardProps) {
+}: AuthGuardProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, isAuthenticated, onboardingCompleted } = useAuth();
@@ -116,4 +116,6 @@ export function AuthGuard({
   }
 
   return <>{children}</>;
-}
+};
+
+export default AuthGuard;

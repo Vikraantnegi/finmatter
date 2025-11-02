@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 const CHECK_INTERVAL = 60 * 1000; // Check every 60 seconds
 const REFRESH_THRESHOLD = 15 * 60 * 1000; // Refresh if < 15 minutes until expiry
 
-export function useTokenRefresh() {
+export const useTokenRefresh = () => {
   const router = useRouter();
   const { sessionExpiresAt, refreshSession, clearAuth } = useAuthStore();
 
@@ -66,4 +66,4 @@ export function useTokenRefresh() {
 
     return () => clearInterval(interval);
   }, [sessionExpiresAt, refreshSession, clearAuth, router]);
-}
+};

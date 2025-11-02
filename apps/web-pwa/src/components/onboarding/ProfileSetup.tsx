@@ -15,10 +15,7 @@ interface ProfileSetupProps {
   onUpdateFormData: (updates: Partial<ProfileFormData>) => void;
 }
 
-export default function ProfileSetup({
-  onComplete,
-  onUpdateFormData,
-}: ProfileSetupProps) {
+const ProfileSetup = ({ onComplete, onUpdateFormData }: ProfileSetupProps) => {
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const [stepCompleted, setStepCompleted] = useState({
     step1: false,
@@ -94,4 +91,6 @@ export default function ProfileSetup({
       </div>
     </div>
   );
-}
+};
+
+export default ProfileSetup;

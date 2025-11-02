@@ -11,7 +11,6 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@finmatter/cc-engine": "workspace:*",
     "@finmatter/shared": "workspace:*",
     "@finmatter/types": "workspace:*",
     "@hookform/resolvers": "^3.3.0",

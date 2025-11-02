@@ -11,13 +11,13 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
-export function Modal({
+export const Modal = ({
   isOpen,
   onClose,
   title,
   children,
   size = 'md',
-}: ModalProps) {
+}: ModalProps) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Handle escape key
@@ -82,4 +82,4 @@ export function Modal({
       </div>
     </div>
   );
-}
+};

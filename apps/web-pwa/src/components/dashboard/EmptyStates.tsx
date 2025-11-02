@@ -64,14 +64,14 @@ const illustrations = {
   ),
 };
 
-export function EmptyState({
+export const EmptyState = ({
   title,
   description,
   actionLabel,
   onAction,
   illustration = 'cards',
   className = '',
-}: EmptyStateProps) {
+}: EmptyStateProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -116,13 +116,13 @@ export function EmptyState({
       </motion.div>
     </motion.div>
   );
-}
+};
 
 /**
  * Specific Empty State Components
  */
 
-export function NoCardsEmptyState() {
+export const NoCardsEmptyState = () => {
   const router = useRouter();
   return (
     <EmptyState
@@ -133,9 +133,9 @@ export function NoCardsEmptyState() {
       illustration='cards'
     />
   );
-}
+};
 
-export function NoTransactionsEmptyState() {
+export const NoTransactionsEmptyState = () => {
   const router = useRouter();
   return (
     <EmptyState
@@ -146,9 +146,9 @@ export function NoTransactionsEmptyState() {
       illustration='transactions'
     />
   );
-}
+};
 
-export function NoInsightsEmptyState() {
+export const NoInsightsEmptyState = () => {
   const router = useRouter();
   return (
     <EmptyState
@@ -159,9 +159,9 @@ export function NoInsightsEmptyState() {
       illustration='insights'
     />
   );
-}
+};
 
-export function NoGoalsEmptyState() {
+export const NoGoalsEmptyState = () => {
   return (
     <EmptyState
       title='No goals yet'
@@ -174,4 +174,4 @@ export function NoGoalsEmptyState() {
       illustration='goals'
     />
   );
-}
+};

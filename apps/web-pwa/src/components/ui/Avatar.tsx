@@ -34,7 +34,12 @@ const sizeClasses = {
  * 2. Preset emoji avatar
  * 3. Initials with colored background (default)
  */
-export function Avatar({ name, avatar, size = 'md', className }: AvatarProps) {
+export const Avatar = ({
+  name,
+  avatar,
+  size = 'md',
+  className,
+}: AvatarProps) => {
   const avatarData = generateAvatarData(name, avatar);
   const isEmoji = isEmojiAvatar(avatar);
   const isImage = isImageUrl(avatar);
@@ -85,17 +90,17 @@ export function Avatar({ name, avatar, size = 'md', className }: AvatarProps) {
       {avatarData.initials}
     </div>
   );
-}
+};
 
 /**
  * Avatar with border (for profile pages)
  */
-export function AvatarWithBorder({
+export const AvatarWithBorder = ({
   name,
   avatar,
   size = 'xl',
   className,
-}: AvatarProps) {
+}: AvatarProps) => {
   return (
     <div className='relative inline-block'>
       <div className='p-1 bg-gradient-to-br from-primary to-blue-400 rounded-full'>
@@ -110,4 +115,4 @@ export function AvatarWithBorder({
       </div>
     </div>
   );
-}
+};

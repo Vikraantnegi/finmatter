@@ -9,10 +9,10 @@ interface LocationPermissionStepProps {
   onUpdateFormData: (updates: { locationEnabled: boolean }) => void;
 }
 
-export default function LocationPermissionStep({
+const LocationPermissionStep = ({
   onNext,
   onUpdateFormData,
-}: LocationPermissionStepProps) {
+}: LocationPermissionStepProps) => {
   const [isRequesting, setIsRequesting] = useState(false);
 
   const handleEnable = async () => {
@@ -149,4 +149,6 @@ export default function LocationPermissionStep({
       </div>
     </div>
   );
-}
+};
+
+export default LocationPermissionStep;

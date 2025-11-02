@@ -7,14 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { Avatar } from '@/components/ui/Avatar';
 import { motion } from 'framer-motion';
 
-/**
- * Get simple greeting
- */
-function getGreeting(): string {
-  return 'Hi';
-}
-
-export function DashboardHeader() {
+const DashboardHeader = () => {
   const router = useRouter();
   const { user } = useAuthStore();
 
@@ -50,9 +43,7 @@ export function DashboardHeader() {
         </motion.div>
 
         <div className='text-left'>
-          <p className='text-lg font-bold text-white'>
-            {getGreeting()}, {firstName}!
-          </p>
+          <p className='text-lg font-bold text-white'>Hi, {firstName}!</p>
         </div>
       </button>
 
@@ -68,4 +59,6 @@ export function DashboardHeader() {
       </motion.button>
     </motion.div>
   );
-}
+};
+
+export default DashboardHeader;

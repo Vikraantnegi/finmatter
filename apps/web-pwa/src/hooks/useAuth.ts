@@ -8,7 +8,7 @@ import { apiClient } from '@/lib/apiClient';
 import { useReturnUrl } from '@/hooks/useReturnUrl';
 import toast from 'react-hot-toast';
 
-export function useAuth() {
+export const useAuth = () => {
   const router = useRouter();
   const { navigateToReturnUrl } = useReturnUrl();
   const {
@@ -22,9 +22,6 @@ export function useAuth() {
     setSession,
     clearAuth,
   } = useAuthStore();
-
-  // Auth initialization is now handled by AuthProvider in root layout
-  // No need to initialize here - prevents duplicate initialization
 
   const sendOTP = useCallback(
     async (phoneNumber: string) => {
@@ -210,4 +207,4 @@ export function useAuth() {
     signOut,
     completeOnboarding,
   };
-}
+};

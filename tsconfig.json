@@ -22,12 +22,7 @@
     "paths": {
       "@finmatter/shared": ["./packages/shared/src"],
       "@finmatter/shared/*": ["./packages/shared/src/*"],
-      "@finmatter/types": ["./packages/types/src"],
-      "@finmatter/types/*": ["./packages/types/src/*"],
-      "@finmatter/ui": ["./packages/ui/src"],
-      "@finmatter/ui/*": ["./packages/ui/src/*"],
-      "@finmatter/cc-engine": ["./packages/cc-engine/src"],
-      "@finmatter/cc-engine/*": ["./packages/cc-engine/src/*"]
+      "@finmatter/types": ["./packages/types/src"]
     },
     "forceConsistentCasingInFileNames": true,
     "noUncheckedIndexedAccess": true,

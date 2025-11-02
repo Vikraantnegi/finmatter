@@ -11,7 +11,7 @@ interface PageHeaderProps {
   onBack?: () => void;
 }
 
-export function PageHeader({ title, action, onBack }: PageHeaderProps) {
+const PageHeader = ({ title, action, onBack }: PageHeaderProps) => {
   const router = useRouter();
 
   const handleBack = () => {
@@ -49,4 +49,6 @@ export function PageHeader({ title, action, onBack }: PageHeaderProps) {
       </div>
     </motion.div>
   );
-}
+};
+
+export default PageHeader;

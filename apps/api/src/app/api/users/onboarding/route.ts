@@ -172,13 +172,12 @@ export async function PUT(request: NextRequest) {
       .update({
         onboarding_completed: true,
         notifications_enabled: notificationsEnabled || false,
+        location_enabled: locationEnabled || false,
+        sms_enabled: smsEnabled || false,
         profile_data: {
           firstName,
           lastName: lastName || '',
           avatar: avatar || '',
-          notificationsEnabled: notificationsEnabled || false,
-          locationEnabled: locationEnabled || false,
-          smsEnabled: smsEnabled || false,
         },
         updated_at: new Date().toISOString(),
       })

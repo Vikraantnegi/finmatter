@@ -6,7 +6,7 @@ import { useEffect } from 'react';
  * Hook to block scrolling on the body element
  * Useful for modals, drawers, and other overlays
  */
-export function useBlockScroll(shouldBlock: boolean) {
+export const useBlockScroll = (shouldBlock: boolean) => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -25,13 +25,13 @@ export function useBlockScroll(shouldBlock: boolean) {
       document.body.style.overflow = originalStyle;
     };
   }, [shouldBlock]);
-}
+};
 
 /**
  * Alternative hook that preserves scroll position
  * This version saves the current scroll position and restores it when unblocking
  */
-export function useBlockScrollWithPosition(shouldBlock: boolean) {
+export const useBlockScrollWithPosition = (shouldBlock: boolean) => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -68,4 +68,4 @@ export function useBlockScrollWithPosition(shouldBlock: boolean) {
       }
     };
   }, [shouldBlock]);
-}
+};

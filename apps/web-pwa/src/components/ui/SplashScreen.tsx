@@ -14,11 +14,11 @@ interface SplashScreenProps {
  * Displays the app logo, name, and tagline centered on dark background
  * Fades in on mount and fades out automatically
  */
-export function SplashScreen({
+export const SplashScreen = ({
   catchLine = 'Your Smartest Financial Move',
   onComplete,
   minimumDisplayTime = 1500,
-}: SplashScreenProps) {
+}: SplashScreenProps) => {
   const [shouldFadeOut, setShouldFadeOut] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -129,4 +129,4 @@ export function SplashScreen({
       )}
     </AnimatePresence>
   );
-}
+};

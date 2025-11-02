@@ -24,7 +24,7 @@ interface EmptyStateProps {
   showBenefits?: boolean; // Show "What you'll get" section
 }
 
-export function EmptyState({
+export const EmptyState = ({
   icon,
   title,
   description,
@@ -32,7 +32,7 @@ export function EmptyState({
   secondaryAction,
   illustration,
   showBenefits = false,
-}: EmptyStateProps) {
+}: EmptyStateProps) => {
   // Get illustration component
   const IllustrationComponent = illustration
     ? getIllustration(illustration)
@@ -109,7 +109,7 @@ export function EmptyState({
       )}
     </div>
   );
-}
+};
 
 /**
  * Simple illustrations for different empty states

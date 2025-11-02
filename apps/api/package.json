@@ -13,7 +13,6 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
-    "@finmatter/cc-engine": "workspace:*",
     "@finmatter/shared": "workspace:*",
     "@finmatter/types": "workspace:*",
     "@supabase/supabase-js": "^2.58.0",

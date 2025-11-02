@@ -17,11 +17,11 @@ const iconSizes = {
  * FinMatter Logo Component
  * Displays the piggy bank icon with optional text
  */
-export function Logo({
+const Logo = ({
   className = '',
   showText = true,
   iconSize = 'md',
-}: LogoProps) {
+}: LogoProps) => {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <span
@@ -36,4 +36,6 @@ export function Logo({
       )}
     </div>
   );
-}
+};
+
+export default Logo;

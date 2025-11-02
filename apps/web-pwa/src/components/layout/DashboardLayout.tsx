@@ -26,7 +26,7 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const { user, signOut } = useAuthStore();
@@ -194,4 +194,4 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
     </div>
   );
-}
+};

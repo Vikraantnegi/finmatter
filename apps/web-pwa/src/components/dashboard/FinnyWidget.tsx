@@ -73,13 +73,6 @@ export function FinnyWidget({ className = '' }: FinnyWidgetProps) {
             </div>
           </motion.div>
         </div>
-
-        {/* Chat Button Label */}
-        <div className='mt-4 relative'>
-          <div className='inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg border border-primary/20'>
-            <span className='text-sm font-medium text-primary'>Chat</span>
-          </div>
-        </div>
       </motion.button>
     </motion.div>
   );

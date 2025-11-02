@@ -1,6 +1,6 @@
 'use client';
 
-import { AuthGuard } from '@/components/auth/AuthGuard';
+import AuthGuard from '@/components/auth/AuthGuard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,35 +10,36 @@ import ProfileSetup from '@/components/onboarding/ProfileSetup';
 import LocationPermissionStep from '@/components/onboarding/LocationPermissionStep';
 import NotificationPermissionStep from '@/components/onboarding/NotificationPermissionStep';
 import SMSPermissionStep from '@/components/onboarding/SMSPermissionStep';
+import { OnboardingSteps } from '@finmatter/types/src/user';
 
-function OnboardingContent() {
+const OnboardingContent = () => {
   const { currentStep, isLoading, nextStep, updateFormData } = useOnboarding();
   const { onboardingCompleted } = useAuth();
 
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 'profile':
+      case OnboardingSteps.PROFILE:
         return (
           <ProfileSetup
             onComplete={nextStep}
             onUpdateFormData={updateFormData}
           />
         );
-      case 'location':
+      case OnboardingSteps.LOCATION:
         return (
           <LocationPermissionStep
             onNext={nextStep}
             onUpdateFormData={updateFormData}
           />
         );
-      case 'notification':
+      case OnboardingSteps.NOTIFICATION:
         return (
           <NotificationPermissionStep
             onNext={nextStep}
             onUpdateFormData={updateFormData}
           />
         );
-      case 'sms':
+      case OnboardingSteps.SMS:
         return (
           <SMSPermissionStep
             onNext={nextStep}
@@ -55,8 +56,6 @@ function OnboardingContent() {
     }
   };
 
-  // Show full-screen loading during onboarding completion or if already completed
-  // This prevents flashing of onboarding screens during redirect
   if (isLoading || onboardingCompleted) {
     return (
       <div className='min-h-screen bg-background-dark flex items-center justify-center px-4'>
@@ -73,12 +72,14 @@ function OnboardingContent() {
       {renderCurrentStep()}
     </div>
   );
-}
+};
 
-export default function OnboardingPage() {
+const OnboardingPage = () => {
   return (
     <AuthGuard requireAuth={true} requireOnboarding={false}>
       <OnboardingContent />
     </AuthGuard>
   );
-}
+};
+
+export default OnboardingPage;

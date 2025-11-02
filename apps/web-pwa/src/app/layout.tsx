@@ -3,7 +3,7 @@ import React from 'react';
 import { Manrope } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers/Providers';
-import { AuthProvider } from '@/components/auth/AuthProvider';
+import AuthProvider from '@/components/auth/AuthProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SWRProvider } from '@/components/providers/SWRProvider';
 import { NotificationPermission } from '@/components/notifications/NotificationPermission';

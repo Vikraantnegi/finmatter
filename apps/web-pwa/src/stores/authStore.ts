@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { apiClient } from '@/lib/apiClient';
 import { authCookies } from '@/lib/cookies';
 import { authService } from '@/services/authService';
+import { API_ROUTES } from '@/constants/apiRoutes';
 
 // Extended user type for API responses that include onboarding status
 interface UserWithOnboarding extends User {
@@ -114,7 +115,7 @@ export const useAuthStore = create<AuthState>()(
             if (user) {
               try {
                 const profileResponse = (await apiClient.get(
-                  `/api/users/${user.id}`,
+                  API_ROUTES.USER.BY_ID(user.id),
                 )) as {
                   success: boolean;
                   data?: { user: UserWithOnboarding };
@@ -222,7 +223,7 @@ export const useAuthStore = create<AuthState>()(
             // Fetch fresh user profile data from our API
             try {
               const response = (await apiClient.get(
-                `/api/users/${currentUser.id}`,
+                API_ROUTES.USER.BY_ID(currentUser.id),
               )) as {
                 success: boolean;
                 data?: { user: UserWithOnboarding };
@@ -283,7 +284,7 @@ export const useAuthStore = create<AuthState>()(
             try {
               // Fetch user profile from our API endpoint
               const response = (await apiClient.get(
-                `/api/users/${session.user.id}`,
+                API_ROUTES.USER.BY_ID(session.user.id),
               )) as {
                 success: boolean;
                 data?: { user: UserWithOnboarding };
@@ -387,7 +388,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // Call API to complete onboarding using apiClient
-          const response = (await apiClient.put('/api/users/onboarding', {
+          const response = (await apiClient.put(API_ROUTES.USER.ONBOARDING, {
             firstName: userName || 'User',
             notificationsEnabled: notificationsEnabled || false,
           })) as {

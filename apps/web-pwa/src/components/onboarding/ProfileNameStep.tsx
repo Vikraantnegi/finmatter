@@ -19,7 +19,7 @@ interface ProfileNameStepProps {
   onNext: (data: { firstName: string; lastName?: string }) => void;
 }
 
-export default function ProfileNameStep({ onNext }: ProfileNameStepProps) {
+const ProfileNameStep = ({ onNext }: ProfileNameStepProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -93,4 +93,6 @@ export default function ProfileNameStep({ onNext }: ProfileNameStepProps) {
       </div>
     </div>
   );
-}
+};
+
+export default ProfileNameStep;

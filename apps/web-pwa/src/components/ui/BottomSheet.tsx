@@ -11,12 +11,12 @@ interface BottomSheetProps {
   snapPoints?: number[]; // Percentage heights [min, max]
 }
 
-export function BottomSheet({
+export const BottomSheet = ({
   isOpen,
   onClose,
   title,
   children,
-}: BottomSheetProps) {
+}: BottomSheetProps) => {
   const sheetRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const [startY, setStartY] = React.useState(0);
@@ -73,7 +73,6 @@ export function BottomSheet({
     <div
       className='fixed inset-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm m-0'
       onClick={handleBackdropClick}
-      // eslint-disable-next-line react-native/no-inline-styles
       style={{ touchAction: 'none', margin: 0 }}
     >
       <div
@@ -116,4 +115,4 @@ export function BottomSheet({
       </div>
     </div>
   );
-}
+};

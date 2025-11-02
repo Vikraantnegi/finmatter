@@ -9,10 +9,10 @@ interface NotificationPermissionStepProps {
   onUpdateFormData: (updates: { notificationsEnabled: boolean }) => void;
 }
 
-export default function NotificationPermissionStep({
+export const NotificationPermissionStep = ({
   onNext,
   onUpdateFormData,
-}: NotificationPermissionStepProps) {
+}: NotificationPermissionStepProps) => {
   const [isRequesting, setIsRequesting] = useState(false);
 
   const handleEnable = async () => {
@@ -142,4 +142,6 @@ export default function NotificationPermissionStep({
       </div>
     </div>
   );
-}
+};
+
+export default NotificationPermissionStep;

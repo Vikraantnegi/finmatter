@@ -7,18 +7,18 @@ import {
   Search,
   ChevronRight,
   Bell,
-  Mail,
+  // Mail,
   HelpCircle,
   FileText,
   Shield,
 } from 'lucide-react';
-import { PageHeader } from '@/components/common/PageHeader';
+import PageHeader from '@/components/common/PageHeader';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/authStore';
 import { useAuth } from '@/hooks/useAuth';
 
-export default function SettingsPage() {
+const SettingsPage = () => {
   const router = useRouter();
   const { user } = useAuthStore();
   const { signOut } = useAuth();
@@ -35,10 +35,10 @@ export default function SettingsPage() {
     router.push('/auth/login');
   };
 
-  const handleDeleteAccount = () => {
-    // TODO: Implement delete account flow
-    console.log('Delete account');
-  };
+  // const handleDeleteAccount = () => {
+  //   // TODO: Implement delete account flow
+  //   console.log('Delete account');
+  // };
 
   return (
     <div className='min-h-screen bg-background-dark pb-20'>
@@ -111,7 +111,7 @@ export default function SettingsPage() {
           </button>
 
           {/* Email Notifications */}
-          <button
+          {/* <button
             onClick={() => router.push('/settings/notifications/email')}
             className='w-full flex items-center justify-between p-4 bg-gray-800/30 hover:bg-gray-800/50 rounded-xl transition-colors group'
           >
@@ -124,7 +124,7 @@ export default function SettingsPage() {
               </span>
             </div>
             <ChevronRight className='w-5 h-5 text-gray-500' />
-          </button>
+          </button> */}
         </motion.div>
 
         {/* Support & Legal Section */}
@@ -195,14 +195,16 @@ export default function SettingsPage() {
             Log Out
           </Button>
 
-          <button
+          {/* <button
             onClick={handleDeleteAccount}
             className='w-full text-red-500 hover:text-red-400 font-medium py-3 transition-colors'
           >
             Delete Account
-          </button>
+          </button> */}
         </motion.div>
       </div>
     </div>
   );
-}
+};
+
+export default SettingsPage;

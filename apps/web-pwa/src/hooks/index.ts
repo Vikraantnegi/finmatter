@@ -1,4 +1,5 @@
 export { useAuth } from './useAuth';
-export { useCards } from './useCards';
 export { useOnboarding } from './useOnboarding';
-export { useCardSearch } from './useCardSearch';
+export { useEditProfile } from './useEditProfile';
+export { useAvatarUpload } from './useAvatarUpload';
+export { useVerifyOTP } from './useVerifyOTP';

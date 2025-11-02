@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
         .update({
           last_login: new Date().toISOString(),
           is_verified: true,
-          last_otp_verification: new Date().toISOString(), // Track OTP verification for 30-day logic
+          last_otp_verification: new Date().toISOString(),
         })
         .eq('id', existingUser.id)
         .select()
@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
           phone_number: phoneNumber,
           is_verified: true,
           last_login: new Date().toISOString(),
-          last_otp_verification: new Date().toISOString(), // Track OTP verification for 30-day logic
+          last_otp_verification: new Date().toISOString(),
           profile_data: {
             firstName: '', // Required by constraint, will be set during onboarding
             lastName: '',

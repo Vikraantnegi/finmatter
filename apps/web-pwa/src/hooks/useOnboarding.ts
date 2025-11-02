@@ -6,7 +6,7 @@ import { useAuth } from './useAuth';
 
 export type OnboardingStep = 'profile' | 'location' | 'notification' | 'sms';
 
-export function useOnboarding() {
+export const useOnboarding = () => {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('profile');
   const [completedSteps, setCompletedSteps] = useState<Set<OnboardingStep>>(
     new Set(),
@@ -145,4 +145,4 @@ export function useOnboarding() {
     totalSteps: steps.length,
     requiredSteps,
   };
-}
+};

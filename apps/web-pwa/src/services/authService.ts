@@ -1,19 +1,20 @@
 import { apiClient } from '@/lib/apiClient';
 import { SendOTPResponse, VerifyOTPResponse } from '@finmatter/types';
 import { retryWithBackoff, handleApiError, logError } from '@/lib/errorHandler';
+import { API_ROUTES } from '@/constants/apiRoutes';
 
 export class AuthService {
   async sendOTP(phone: string): Promise<SendOTPResponse> {
     try {
       const response = await retryWithBackoff(async () => {
-        return await apiClient.post<SendOTPResponse>('/api/auth/send-otp', {
+        return await apiClient.post<SendOTPResponse>(API_ROUTES.AUTH.SEND_OTP, {
           phoneNumber: phone,
         });
       });
       return response;
     } catch (error) {
       logError(error, {
-        endpoint: '/api/auth/send-otp',
+        endpoint: API_ROUTES.AUTH.SEND_OTP,
         phoneNumber: phone,
         additionalData: { operation: 'sendOTP' },
       });
@@ -35,15 +36,18 @@ export class AuthService {
   async verifyOTP(phone: string, otp: string): Promise<VerifyOTPResponse> {
     try {
       const response = await retryWithBackoff(async () => {
-        return await apiClient.post<VerifyOTPResponse>('/api/auth/verify-otp', {
-          phoneNumber: phone,
-          otp,
-        });
+        return await apiClient.post<VerifyOTPResponse>(
+          API_ROUTES.AUTH.VERIFY_OTP,
+          {
+            phoneNumber: phone,
+            otp,
+          },
+        );
       });
       return response;
     } catch (error: any) {
       logError(error, {
-        endpoint: '/api/auth/verify-otp',
+        endpoint: API_ROUTES.AUTH.VERIFY_OTP,
         phoneNumber: phone,
         additionalData: {
           operation: 'verifyOTP',
@@ -94,11 +98,11 @@ export class AuthService {
 
   async signOut(): Promise<void> {
     try {
-      await apiClient.post('/api/auth/signout');
+      await apiClient.post(API_ROUTES.AUTH.SIGN_OUT);
       apiClient.clearAuthToken();
     } catch (error) {
       logError(error, {
-        endpoint: '/api/auth/signout',
+        endpoint: API_ROUTES.AUTH.SIGN_OUT,
         additionalData: { operation: 'signOut' },
       });
 
@@ -110,12 +114,12 @@ export class AuthService {
   async getCurrentUser(userId: string): Promise<any> {
     try {
       const response = await retryWithBackoff(async () => {
-        return await apiClient.get(`/api/users/${userId}`);
+        return await apiClient.get(API_ROUTES.USER.BY_ID(userId));
       });
       return response;
     } catch (error) {
       logError(error, {
-        endpoint: `/api/users/${userId}`,
+        endpoint: API_ROUTES.USER.BY_ID(userId),
         additionalData: { operation: 'getCurrentUser' },
       });
 
@@ -132,12 +136,12 @@ export class AuthService {
     try {
       const response = await retryWithBackoff(async () => {
         // Empty body - refresh token comes from httpOnly cookie
-        return await apiClient.post('/api/auth/refresh', {});
+        return await apiClient.post(API_ROUTES.AUTH.REFRESH_TOKEN, {});
       });
       return response;
     } catch (error) {
       logError(error, {
-        endpoint: '/api/auth/refresh',
+        endpoint: API_ROUTES.AUTH.REFRESH_TOKEN,
         additionalData: { operation: 'refreshToken' },
       });
 
@@ -151,7 +155,7 @@ export class AuthService {
     lastName?: string;
     notificationsEnabled: boolean;
   }): Promise<any> {
-    const response = await apiClient.put('/api/users/onboarding', userData);
+    const response = await apiClient.put(API_ROUTES.USER.ONBOARDING, userData);
     return response;
   }
 
@@ -173,7 +177,7 @@ export class AuthService {
       };
     };
   }): Promise<any> {
-    const response = await apiClient.put('/api/users/profile', data);
+    const response = await apiClient.put(API_ROUTES.USER.PROFILE, data);
     return response;
   }
 }

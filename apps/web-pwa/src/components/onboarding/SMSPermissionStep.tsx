@@ -9,10 +9,10 @@ interface SMSPermissionStepProps {
   onUpdateFormData: (updates: { smsEnabled: boolean }) => void;
 }
 
-export default function SMSPermissionStep({
+export const SMSPermissionStep = ({
   onNext,
   onUpdateFormData,
-}: SMSPermissionStepProps) {
+}: SMSPermissionStepProps) => {
   const [isRequesting, setIsRequesting] = useState(false);
 
   const handleEnable = async () => {
@@ -139,4 +139,6 @@ export default function SMSPermissionStep({
       </div>
     </div>
   );
-}
+};
+
+export default SMSPermissionStep;

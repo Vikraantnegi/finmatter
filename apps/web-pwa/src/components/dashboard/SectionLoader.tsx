@@ -12,7 +12,7 @@ interface SkeletonProps {
   className?: string;
 }
 
-export function Skeleton({ className = '' }: SkeletonProps) {
+export const Skeleton = ({ className = '' }: SkeletonProps) => {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -25,12 +25,12 @@ export function Skeleton({ className = '' }: SkeletonProps) {
       className={`bg-gray-800/50 rounded-lg ${className}`}
     />
   );
-}
+};
 
 /**
  * Card Stack Loader
  */
-export function CardsStackLoader() {
+export const CardsStackLoader = () => {
   return (
     <div>
       {/* Header */}
@@ -104,12 +104,16 @@ export function CardsStackLoader() {
       </div>
     </div>
   );
-}
+};
 
 /**
  * Section Card Loader
  */
-export function SectionCardLoader({ className = '' }: { className?: string }) {
+export const SectionCardLoader = ({
+  className = '',
+}: {
+  className?: string;
+}) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -138,12 +142,12 @@ export function SectionCardLoader({ className = '' }: { className?: string }) {
       </div>
     </motion.div>
   );
-}
+};
 
 /**
  * List Item Loader
  */
-export function ListItemLoader() {
+export const ListItemLoader = () => {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -158,12 +162,12 @@ export function ListItemLoader() {
       <Skeleton className='w-20 h-5' />
     </motion.div>
   );
-}
+};
 
 /**
  * Spending Chart Loader
  */
-export function SpendingChartLoader() {
+export const SpendingChartLoader = () => {
   return (
     <div className='px-6'>
       <motion.div
@@ -197,12 +201,12 @@ export function SpendingChartLoader() {
       </motion.div>
     </div>
   );
-}
+};
 
 /**
  * Rewards Widget Loader
  */
-export function RewardsWidgetLoader() {
+export const RewardsWidgetLoader = () => {
   return (
     <div className='px-6'>
       <motion.div
@@ -228,12 +232,12 @@ export function RewardsWidgetLoader() {
       </motion.div>
     </div>
   );
-}
+};
 
 /**
  * Recent Transactions Loader
  */
-export function RecentTransactionsLoader() {
+export const RecentTransactionsLoader = () => {
   return (
     <div className='px-6'>
       <motion.div
@@ -258,12 +262,12 @@ export function RecentTransactionsLoader() {
       </motion.div>
     </div>
   );
-}
+};
 
 /**
  * AI Widget Loader
  */
-export function AIWidgetLoader() {
+export const AIWidgetLoader = () => {
   return (
     <div className='px-6'>
       <motion.div
@@ -281,12 +285,12 @@ export function AIWidgetLoader() {
       </motion.div>
     </div>
   );
-}
+};
 
 /**
  * Full Dashboard Loader
  */
-export function DashboardLoader() {
+export const DashboardLoader = () => {
   return (
     <div className='space-y-6 pb-6'>
       {/* Header Loader */}
@@ -307,4 +311,4 @@ export function DashboardLoader() {
       <AIWidgetLoader />
     </div>
   );
-}
+};

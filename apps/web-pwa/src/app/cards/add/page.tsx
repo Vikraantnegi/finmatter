@@ -3,36 +3,55 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  X,
-  CreditCard,
-  Calendar,
-  Lock,
-  User,
-  Check,
-  AlertCircle,
-} from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { CreditCard, Lock, User, Check, AlertCircle } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
-import { Card3DPreview } from '@/components/cards/Card3DPreview';
 import { Button } from '@/components/ui/Button';
 import {
   detectCard,
   formatCardNumber,
   CardDetectionResult,
 } from '@/services/cardDetectionService';
+import { cardService } from '@/services/cardService';
+import { apiClient } from '@/lib/apiClient';
 import toast from 'react-hot-toast';
+import CardPreview from '@/components/cards/CardPreview';
+
+interface CardFormData {
+  cardNumber: string;
+  cardholderName: string;
+  expiryDate: string;
+  cvv: string;
+}
 
 export default function AddCardPage() {
   const router = useRouter();
+  const {
+    register,
+    handleSubmit: handleFormSubmit,
+    watch,
+    setValue,
+    formState: { isSubmitting },
+  } = useForm<CardFormData>({
+    defaultValues: {
+      cardNumber: '',
+      cardholderName: '',
+      expiryDate: '',
+      cvv: '',
+    },
+  });
 
-  // Form state
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardholderName, setCardholderName] = useState('');
-  const [expiryMonth, setExpiryMonth] = useState('');
-  const [expiryYear, setExpiryYear] = useState('');
-  const [cvv, setCvv] = useState('');
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Watch form values for real-time updates
+  const cardNumber = watch('cardNumber');
+  const cardholderName = watch('cardholderName');
+  const expiryDate = watch('expiryDate');
+  const cvv = watch('cvv');
+
+  // Parse expiry date
+  const expiryMonth = expiryDate.slice(0, 2);
+  const expiryYear = expiryDate.slice(3, 5);
 
   // Detection state
   const [detection, setDetection] = useState<CardDetectionResult>({
@@ -55,87 +74,91 @@ export default function AddCardPage() {
     }
   }, [cardNumber]);
 
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\s/g, '');
-    if (/^\d*$/.test(value) && value.length <= 16) {
-      setCardNumber(value);
-    }
-  };
-
-  const handleExpiryChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    type: 'month' | 'year',
-  ) => {
-    const value = e.target.value.replace(/\D/g, '');
-    if (type === 'month') {
-      if (value.length <= 2 && (value === '' || parseInt(value) <= 12)) {
-        setExpiryMonth(value);
-      }
-    } else {
-      if (value.length <= 2) {
-        setExpiryYear(value);
-      }
-    }
-  };
-
-  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '');
-    if (value.length <= (detection.network === 'Amex' ? 4 : 3)) {
-      setCvv(value);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const onSubmit = async (data: CardFormData) => {
     if (!detection.isValid) {
       toast.error('Please enter a valid card number');
       return;
     }
 
-    if (!cardholderName.trim()) {
-      toast.error('Please enter cardholder name');
-      return;
-    }
+    const expiryMonth = data.expiryDate.slice(0, 2);
+    const expiryYear = data.expiryDate.slice(3, 5);
 
     if (!expiryMonth || !expiryYear) {
       toast.error('Please enter expiry date');
       return;
     }
 
-    if (!cvv) {
-      toast.error('Please enter CVV');
-      return;
-    }
-
     try {
-      setIsSubmitting(true);
+      const bin = cardNumber.replace(/\s/g, '').slice(0, 8);
+      let cardMetadata: {
+        bankName?: string;
+        cardBrand?: string;
+        cardType?: string;
+        cardMetadata?: {
+          reward_type?: string;
+          annual_fee?: number;
+          primary_color?: string;
+          secondary_color?: string;
+          id?: string;
+        };
+        cardMetadataId?: string;
+      } | null = null;
 
-      // TODO: Call API to add card
+      try {
+        const binResponse = await apiClient.get<{
+          success: boolean;
+          data?: {
+            found?: boolean;
+            bankName?: string;
+            cardBrand?: string;
+            cardType?: string;
+            cardMetadata?: {
+              reward_type?: string;
+              annual_fee?: number;
+              primary_color?: string;
+              secondary_color?: string;
+              id?: string;
+            };
+            cardMetadataId?: string;
+          };
+        }>(`/api/cards/bin-lookup?bin=${bin}`);
+        if (binResponse.success && binResponse.data?.found) {
+          cardMetadata = binResponse.data;
+        }
+      } catch (error) {
+        console.warn('BIN lookup failed, continuing with defaults:', error);
+      }
+
+      // Prepare card data with metadata if available
       const cardData = {
-        cardNumber: cardNumber.replace(/\s/g, ''),
-        cardholderName,
-        expiryDate: `20${expiryYear}-${expiryMonth.padStart(2, '0')}-01`,
-        network: detection.network,
-        bankName: detection.bankName || 'Unknown Bank',
-        cardBrand: detection.cardBrand,
+        bankName:
+          cardMetadata?.bankName || detection.bankName || 'Unknown Bank',
+        cardName:
+          cardMetadata?.cardBrand || detection.cardBrand || 'Credit Card',
         lastFourDigits: cardNumber.slice(-4),
+        cardType: cardMetadata?.cardType || 'credit',
+        network: detection.network.toLowerCase(),
+        rewardType: cardMetadata?.cardMetadata?.reward_type || 'none',
+        annualFee: cardMetadata?.cardMetadata?.annual_fee || 0,
+        cardMetadataId:
+          cardMetadata?.cardMetadataId || cardMetadata?.cardMetadata?.id,
+        primaryColor: cardMetadata?.cardMetadata?.primary_color,
+        secondaryColor: cardMetadata?.cardMetadata?.secondary_color,
+        expiryDate: `${expiryMonth.padStart(2, '0')}/${expiryYear}`,
+        isCustom: !cardMetadata?.cardMetadataId,
+        currency: 'INR',
       };
 
-      console.log('Adding card:', cardData);
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Call real API to create card
+      const card = await cardService.createCard(cardData);
 
       toast.success('Card added successfully!');
-      router.push('/cards');
+      router.push(`/cards/${card.id}`);
     } catch (error) {
       console.error('Error adding card:', error);
       toast.error(
         error instanceof Error ? error.message : 'Failed to add card',
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -146,33 +169,23 @@ export default function AddCardPage() {
 
   return (
     <div className='min-h-screen bg-background-dark pb-20'>
-      <PageHeader
-        title='Add Card'
-        action={
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => router.back()}
-            className='w-10 h-10 flex items-center justify-center rounded-full bg-gray-800/50 hover:bg-gray-800 transition-colors'
-          >
-            <X className='w-5 h-5 text-white' />
-          </motion.button>
-        }
-      />
+      <PageHeader title='Add Card' />
 
       <div className='px-6 py-6 space-y-6'>
-        {/* 3D Card Preview */}
+        {/* 2D Card Preview */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Card3DPreview
+          <CardPreview
             cardNumber={formatCardNumber(cardNumber)}
             cardholderName={cardholderName}
             expiryDate={expiryDisplay}
             network={detection.network}
             bankName={detection.bankName}
             isFlipped={isFlipped}
+            cvv={cvv}
           />
         </motion.div>
 
@@ -183,7 +196,7 @@ export default function AddCardPage() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className='flex items-center justify-center gap-2 p-3 bg-primary/10 border border-primary/30 rounded-xl'
+              className='flex items-center justify-center gap-2 p-3 bg-primary/10 border border-primary/30 rounded-md'
             >
               <Check className='w-5 h-5 text-primary' />
               <span className='text-sm text-primary font-medium'>
@@ -198,7 +211,7 @@ export default function AddCardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          onSubmit={handleSubmit}
+          onSubmit={handleFormSubmit(onSubmit)}
           className='space-y-4'
         >
           {/* Card Number */}
@@ -210,10 +223,18 @@ export default function AddCardPage() {
               <CreditCard className='absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500' />
               <input
                 type='text'
+                {...register('cardNumber', {
+                  required: 'Card number is required',
+                  onChange: e => {
+                    const value = e.target.value.replace(/\s/g, '');
+                    if (/^\d*$/.test(value) && value.length <= 16) {
+                      setValue('cardNumber', value);
+                    }
+                  },
+                })}
                 value={formatCardNumber(cardNumber)}
-                onChange={handleCardNumberChange}
                 placeholder='1234 5678 9012 3456'
-                className='w-full pl-12 pr-12 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
+                className='w-full pl-12 pr-12 py-4 bg-gray-800/50 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
                 maxLength={19}
                 autoComplete='cc-number'
               />
@@ -241,10 +262,11 @@ export default function AddCardPage() {
               <User className='absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500' />
               <input
                 type='text'
-                value={cardholderName}
-                onChange={e => setCardholderName(e.target.value)}
+                {...register('cardholderName', {
+                  required: 'Cardholder name is required',
+                })}
                 placeholder='JOHN DOE'
-                className='w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 uppercase focus:outline-none focus:border-primary transition-colors'
+                className='w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 rounded-md text-white placeholder-gray-500 uppercase focus:outline-none focus:border-primary transition-colors'
                 autoComplete='cc-name'
               />
             </div>
@@ -257,28 +279,29 @@ export default function AddCardPage() {
               <label className='block text-sm font-medium text-gray-400 mb-2'>
                 Expiry Date
               </label>
-              <div className='flex gap-2'>
-                <div className='relative flex-1'>
-                  <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500' />
-                  <input
-                    type='text'
-                    value={expiryMonth}
-                    onChange={e => handleExpiryChange(e, 'month')}
-                    placeholder='MM'
-                    className='w-full pl-10 pr-2 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-center focus:outline-none focus:border-primary transition-colors'
-                    maxLength={2}
-                    autoComplete='cc-exp-month'
-                  />
-                </div>
-                <span className='text-gray-500 text-2xl'>/</span>
+              <div className='relative'>
                 <input
                   type='text'
-                  value={expiryYear}
-                  onChange={e => handleExpiryChange(e, 'year')}
-                  placeholder='YY'
-                  className='flex-1 px-2 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-center focus:outline-none focus:border-primary transition-colors'
-                  maxLength={2}
-                  autoComplete='cc-exp-year'
+                  {...register('expiryDate', {
+                    required: 'Expiry date is required',
+                    onChange: e => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      if (value.length <= 4) {
+                        // Auto-format MM/YY as user types
+                        if (value.length <= 2) {
+                          setValue('expiryDate', value);
+                        } else {
+                          setValue(
+                            'expiryDate',
+                            `${value.slice(0, 2)}/${value.slice(2, 4)}`,
+                          );
+                        }
+                      }
+                    },
+                  })}
+                  placeholder='MM/YY'
+                  className='w-full px-4 py-4 bg-gray-800/50 border border-gray-700 rounded-md text-white placeholder-gray-500 text-center focus:outline-none focus:border-primary transition-colors'
+                  maxLength={5}
                 />
               </div>
             </div>
@@ -292,12 +315,21 @@ export default function AddCardPage() {
                 <Lock className='absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500' />
                 <input
                   type='text'
-                  value={cvv}
-                  onChange={handleCvvChange}
+                  {...register('cvv', {
+                    required: 'CVV is required',
+                    onChange: e => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      if (
+                        value.length <= (detection.network === 'Amex' ? 4 : 3)
+                      ) {
+                        setValue('cvv', value);
+                      }
+                    },
+                  })}
                   onFocus={() => setIsFlipped(true)}
                   onBlur={() => setIsFlipped(false)}
                   placeholder='123'
-                  className='w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-center focus:outline-none focus:border-primary transition-colors'
+                  className='w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 rounded-md text-white placeholder-gray-500 text-center focus:outline-none focus:border-primary transition-colors'
                   maxLength={detection.network === 'Amex' ? 4 : 3}
                   autoComplete='cc-csc'
                 />
@@ -309,7 +341,7 @@ export default function AddCardPage() {
           <Button
             type='submit'
             disabled={!detection.isValid || isSubmitting}
-            className='w-full mt-6 bg-primary hover:bg-primary/90 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-colors'
+            className='w-full mt-6 bg-primary hover:bg-primary/90 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-md transition-colors'
           >
             {isSubmitting ? 'Adding Card...' : 'Add Card'}
           </Button>

@@ -3,6 +3,7 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
+  transpilePackages: ['three', '@react-three/fiber', '@react-three/drei'],
   async headers() {
     return [
       {

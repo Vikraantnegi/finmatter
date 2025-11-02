@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -12,6 +12,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
+import { cardService } from '@/services/cardService';
+import toast from 'react-hot-toast';
 
 // This will be replaced with actual data from API
 const MOCK_CARD = {
@@ -114,14 +116,56 @@ const MOCK_CARD = {
 
 export default function CardDetailsPage() {
   const router = useRouter();
+  const params = useParams();
+  const cardId = params.id as string;
+
   const [activeTab, setActiveTab] = useState<
     'offers' | 'benefits' | 'analytics'
   >('offers');
+  const [card, setCard] = useState<any>(MOCK_CARD);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const card = MOCK_CARD; // Replace with actual data from API
+  useEffect(() => {
+    async function fetchCard() {
+      if (!cardId) return;
+
+      try {
+        setLoading(true);
+        const fetchedCard = await cardService.getCardById(cardId);
+        setCard(fetchedCard);
+      } catch (err) {
+        console.error('Failed to fetch card:', err);
+        setError('Failed to load card details');
+        toast.error('Failed to load card details');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCard();
+  }, [cardId]);
+
+  if (loading) {
+    return (
+      <div className='min-h-screen bg-background-dark flex items-center justify-center'>
+        <div className='text-white'>Loading card details...</div>
+      </div>
+    );
+  }
+
+  if (error || !card) {
+    return (
+      <div className='min-h-screen bg-background-dark flex items-center justify-center'>
+        <div className='text-white'>Error: {error || 'Card not found'}</div>
+      </div>
+    );
+  }
 
   const utilization =
-    ((card.creditLimit - card.availableCredit) / card.creditLimit) * 100;
+    card.creditLimit && card.availableCredit
+      ? ((card.creditLimit - card.availableCredit) / card.creditLimit) * 100
+      : 0;
 
   return (
     <div className='min-h-screen bg-background-dark pb-20'>
@@ -266,7 +310,7 @@ export default function CardDetailsPage() {
               </span>
             </div>
 
-            {card.offers.map((offer, index) => (
+            {card.offers.map((offer: any, index: number) => (
               <motion.div
                 key={offer.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -327,7 +371,7 @@ export default function CardDetailsPage() {
 
             {/* Key Features */}
             <div className='grid gap-3'>
-              {card.metadata.features.map((feature, index) => (
+              {card.metadata.features.map((feature: string, index: number) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, x: -20 }}
@@ -349,20 +393,24 @@ export default function CardDetailsPage() {
                 Reward Categories
               </h4>
               <div className='space-y-3'>
-                {card.metadata.rewards.categories.map((cat, index) => (
-                  <div
-                    key={index}
-                    className='flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-gray-800'
-                  >
-                    <div className='flex items-center gap-3'>
-                      <span className='text-2xl'>{cat.icon}</span>
-                      <span className='text-white font-medium'>{cat.name}</span>
+                {card.metadata.rewards.categories.map(
+                  (cat: any, index: number) => (
+                    <div
+                      key={index}
+                      className='flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-gray-800'
+                    >
+                      <div className='flex items-center gap-3'>
+                        <span className='text-2xl'>{cat.icon}</span>
+                        <span className='text-white font-medium'>
+                          {cat.name}
+                        </span>
+                      </div>
+                      <span className='text-primary font-semibold'>
+                        {cat.rate}
+                      </span>
                     </div>
-                    <span className='text-primary font-semibold'>
-                      {cat.rate}
-                    </span>
-                  </div>
-                ))}
+                  ),
+                )}
               </div>
             </div>
 
@@ -401,7 +449,7 @@ export default function CardDetailsPage() {
             </h3>
 
             {/* Spending bars */}
-            {card.spending.map((item, index) => (
+            {card.spending.map((item: any, index: number) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, x: -20 }}
@@ -434,7 +482,7 @@ export default function CardDetailsPage() {
               </div>
 
               <div className='space-y-3'>
-                {card.recentTransactions.map((txn, index) => (
+                {card.recentTransactions.map((txn: any, index: number) => (
                   <motion.div
                     key={txn.id}
                     initial={{ opacity: 0, x: -20 }}

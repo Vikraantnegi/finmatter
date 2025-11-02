@@ -162,8 +162,27 @@ export async function GET(
       );
     }
 
+    // Fetch metadata if card_metadata_id exists
+    let cardMetadata = null;
+    if (card.card_metadata_id) {
+      const { data: metadata, error: metadataError } = await supabaseAdmin
+        .from('cards_metadata')
+        .select('*')
+        .eq('id', card.card_metadata_id)
+        .single();
+
+      if (!metadataError && metadata) {
+        cardMetadata = metadata;
+      }
+    }
+
     // Transform database format to API format
     const transformedCard = dbCardToApiCard(card);
+
+    // Add metadata to response
+    if (cardMetadata) {
+      (transformedCard as any).metadata = cardMetadata;
+    }
 
     return createCorsResponse(
       {

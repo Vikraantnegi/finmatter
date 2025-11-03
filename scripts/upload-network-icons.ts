@@ -42,9 +42,9 @@ const NETWORK_ICONS_REPO = path.resolve(
 const TEMP_ICONS_DIR = path.resolve(PROJECT_ROOT, 'temp-network-icons');
 
 // Supabase configuration
-const supabaseUrl = 'https://gzjlausszwdrrpyzdjwl.supabase.co';
+const supabaseUrl = 'https://tpiemcfwrodnxbrvjsvx.supabase.co';
 const supabaseServiceKey =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6amxhdXNzendkcnJweXpkandsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDQ0Njg5MCwiZXhwIjoyMDc2MDIyODkwfQ.0G06kvMXr9jDzIPCUEWhEgHZ4vGLPixeGmpSUumR3DA';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwaWVtY2Z3cm9kbnhicnZqc3Z4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTU4ODU0OSwiZXhwIjoyMDc1MTY0NTQ5fQ.fkXJte1bKUVqNP3R4k7hbwSVpyMTRDiGg-JiO7LFQe0';
 
 if (!supabaseUrl || !supabaseServiceKey) {
   throw new Error(

@@ -1,0 +1,419 @@
+/**
+ * Seed Database Script
+ *
+ * Seeds banks, networks, and cards_metadata tables from JSON files
+ *
+ * Usage:
+ *   pnpm tsx scripts/seed-database.ts
+ *
+ * Environment Variables Required:
+ *   NEXT_PUBLIC_SUPABASE_URL - Your Supabase project URL
+ *   SUPABASE_SERVICE_ROLE_KEY - Your Supabase service role key
+ */
+
+import { createClient } from '@supabase/supabase-js';
+import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PROJECT_ROOT = path.resolve(__dirname, '..');
+
+// Supabase client - using same config as upload scripts
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.SUPABASE_URL ||
+  'https://gzjlausszwdrrpyzdjwl.supabase.co';
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6amxhdXNzendkcnJweXpkandsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDQ0Njg5MCwiZXhwIjoyMDc2MDIyODkwfQ.0G06kvMXr9jDzIPCUEWhEgHZ4vGLPixeGmpSUumR3DA';
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error(
+    'Missing required environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY',
+  );
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+// File paths
+const BANKS_FILE = path.join(PROJECT_ROOT, 'data', 'banks.json');
+const CARDS_FILE = path.join(PROJECT_ROOT, 'data', 'cards.json');
+
+// Network data (from existing network icons)
+const NETWORKS_DATA = [
+  {
+    name: 'visa',
+    displayName: 'Visa',
+    iconUrl:
+      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/visa/logo.png',
+    logoUrl:
+      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/visa/logo.png',
+    primaryColor: '#1A1F71',
+    secondaryColor: '#FFFFFF',
+  },
+  {
+    name: 'mastercard',
+    displayName: 'Mastercard',
+    iconUrl:
+      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/mastercard/logo.png',
+    logoUrl:
+      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/mastercard/logo.png',
+    primaryColor: '#EB001B',
+    secondaryColor: '#F79E1B',
+  },
+  {
+    name: 'rupay',
+    displayName: 'RuPay',
+    iconUrl:
+      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/rupay/flat-rounded.png',
+    logoUrl:
+      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/rupay/logo.png',
+    primaryColor: '#0066B2',
+    secondaryColor: '#003D7A',
+  },
+  {
+    name: 'amex',
+    displayName: 'American Express',
+    iconUrl:
+      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/amex/logo.png',
+    logoUrl:
+      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/amex/logo.png',
+    primaryColor: '#006FCF',
+    secondaryColor: '#00175A',
+  },
+  {
+    name: 'discover',
+    displayName: 'Discover',
+    iconUrl:
+      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/discover/logo.png',
+    logoUrl:
+      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/discover/logo.png',
+    primaryColor: '#FF6000',
+    secondaryColor: '#000000',
+  },
+];
+
+interface BankData {
+  name: string;
+  displayName: string;
+  logoUrl: string | null;
+  logoWithNameUrl: string | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+}
+
+interface CardData {
+  bankName: string;
+  cards: Array<{
+    cardName: string;
+    displayName: string;
+    cardType: string;
+    network: string;
+    rewardType: string | null;
+    annualFee: number;
+    joiningFee: number;
+    benefits?: any[];
+    offers?: any[];
+    rewards?: any;
+    milestones?: any[];
+    binRanges?: Array<{ binStart: string; binEnd?: string }>;
+    networkLogoUrl?: string;
+    networkIconUrl?: string;
+    primaryColor?: string;
+    secondaryColor?: string;
+    cardLogoUrl?: string;
+    joiningBonus?: any;
+    metadata?: any;
+  }>;
+}
+
+/**
+ * Seed networks table
+ */
+async function seedNetworks(): Promise<Map<string, string>> {
+  console.log('\n📡 Seeding networks...');
+  const networkIdMap = new Map<string, string>();
+
+  for (const network of NETWORKS_DATA) {
+    const { data, error } = await supabase
+      .from('networks')
+      .upsert(
+        {
+          name: network.name,
+          display_name: network.displayName,
+          icon_url: network.iconUrl,
+          logo_url: network.logoUrl,
+          primary_color: network.primaryColor,
+          secondary_color: network.secondaryColor,
+          is_active: true,
+        },
+        {
+          onConflict: 'name',
+          ignoreDuplicates: false,
+        },
+      )
+      .select('id, name')
+      .single();
+
+    if (error) {
+      console.error(
+        `  ❌ Error seeding network ${network.name}:`,
+        error.message,
+      );
+      continue;
+    }
+
+    if (data) {
+      networkIdMap.set(network.name, data.id);
+      console.log(`  ✓ Seeded network: ${network.displayName}`);
+    }
+  }
+
+  console.log(`  ✅ Seeded ${networkIdMap.size} networks\n`);
+  return networkIdMap;
+}
+
+/**
+ * Seed banks table
+ */
+async function seedBanks(): Promise<Map<string, string>> {
+  console.log('🏦 Seeding banks...');
+
+  if (!fs.existsSync(BANKS_FILE)) {
+    throw new Error(`Banks file not found: ${BANKS_FILE}`);
+  }
+
+  const banksJson = fs.readFileSync(BANKS_FILE, 'utf-8');
+  const banks: BankData[] = JSON.parse(banksJson);
+  const bankIdMap = new Map<string, string>();
+
+  for (const bank of banks) {
+    const { data, error } = await supabase
+      .from('banks')
+      .upsert(
+        {
+          name: bank.name,
+          display_name: bank.displayName,
+          logo_url: bank.logoUrl,
+          logo_with_name_url: bank.logoWithNameUrl,
+          primary_color: bank.primaryColor,
+          secondary_color: bank.secondaryColor,
+          is_active: true,
+        },
+        {
+          onConflict: 'name',
+          ignoreDuplicates: false,
+        },
+      )
+      .select('id, name')
+      .single();
+
+    if (error) {
+      console.error(`  ❌ Error seeding bank ${bank.name}:`, error.message);
+      continue;
+    }
+
+    if (data) {
+      bankIdMap.set(bank.name, data.id);
+      console.log(`  ✓ Seeded bank: ${bank.displayName}`);
+    }
+  }
+
+  console.log(`  ✅ Seeded ${bankIdMap.size} banks\n`);
+  return bankIdMap;
+}
+
+/**
+ * Seed cards_metadata table
+ */
+async function seedCards(bankIdMap: Map<string, string>): Promise<void> {
+  console.log('💳 Seeding cards metadata...');
+
+  if (!fs.existsSync(CARDS_FILE)) {
+    throw new Error(`Cards file not found: ${CARDS_FILE}`);
+  }
+
+  const cardsJson = fs.readFileSync(CARDS_FILE, 'utf-8');
+  const cardsData: CardData[] = JSON.parse(cardsJson);
+
+  let totalCards = 0;
+  let seededCards = 0;
+
+  for (const bankCards of cardsData) {
+    const bankId = bankIdMap.get(bankCards.bankName);
+    if (!bankId) {
+      console.error(
+        `  ⚠️  Bank not found: ${bankCards.bankName}, skipping cards`,
+      );
+      continue;
+    }
+
+    for (const card of bankCards.cards) {
+      totalCards++;
+
+      const { data, error } = await supabase
+        .from('cards_metadata')
+        .upsert(
+          {
+            bank_id: bankId,
+            card_name: card.cardName,
+            display_name: card.displayName,
+            card_type: card.cardType,
+            network: card.network,
+            reward_type: card.rewardType || null,
+            annual_fee: card.annualFee || 0,
+            joining_fee: card.joiningFee || 0,
+            primary_color: card.primaryColor || null,
+            secondary_color: card.secondaryColor || null,
+            card_logo_url: card.cardLogoUrl || null,
+            benefits: card.benefits || [],
+            offers: card.offers || [],
+            rewards: card.rewards || {},
+            milestones: card.milestones || [],
+            metadata: {
+              ...(card.metadata || {}),
+              networkLogoUrl: card.networkLogoUrl,
+              networkIconUrl: card.networkIconUrl,
+              joiningBonus: card.joiningBonus,
+            },
+            is_active: true,
+          },
+          {
+            onConflict: 'bank_id,card_name',
+            ignoreDuplicates: false,
+          },
+        )
+        .select('id, display_name')
+        .single();
+
+      if (error) {
+        console.error(
+          `  ❌ Error seeding card ${card.displayName}:`,
+          error.message,
+        );
+        continue;
+      }
+
+      if (data) {
+        seededCards++;
+        if (seededCards % 10 === 0) {
+          console.log(`  ... Seeded ${seededCards} cards`);
+        }
+      }
+    }
+  }
+
+  console.log(`  ✅ Seeded ${seededCards}/${totalCards} cards metadata\n`);
+}
+
+/**
+ * Seed BIN ranges
+ */
+async function seedBinRanges(bankIdMap: Map<string, string>): Promise<void> {
+  console.log('🔢 Seeding BIN ranges...');
+
+  if (!fs.existsSync(CARDS_FILE)) {
+    return; // Skip if no cards file
+  }
+
+  const cardsJson = fs.readFileSync(CARDS_FILE, 'utf-8');
+  const cardsData: CardData[] = JSON.parse(cardsJson);
+
+  // First, get card metadata IDs
+  let totalBinRanges = 0;
+  let seededBinRanges = 0;
+
+  for (const bankCards of cardsData) {
+    const bankId = bankIdMap.get(bankCards.bankName);
+    if (!bankId) continue;
+
+    for (const card of bankCards.cards) {
+      // Get card metadata ID
+      const { data: cardMetadata } = await supabase
+        .from('cards_metadata')
+        .select('id')
+        .eq('bank_id', bankId)
+        .eq('card_name', card.cardName)
+        .single();
+
+      if (!cardMetadata || !card.binRanges || card.binRanges.length === 0) {
+        continue;
+      }
+
+      for (const binRange of card.binRanges) {
+        // Skip if binStart is missing or invalid
+        if (
+          !binRange.binStart ||
+          typeof binRange.binStart !== 'string' ||
+          binRange.binStart.length !== 6
+        ) {
+          continue;
+        }
+
+        totalBinRanges++;
+
+        const { error } = await supabase.from('bin_lookup').upsert(
+          {
+            bin_start: binRange.binStart,
+            bin_end: binRange.binEnd || binRange.binStart,
+            bank_id: bankId,
+            card_metadata_id: cardMetadata.id,
+            card_type: card.cardType,
+            network: card.network,
+            country: 'IN',
+            is_active: true,
+          },
+          {
+            onConflict: undefined, // No unique constraint, allow duplicates
+          },
+        );
+
+        if (error) {
+          console.error(
+            `  ❌ Error seeding BIN range ${binRange.binStart}:`,
+            error.message,
+          );
+          continue;
+        }
+
+        seededBinRanges++;
+      }
+    }
+  }
+
+  console.log(`  ✅ Seeded ${seededBinRanges}/${totalBinRanges} BIN ranges\n`);
+}
+
+/**
+ * Main execution
+ */
+async function main() {
+  console.log('🌱 Starting database seeding...\n');
+
+  try {
+    // Seed in order: networks -> banks -> cards -> bin_ranges
+    const networkIdMap = await seedNetworks();
+    const bankIdMap = await seedBanks();
+    await seedCards(bankIdMap);
+    await seedBinRanges(bankIdMap);
+
+    console.log('✅ Database seeding complete!\n');
+    console.log('📊 Summary:');
+    console.log(`   - Networks: ${networkIdMap.size}`);
+    console.log(`   - Banks: ${bankIdMap.size}`);
+    console.log('   - Cards: Check above for count');
+    console.log('   - BIN ranges: Check above for count\n');
+  } catch (error: any) {
+    console.error('\n❌ Seeding failed:', error.message);
+    console.error(error);
+    process.exit(1);
+  }
+}
+
+if (require.main === module) {
+  main();
+}

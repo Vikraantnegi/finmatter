@@ -27,11 +27,22 @@ export const HEALTH_ROUTES = {
   CHECK: '/api/health',
 } as const;
 
+// Card Routes
+export const CARD_ROUTES = {
+  BIN_LOOKUP: '/api/cards/bin-lookup',
+  LIST: '/api/cards',
+  ADD: '/api/cards',
+  BY_ID: (cardId: string) => `/api/cards/${cardId}` as const,
+  UPDATE: (cardId: string) => `/api/cards/${cardId}` as const,
+  DELETE: (cardId: string) => `/api/cards/${cardId}` as const,
+} as const;
+
 // Combined API Routes object
 export const API_ROUTES = {
   AUTH: AUTH_ROUTES,
   USER: USER_ROUTES,
   HEALTH: HEALTH_ROUTES,
+  CARD: CARD_ROUTES,
 } as const;
 
 // Type helpers for route parameters

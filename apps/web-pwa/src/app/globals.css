@@ -43,6 +43,22 @@ body {
   }
 }
 
+@layer utilities {
+  /* Card flip animation */
+  @keyframes flip360 {
+    0% {
+      transform: rotateY(0deg);
+    }
+    100% {
+      transform: rotateY(360deg);
+    }
+  }
+
+  .animate-flip360 {
+    animation: flip360 2s linear infinite;
+  }
+}
+
 @layer components {
   /* Buttons - matching your design */
   .btn {

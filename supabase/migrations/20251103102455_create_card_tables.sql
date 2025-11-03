@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS cards_metadata (
   card_name TEXT NOT NULL, -- e.g., 'millennia', 'regalia'
   display_name TEXT NOT NULL, -- e.g., 'HDFC Millennia', 'ICICI Amazon Pay'
   card_type TEXT NOT NULL CHECK (card_type IN ('credit', 'debit', 'prepaid')),
-  network TEXT NOT NULL CHECK (network IN ('visa', 'mastercard', 'rupay', 'amex', 'discover')),
+  network TEXT NOT NULL CHECK (network IN ('visa', 'mastercard', 'rupay', 'amex', 'discover', 'diners')),
   reward_type TEXT CHECK (reward_type IN ('cashback', 'points', 'miles', 'none')),
   annual_fee NUMERIC(10, 2) NOT NULL DEFAULT 0,
   joining_fee NUMERIC(10, 2) NOT NULL DEFAULT 0,
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS bin_lookup (
   bank_id UUID NOT NULL REFERENCES banks(id) ON DELETE RESTRICT,
   card_metadata_id UUID REFERENCES cards_metadata(id) ON DELETE SET NULL, -- Optional: specific card if known
   card_type TEXT NOT NULL CHECK (card_type IN ('credit', 'debit', 'prepaid')),
-  network TEXT NOT NULL CHECK (network IN ('visa', 'mastercard', 'rupay', 'amex', 'discover')),
+  network TEXT NOT NULL CHECK (network IN ('visa', 'mastercard', 'rupay', 'amex', 'discover', 'diners')),
   country TEXT DEFAULT 'IN', -- ISO country code
   is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS cards (
   card_name TEXT,
   last_four_digits TEXT NOT NULL,
   card_type TEXT NOT NULL CHECK (card_type IN ('credit', 'debit', 'prepaid')),
-  network TEXT NOT NULL CHECK (network IN ('visa', 'mastercard', 'rupay', 'amex', 'discover')),
+  network TEXT NOT NULL CHECK (network IN ('visa', 'mastercard', 'rupay', 'amex', 'discover', 'diners')),
   reward_type TEXT CHECK (reward_type IN ('cashback', 'points', 'miles', 'none')),
   annual_fee NUMERIC(10, 2) DEFAULT 0,
   currency TEXT DEFAULT 'INR',

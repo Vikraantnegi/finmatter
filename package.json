@@ -46,7 +46,8 @@
     "upload:bank-logos": "tsx scripts/upload-bank-logos.ts",
     "upload:network-icons": "tsx scripts/upload-network-icons.ts",
     "add:network-logos": "tsx scripts/add-network-logos-to-cards.ts",
-    "merge:card-data": "tsx scripts/merge-card-data.ts"
+    "merge:card-data": "tsx scripts/merge-card-data.ts",
+    "seed:database": "tsx scripts/seed-database.ts"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",

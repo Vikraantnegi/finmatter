@@ -344,22 +344,83 @@ async function seedBinRanges(bankIdMap: Map<string, string>): Promise<void> {
         continue;
       }
 
-      for (const binRange of card.binRanges) {
-        // Skip if binStart is missing or invalid
-        if (
-          !binRange.binStart ||
-          typeof binRange.binStart !== 'string' ||
-          binRange.binStart.length !== 6
-        ) {
-          continue;
-        }
+      // Process BIN ranges
+      // Handle both formats:
+      // 1. String array: ["453282", "453283", "453284"] -> create range if consecutive, or individual entries
+      // 2. Object array: [{binStart: "453282", binEnd: "453284"}]
 
+      // First, normalize all BINs to numbers for sorting and range detection
+      const binNumbers: number[] = [];
+      const binRangesToProcess: Array<{ binStart: string; binEnd: string }> =
+        [];
+
+      for (const binRange of card.binRanges) {
+        let binStart: string;
+        let binEnd: string;
+
+        if (typeof binRange === 'string') {
+          // String format: "453282"
+          if (!/^\d{6}$/.test(binRange)) {
+            continue; // Skip invalid BIN format
+          }
+          binNumbers.push(parseInt(binRange, 10));
+        } else if (typeof binRange === 'object' && binRange.binStart) {
+          // Object format: {binStart: "453282", binEnd: "453284"}
+          if (!/^\d{6}$/.test(binRange.binStart)) {
+            continue;
+          }
+          binEnd = binRange.binEnd || binRange.binStart;
+          if (!/^\d{6}$/.test(binEnd)) {
+            continue;
+          }
+          // Add object ranges directly
+          binRangesToProcess.push({
+            binStart: binRange.binStart,
+            binEnd: binEnd,
+          });
+        } else {
+          continue; // Skip invalid format
+        }
+      }
+
+      // Process string array: group consecutive numbers into ranges
+      if (binNumbers.length > 0) {
+        // Sort numbers
+        binNumbers.sort((a, b) => a - b);
+
+        // Group consecutive numbers into ranges
+        let rangeStart = binNumbers[0];
+        let rangeEnd = binNumbers[0];
+
+        for (let i = 1; i < binNumbers.length; i++) {
+          if (binNumbers[i] === rangeEnd + 1) {
+            // Consecutive, extend range
+            rangeEnd = binNumbers[i];
+          } else {
+            // Not consecutive, save current range and start new one
+            binRangesToProcess.push({
+              binStart: rangeStart.toString().padStart(6, '0'),
+              binEnd: rangeEnd.toString().padStart(6, '0'),
+            });
+            rangeStart = binNumbers[i];
+            rangeEnd = binNumbers[i];
+          }
+        }
+        // Don't forget the last range
+        binRangesToProcess.push({
+          binStart: rangeStart.toString().padStart(6, '0'),
+          binEnd: rangeEnd.toString().padStart(6, '0'),
+        });
+      }
+
+      // Insert all BIN ranges
+      for (const binRange of binRangesToProcess) {
         totalBinRanges++;
 
         const { error } = await supabase.from('bin_lookup').upsert(
           {
             bin_start: binRange.binStart,
-            bin_end: binRange.binEnd || binRange.binStart,
+            bin_end: binRange.binEnd,
             bank_id: bankId,
             card_metadata_id: cardMetadata.id,
             card_type: card.cardType,
@@ -374,7 +435,7 @@ async function seedBinRanges(bankIdMap: Map<string, string>): Promise<void> {
 
         if (error) {
           console.error(
-            `  ❌ Error seeding BIN range ${binRange.binStart}:`,
+            `  ❌ Error seeding BIN range ${binRange.binStart}-${binRange.binEnd}:`,
             error.message,
           );
           continue;

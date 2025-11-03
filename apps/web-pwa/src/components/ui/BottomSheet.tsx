@@ -9,6 +9,8 @@ interface BottomSheetProps {
   title?: string;
   children: ReactNode;
   snapPoints?: number[]; // Percentage heights [min, max]
+  className?: string; // Additional classes for custom styling
+  dark?: boolean; // Dark theme variant
 }
 
 export const BottomSheet = ({
@@ -16,6 +18,8 @@ export const BottomSheet = ({
   onClose,
   title,
   children,
+  className,
+  dark = false,
 }: BottomSheetProps) => {
   const sheetRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
@@ -77,7 +81,9 @@ export const BottomSheet = ({
     >
       <div
         ref={sheetRef}
-        className='fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl transform transition-transform duration-300 ease-out max-h-[90vh] flex flex-col'
+        className={`fixed bottom-0 left-0 right-0 rounded-t-3xl shadow-2xl transform transition-transform duration-300 ease-out max-h-[90vh] flex flex-col ${
+          dark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
+        } ${className || ''}`}
         style={{
           transform: isDragging
             ? `translateY(${Math.max(0, currentY)}px)`
@@ -97,11 +103,25 @@ export const BottomSheet = ({
 
         {/* Header */}
         {title && (
-          <div className='flex items-center justify-between px-6 py-4 border-b border-gray-200'>
-            <h3 className='text-lg font-semibold text-gray-900'>{title}</h3>
+          <div
+            className={`flex items-center justify-between px-6 py-4 border-b ${
+              dark ? 'border-gray-700' : 'border-gray-200'
+            }`}
+          >
+            <h3
+              className={`text-lg font-semibold ${
+                dark ? 'text-white' : 'text-gray-900'
+              }`}
+            >
+              {title}
+            </h3>
             <button
               onClick={onClose}
-              className='text-gray-400 hover:text-gray-600 transition-colors p-2 -mr-2'
+              className={`${
+                dark
+                  ? 'text-gray-400 hover:text-gray-300'
+                  : 'text-gray-400 hover:text-gray-600'
+              } transition-colors p-2 -mr-2`}
             >
               <X className='w-5 h-5' />
             </button>

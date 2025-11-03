@@ -4,15 +4,15 @@
  */
 
 import { DatabaseUser } from './user';
-import { DatabaseCard, DatabaseCardBenefit } from './card';
-
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
+import {
+  DatabaseCard,
+  DatabaseCardBenefit,
+  DatabaseBank,
+  DatabaseNetwork,
+  DatabaseCardMetadata,
+  DatabaseBinLookup,
+  Json,
+} from './card';
 
 export interface Database {
   public: {
@@ -27,6 +27,69 @@ export interface Database {
         Update: Partial<DatabaseUser>;
         Relationships: [];
       };
+      banks: {
+        Row: DatabaseBank;
+        Insert: Omit<DatabaseBank, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<DatabaseBank>;
+        Relationships: [];
+      };
+      networks: {
+        Row: DatabaseNetwork;
+        Insert: Omit<DatabaseNetwork, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<DatabaseNetwork>;
+        Relationships: [];
+      };
+      cards_metadata: {
+        Row: DatabaseCardMetadata;
+        Insert: Omit<
+          DatabaseCardMetadata,
+          'id' | 'created_at' | 'updated_at'
+        > & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<DatabaseCardMetadata>;
+        Relationships: [
+          {
+            foreignKeyName: 'cards_metadata_bank_id_fkey';
+            columns: ['bank_id'];
+            referencedRelation: 'banks';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      bin_lookup: {
+        Row: DatabaseBinLookup;
+        Insert: Omit<DatabaseBinLookup, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<DatabaseBinLookup>;
+        Relationships: [
+          {
+            foreignKeyName: 'bin_lookup_bank_id_fkey';
+            columns: ['bank_id'];
+            referencedRelation: 'banks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'bin_lookup_card_metadata_id_fkey';
+            columns: ['card_metadata_id'];
+            referencedRelation: 'cards_metadata';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       cards: {
         Row: DatabaseCard;
         Insert: Omit<DatabaseCard, 'id' | 'created_at' | 'updated_at'> & {
@@ -40,6 +103,18 @@ export interface Database {
             foreignKeyName: 'cards_user_id_fkey';
             columns: ['user_id'];
             referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'cards_bank_id_fkey';
+            columns: ['bank_id'];
+            referencedRelation: 'banks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'cards_card_metadata_id_fkey';
+            columns: ['card_metadata_id'];
+            referencedRelation: 'cards_metadata';
             referencedColumns: ['id'];
           },
         ];

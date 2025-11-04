@@ -122,14 +122,18 @@ export const EmptyState = ({
  * Specific Empty State Components
  */
 
-export const NoCardsEmptyState = () => {
+export const NoCardsEmptyState = ({
+  onAddCard,
+}: {
+  onAddCard?: () => void;
+}) => {
   const router = useRouter();
   return (
     <EmptyState
       title='No Cards Added Yet'
       description='Add your first card to unlock app features and start tracking your spending.'
       actionLabel='Add Card'
-      onAction={() => router.push('/cards/add')}
+      onAction={onAddCard || (() => router.push('/cards'))}
       illustration='cards'
     />
   );

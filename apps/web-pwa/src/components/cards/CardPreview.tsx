@@ -62,14 +62,19 @@ export const CardPreview = ({
               ? 'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/discover/flat-rounded.svg'
               : undefined;
 
+  // Extract height class if provided, otherwise default to h-48
+  const heightMatch = className?.match(/h-\d+/);
+  const heightClass = heightMatch ? heightMatch[0] : 'h-48';
+  const otherClasses = className?.replace(/h-\d+/g, '').trim() || '';
+
   return (
     <div
-      className={cn('relative w-full', className)}
+      className={cn('relative w-full', otherClasses)}
       style={{ perspective: '1000px' }}
     >
       {/* Card Container */}
       <div
-        className='relative w-full h-48 rounded-2xl text-white'
+        className={cn('relative w-full rounded-2xl text-white', heightClass)}
         style={{
           transformStyle: 'preserve-3d',
           background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,

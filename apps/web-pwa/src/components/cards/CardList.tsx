@@ -1,92 +1,79 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/apiClient';
-import { CARD_ROUTES } from '@/constants/apiRoutes';
-import type { Card } from '@finmatter/types';
+import { useState } from 'react';
+import { Plus } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { CardGridItem } from './CardGridItem';
+import { AddCardFlow } from './AddCardFlow';
+import { EmptyState } from '@/components/dashboard/EmptyStates';
+import { CardsStackLoader } from '@/components/dashboard/SectionLoader';
+import { useCards } from '@/hooks/useCards';
 
 export const CardList = () => {
-  const [cards, setCards] = useState<Card[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { cards, isLoading, fetchCards } = useCards();
+  const [showAddCard, setShowAddCard] = useState(false);
 
-  useEffect(() => {
-    fetchCards();
-  }, []);
-
-  const fetchCards = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await apiClient.get<{
-        success: boolean;
-        cards: Card[];
-      }>(CARD_ROUTES.LIST);
-
-      if (response.success && response.cards) {
-        setCards(response.cards);
-      }
-    } catch (err: any) {
-      console.error('Error fetching cards:', err);
-      setError(err.message || 'Failed to fetch cards');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleAddCardSuccess = () => {
+    setShowAddCard(false);
+    fetchCards(); // Refresh list
   };
 
   if (isLoading) {
     return (
-      <div className='flex items-center justify-center min-h-[400px]'>
-        <div className='text-gray-400'>Loading cards...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className='flex items-center justify-center min-h-[400px]'>
-        <div className='text-red-400'>Error: {error}</div>
+      <div className='space-y-4'>
+        <CardsStackLoader />
       </div>
     );
   }
 
   if (cards.length === 0) {
     return (
-      <div className='flex items-center justify-center min-h-[400px]'>
-        <div className='text-gray-400'>No cards found</div>
-      </div>
+      <>
+        <EmptyState
+          title='No Cards Added Yet'
+          description='Add your first card to unlock app features and start tracking your spending.'
+          actionLabel='Add Card'
+          onAction={() => setShowAddCard(true)}
+          illustration='cards'
+        />
+        <AddCardFlow
+          isOpen={showAddCard}
+          onClose={() => setShowAddCard(false)}
+          onSuccess={handleAddCardSuccess}
+        />
+      </>
     );
   }
 
   return (
-    <div className='space-y-4'>
-      <h2 className='text-xl font-semibold text-white mb-4'>
-        Card List Screen
-      </h2>
-      <div className='text-gray-400 text-sm'>
-        {cards.length} card{cards.length !== 1 ? 's' : ''} found
+    <>
+      <div className='space-y-6 pb-24'>
+        {/* Grid Layout */}
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+          {cards.map(card => (
+            <CardGridItem key={card.id} card={card} />
+          ))}
+        </div>
       </div>
-      {/* TODO: Implement card list UI */}
-      <div className='grid grid-cols-1 gap-4'>
-        {cards.map(card => (
-          <div
-            key={card.id}
-            className='p-4 bg-gray-800 rounded-xl border border-gray-700'
-          >
-            <div className='flex items-center justify-between'>
-              <div>
-                <div className='text-white font-semibold'>
-                  **** **** **** {card.lastFourDigits}
-                </div>
-                <div className='text-gray-400 text-sm mt-1'>
-                  {card.bank?.displayName || card.bank?.name || 'Unknown Bank'}
-                </div>
-              </div>
-              <div className='text-gray-400 text-sm'>{card.status}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+
+      {/* Floating Action Button */}
+      <motion.button
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setShowAddCard(true)}
+        className='fixed bottom-24 right-6 w-14 h-14 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg flex items-center justify-center z-40 transition-all'
+      >
+        <Plus className='w-6 h-6' />
+      </motion.button>
+
+      {/* Add Card Flow */}
+      <AddCardFlow
+        isOpen={showAddCard}
+        onClose={() => setShowAddCard(false)}
+        onSuccess={handleAddCardSuccess}
+      />
+    </>
   );
 };

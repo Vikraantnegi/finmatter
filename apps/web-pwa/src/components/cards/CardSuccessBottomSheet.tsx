@@ -60,7 +60,7 @@ export const CardSuccessBottomSheet = ({
         {/* Continue Button */}
         <Button
           onClick={onContinue}
-          className='w-full h-14 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all'
+          className='w-full h-14 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all mb-4'
         >
           Continue to Dashboard
         </Button>

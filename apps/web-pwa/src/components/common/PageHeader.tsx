@@ -34,7 +34,7 @@ const PageHeader = ({ title, action, onBack }: PageHeaderProps) => {
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={handleBack}
-          className='flex items-center justify-center w-10 h-10 rounded-full bg-gray-800/50 hover:bg-gray-800 transition-colors'
+          className='flex items-center justify-center w-10 h-10 rounded-full bg-gray-800/50 hover:bg-gray-800 transition-colors flex-shrink-0'
         >
           <ArrowLeft className='w-5 h-5 text-white' />
         </motion.button>
@@ -45,7 +45,7 @@ const PageHeader = ({ title, action, onBack }: PageHeaderProps) => {
         </h1>
 
         {/* Action (optional) */}
-        <div className='w-10'>{action}</div>
+        <div className='flex-shrink-0 ml-auto'>{action}</div>
       </div>
     </motion.div>
   );

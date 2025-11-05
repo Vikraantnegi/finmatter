@@ -75,13 +75,13 @@ export const BottomSheet = ({
 
   return (
     <div
-      className='fixed inset-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm m-0'
+      className='fixed inset-0 z-[100] bg-black bg-opacity-50 backdrop-blur-sm m-0'
       onClick={handleBackdropClick}
       style={{ touchAction: 'none', margin: 0 }}
     >
       <div
         ref={sheetRef}
-        className={`fixed bottom-0 left-0 right-0 rounded-t-3xl shadow-2xl transform transition-transform duration-300 ease-out max-h-[90vh] flex flex-col ${
+        className={`fixed bottom-0 left-0 right-0 rounded-t-3xl shadow-2xl transform transition-transform duration-300 ease-out max-h-[90vh] flex flex-col pb-safe-area-inset-bottom ${
           dark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
         } ${className || ''}`}
         style={{
@@ -90,6 +90,7 @@ export const BottomSheet = ({
             : isOpen
               ? 'translateY(0)'
               : 'translateY(100%)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))', // Account for bottom navigation with safe spacing
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -109,7 +110,7 @@ export const BottomSheet = ({
             }`}
           >
             <h3
-              className={`text-lg font-semibold ${
+              className={`text-base font-semibold ${
                 dark ? 'text-white' : 'text-gray-900'
               }`}
             >

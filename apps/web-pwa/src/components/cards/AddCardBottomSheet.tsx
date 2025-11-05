@@ -190,7 +190,7 @@ export const AddCardBottomSheet = ({
           </p>
         </div>
       ) : (
-        <div className='px-6 py-4 space-y-6'>
+        <div className='px-6 py-4 pb-10 space-y-6'>
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className='space-y-5'>
             {/* Card Number */}
@@ -212,7 +212,7 @@ export const AddCardBottomSheet = ({
                       cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
                     e.target.value = formatted;
                   }}
-                  className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors font-mono tracking-wider'
+                  className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors font-mono tracking-wider'
                   autoComplete='cc-number'
                 />
                 {/* BIN Lookup Indicator */}
@@ -244,7 +244,7 @@ export const AddCardBottomSheet = ({
                 {...register('cardHolderName')}
                 type='text'
                 placeholder='John Doe'
-                className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
+                className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
                 autoComplete='cc-name'
               />
               {errors.cardHolderName && (
@@ -265,7 +265,7 @@ export const AddCardBottomSheet = ({
                   placeholder='MM/YY'
                   maxLength={5}
                   onChange={handleExpiryChange}
-                  className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
+                  className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
                   autoComplete='cc-exp'
                 />
                 {(errors.expiryMonth || errors.expiryYear) && (
@@ -283,7 +283,7 @@ export const AddCardBottomSheet = ({
                   type='text'
                   placeholder='123'
                   maxLength={4}
-                  className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
+                  className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
                   autoComplete='cc-csc'
                 />
                 {errors.cvv && (
@@ -304,7 +304,7 @@ export const AddCardBottomSheet = ({
             <Button
               type='submit'
               disabled={!isValid || isSubmitting}
-              className='w-full h-14 bg-primary hover:opacity-90 text-white font-semibold rounded-xl disabled:opacity-40 transition-all'
+              className='w-full h-14 bg-primary hover:opacity-90 text-white text-base font-semibold rounded-xl disabled:opacity-40 transition-all'
               loading={isSubmitting}
             >
               Add Card

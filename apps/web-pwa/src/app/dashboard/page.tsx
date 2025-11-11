@@ -6,9 +6,9 @@ import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import { NoCardsEmptyState } from '@/components/dashboard/EmptyStates';
 import { DashboardLoader } from '@/components/dashboard/SectionLoader';
 import { CardsStack } from '@/components/cards/CardsStack';
-import { PortfolioStats } from '@/components/dashboard/PortfolioStats';
 import { AddCardFlow } from '@/components/cards/AddCardFlow';
 import { useCards } from '@/hooks/useCards';
+import { FinnyWidget } from '@/components/dashboard/FinnyWidget';
 
 function DashboardContent() {
   const { cards, isLoading, fetchCards } = useCards();
@@ -20,7 +20,7 @@ function DashboardContent() {
 
   const handleAddCardSuccess = () => {
     setShowAddCard(false);
-    fetchCards(); // Refresh cards
+    fetchCards();
   };
 
   if (isLoading) {
@@ -56,13 +56,7 @@ function DashboardContent() {
         <DashboardHeader />
         <div className='flex-1 space-y-6 pb-6'>
           <CardsStack cards={cards} />
-          <PortfolioStats cards={cards} />
-          {/* Future components will go here:
-          <SpendingAnalysis />
-          <RecentTransactions />
-          <RewardsWidget />
           <FinnyWidget />
-          */}
         </div>
       </div>
       <AddCardFlow

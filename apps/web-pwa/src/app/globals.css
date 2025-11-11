@@ -44,22 +44,71 @@ body {
 }
 
 @layer utilities {
-  /* Card flip animation */
-  @keyframes flip360 {
+  @keyframes card-loader-rotate {
     0% {
       transform: rotateY(0deg);
+    }
+    50% {
+      transform: rotateY(180deg);
     }
     100% {
       transform: rotateY(360deg);
     }
   }
-
-  .animate-flip360 {
-    animation: flip360 2s linear infinite;
-  }
 }
 
 @layer components {
+  .card-loader-scene {
+    @apply relative flex items-center justify-center;
+    perspective: 1400px;
+    transform-style: preserve-3d;
+  }
+
+  .card-loader-card {
+    position: relative;
+    width: 88%;
+    height: 88%;
+    transform-style: preserve-3d;
+    animation: card-loader-rotate 2.2s ease-in-out infinite;
+    transform-origin: center;
+    will-change: transform;
+  }
+
+  .card-loader-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1.5rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+    box-shadow: 0 24px 50px -30px rgba(79, 70, 229, 0.65);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform-style: preserve-3d;
+  }
+
+  .card-loader-face::after {
+    content: '';
+    position: absolute;
+    inset: 12%;
+    border-radius: 1rem;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.12),
+      rgba(255, 255, 255, 0.02)
+    );
+    filter: blur(0.5px);
+  }
+
+  .card-loader-face--back {
+    transform: rotateY(180deg);
+  }
+
+  .card-loader-icon {
+    filter: drop-shadow(0 4px 18px rgba(255, 255, 255, 0.55));
+  }
+
   /* Buttons - matching your design */
   .btn {
     @apply px-5 py-3 rounded-xl text-base font-bold leading-normal 

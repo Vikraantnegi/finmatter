@@ -18,11 +18,11 @@ const ITERATIONS = 100000; // PBKDF2 iterations
  * Get encryption key from environment variable
  */
 function getEncryptionKey(): Buffer {
-  const key = process.env.CARD_ENCRYPTION_KEY;
+  const key = process.env.NEXT_PUBLIC_CARD_ENCRYPTION_KEY;
 
   if (!key) {
     throw new Error(
-      'CARD_ENCRYPTION_KEY environment variable is required for card encryption',
+      'NEXT_PUBLIC_CARD_ENCRYPTION_KEY environment variable is required for card encryption',
     );
   }
 

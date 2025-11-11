@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
+import Image from 'next/image';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -12,6 +13,7 @@ import { CARD_ROUTES } from '@/constants/apiRoutes';
 import { Lock } from 'lucide-react';
 import type { Card } from '@finmatter/types';
 import { useDebounce } from '@/hooks/useDebounce';
+import { getNetworkIconUrl } from '@/lib/networkIcons';
 
 // Form validation schema
 const addCardSchema = z.object({
@@ -40,10 +42,20 @@ interface BinLookupResult {
   cardMetadata?: {
     id: string;
     displayName: string;
-    bank: any;
-    network: any;
-    benefits: any[];
-    offers: any[];
+    bank: {
+      id: string;
+      name: string;
+      displayName?: string | null;
+      logoUrl?: string | null;
+      logoWithNameUrl?: string | null;
+    } | null;
+    network: {
+      id: string;
+      name: string;
+      displayName?: string | null;
+    } | null;
+    benefits: Record<string, unknown>[];
+    offers: Record<string, unknown>[];
   };
   source?: 'internal' | 'binlist_api';
 }
@@ -51,7 +63,7 @@ interface BinLookupResult {
 interface AddCardBottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (card: Card) => void; // This will be used to show the success bottom sheet
+  onSuccess: (card: Card) => void;
 }
 
 export const AddCardBottomSheet = ({
@@ -63,8 +75,16 @@ export const AddCardBottomSheet = ({
   const [isLookingUpBin, setIsLookingUpBin] = useState(false);
   const [binLookupResult, setBinLookupResult] =
     useState<BinLookupResult | null>(null);
+  const [lastLookedUpBin, setLastLookedUpBin] = useState<string | null>(null);
+  const [inFlightBin, setInFlightBin] = useState<string | null>(null);
+  const networkLogoUrl = getNetworkIconUrl(binLookupResult?.network, 'logo');
+  const formatCardNumberDisplay = (value?: string) =>
+    value && value.length > 0
+      ? (value.match(/.{1,4}/g)?.join(' ') ?? value)
+      : '';
 
   const {
+    control,
     register,
     handleSubmit,
     watch,
@@ -93,6 +113,7 @@ export const AddCardBottomSheet = ({
 
     try {
       setIsLookingUpBin(true);
+      setInFlightBin(bin);
       const result = await apiClient.get<BinLookupResult>(
         `${CARD_ROUTES.BIN_LOOKUP}?bin=${bin}`,
       );
@@ -102,6 +123,8 @@ export const AddCardBottomSheet = ({
       setBinLookupResult(null);
     } finally {
       setIsLookingUpBin(false);
+      setInFlightBin(null);
+      setLastLookedUpBin(bin);
     }
   }, []);
 
@@ -111,12 +134,16 @@ export const AddCardBottomSheet = ({
 
     if (cleanCardNumber.length >= 6) {
       const bin = cleanCardNumber.substring(0, 6);
-      performBinLookup(bin);
+      if (bin !== lastLookedUpBin && bin !== inFlightBin) {
+        performBinLookup(bin);
+      }
     } else {
       setBinLookupResult(null);
       setIsLookingUpBin(false);
+      setLastLookedUpBin(null);
+      setInFlightBin(null);
     }
-  }, [debouncedCardNumber, performBinLookup]);
+  }, [debouncedCardNumber, performBinLookup, lastLookedUpBin, inFlightBin]);
 
   // Handle expiry date input
   const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,28 +226,54 @@ export const AddCardBottomSheet = ({
                 Card Number
               </label>
               <div className='relative'>
-                <input
-                  {...register('cardNumber')}
-                  type='text'
-                  placeholder='1234 5678 9012 3456'
-                  maxLength={19}
-                  onChange={e => {
-                    const cleaned = e.target.value.replace(/\D/g, '');
-                    setValue('cardNumber', cleaned, { shouldValidate: true });
-                    // Format display
-                    const formatted =
-                      cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
-                    e.target.value = formatted;
-                  }}
-                  className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors font-mono tracking-wider'
-                  autoComplete='cc-number'
+                <Controller
+                  name='cardNumber'
+                  control={control}
+                  render={({
+                    field: { value, onChange, onBlur, ref, name },
+                  }) => (
+                    <input
+                      name={name}
+                      ref={ref}
+                      onBlur={onBlur}
+                      type='text'
+                      placeholder='1234 5678 9012 3456'
+                      value={formatCardNumberDisplay(value)}
+                      inputMode='numeric'
+                      maxLength={23}
+                      onChange={event => {
+                        const cleaned = event.target.value
+                          .replace(/\D/g, '')
+                          .slice(0, 19);
+
+                        onChange(cleaned);
+                        setValue('cardNumber', cleaned, {
+                          shouldValidate: true,
+                          shouldDirty: true,
+                          shouldTouch: true,
+                        });
+                      }}
+                      className='w-full h-14 pl-4 pr-12 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors font-mono tracking-wider'
+                      autoComplete='cc-number'
+                    />
+                  )}
                 />
                 {/* BIN Lookup Indicator */}
-                {isLookingUpBin && (
-                  <div className='absolute right-4 top-1/2 -translate-y-1/2'>
+                <div className='absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8'>
+                  {isLookingUpBin ? (
                     <div className='w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin' />
-                  </div>
-                )}
+                  ) : (
+                    networkLogoUrl && (
+                      <Image
+                        src={networkLogoUrl}
+                        alt={`${binLookupResult?.network ?? 'card'} network`}
+                        fill
+                        sizes='32px'
+                        className='object-contain'
+                      />
+                    )
+                  )}
+                </div>
               </div>
               {errors.cardNumber && (
                 <p className='mt-1 text-sm text-red-400'>

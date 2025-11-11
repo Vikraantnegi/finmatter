@@ -51,7 +51,7 @@ export const CardsStack = ({
 
       {/* Card Stack */}
       <div className='px-6'>
-        <div className='relative h-[280px] pt-6'>
+        <div className='relative min-h-[220px] pt-6 pb-4'>
           {visibleCards.map((card, index) => {
             const isTop = index === 0;
             const offset = index * 18;
@@ -82,9 +82,11 @@ export const CardsStack = ({
                 onClick={() => isTop && handleCardClick(card.id)}
                 whileTap={isTop ? { scale: 0.98 } : {}}
               >
-                <div className='h-[230px]'>
-                  <CardPreview card={card} className='h-[230px] w-full' />
-                </div>
+                <CardPreview
+                  card={card}
+                  showFlipAction={false}
+                  className='h-[240px] w-full'
+                />
               </motion.div>
             );
           })}

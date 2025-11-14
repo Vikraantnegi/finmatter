@@ -360,53 +360,46 @@ async function seedBinRanges(bankIdMap: Map<string, string>): Promise<void> {
         [];
 
       for (const binRange of card.binRanges) {
-        // Handle both formats:
-        // 1. String format: "453282" or ["453282", "453283"]
-        // 2. Object format: { binStart: "453282", binEnd: "453282" }
-        let binStart: string;
-        let binEnd: string;
-
         if (typeof binRange === 'string') {
-          // String format: use as both start and end
-          binStart = binRange;
-          binEnd = binRange;
-        } else if (typeof binRange === 'object' && binRange !== null) {
-          // Object format: extract binStart and binEnd
-          // Handle both camelCase and snake_case formats
-          const obj = binRange as any;
-          binStart = obj.binStart || obj.bin_start;
-          binEnd = obj.binEnd || obj.bin_end || binStart;
-        } else {
-          // Invalid format, skip
+          if (/^\d{6}$/.test(binRange)) {
+            binNumbers.push(parseInt(binRange, 10));
+          }
           continue;
         }
 
-        // Validate BIN format (must be exactly 6 digits)
-        if (
-          !binStart ||
-          typeof binStart !== 'string' ||
-          binStart.length !== 6 ||
-          !/^\d{6}$/.test(binStart)
-        ) {
-          continue;
+        if (typeof binRange === 'object' && binRange !== null) {
+          const obj = binRange as any;
+          let binStart: string | undefined =
+            obj.binStart || obj.bin_start || undefined;
+          let binEnd: string | undefined =
+            obj.binEnd || obj.bin_end || binStart;
+
+          if (!binStart || !/^\d{6}$/.test(binStart)) {
+            continue;
+          }
+
+          if (!binEnd || !/^\d{6}$/.test(binEnd)) {
+            binEnd = binStart;
+          }
+
+          if (parseInt(binEnd, 10) < parseInt(binStart, 10)) {
+            binEnd = binStart;
+          }
+
+          binRangesToProcess.push({ binStart, binEnd });
         }
       }
 
-      // Process string array: group consecutive numbers into ranges
       if (binNumbers.length > 0) {
-        // Sort numbers
         binNumbers.sort((a, b) => a - b);
 
-        // Group consecutive numbers into ranges
         let rangeStart = binNumbers[0];
         let rangeEnd = binNumbers[0];
 
         for (let i = 1; i < binNumbers.length; i++) {
           if (binNumbers[i] === rangeEnd + 1) {
-            // Consecutive, extend range
             rangeEnd = binNumbers[i];
           } else {
-            // Not consecutive, save current range and start new one
             binRangesToProcess.push({
               binStart: rangeStart.toString().padStart(6, '0'),
               binEnd: rangeEnd.toString().padStart(6, '0'),
@@ -415,24 +408,14 @@ async function seedBinRanges(bankIdMap: Map<string, string>): Promise<void> {
             rangeEnd = binNumbers[i];
           }
         }
-        // Don't forget the last range
+
         binRangesToProcess.push({
           binStart: rangeStart.toString().padStart(6, '0'),
           binEnd: rangeEnd.toString().padStart(6, '0'),
         });
       }
 
-        // Validate binEnd if provided
-        if (binEnd && (binEnd.length !== 6 || !/^\d{6}$/.test(binEnd))) {
-          // If binEnd is invalid, use binStart as binEnd
-          binEnd = binStart;
-        }
-
-        // Ensure binEnd >= binStart
-        if (parseInt(binEnd, 10) < parseInt(binStart, 10)) {
-          binEnd = binStart;
-        }
-
+      for (const { binStart, binEnd } of binRangesToProcess) {
         totalBinRanges++;
 
         const { error } = await supabase.from('bin_lookup').upsert(

@@ -1,8 +1,9 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
 import { CardPreview } from './CardPreview';
 import type { Card } from '@finmatter/types';
 import { cn } from '@/lib/utils';
@@ -11,15 +12,30 @@ interface CardsStackProps {
   cards: Card[];
   maxVisible?: number;
   className?: string;
+  onAddCard?: () => void;
+  onViewAll?: () => void;
 }
 
 export const CardsStack = ({
   cards,
   maxVisible = 3,
   className,
+  onViewAll,
 }: CardsStackProps) => {
   const router = useRouter();
-  const visibleCards = cards.slice(0, maxVisible);
+  const [cardOrder, setCardOrder] = useState<string[]>([]);
+
+  useEffect(() => {
+    setCardOrder(cards.map(card => card.id));
+  }, [cards]);
+
+  const orderedCards = useMemo(() => {
+    return cardOrder
+      .map(id => cards.find(card => card.id === id))
+      .filter((card): card is Card => Boolean(card));
+  }, [cardOrder, cards]);
+
+  const visibleCards = orderedCards.slice(0, maxVisible);
 
   if (visibleCards.length === 0) {
     return null;
@@ -33,30 +49,49 @@ export const CardsStack = ({
     router.push('/cards');
   };
 
+  const cycleDown = () => {
+    setCardOrder(prev => {
+      if (prev.length <= 1) return prev;
+      const [first, ...rest] = prev;
+      return [...rest, first];
+    });
+  };
+
+  const cycleUp = () => {
+    setCardOrder(prev => {
+      if (prev.length <= 1) return prev;
+      const last = prev[prev.length - 1];
+      const rest = prev.slice(0, prev.length - 1);
+      return [last, ...rest];
+    });
+  };
+
   return (
     <div className={cn('space-y-4', className)}>
       {/* Header */}
-      <div className='px-6 flex items-center justify-between'>
+      <div className='px-6 pt-4 flex items-center justify-between'>
         <h2 className='text-xl font-bold text-white'>Your Cards</h2>
-        {cards.length > maxVisible && (
-          <button
-            onClick={handleViewAll}
-            className='flex items-center gap-1 text-primary hover:text-primary/80 transition-colors text-sm font-medium'
-          >
-            View All
-            <ChevronRight className='w-4 h-4' />
-          </button>
-        )}
+        <div className='flex items-center gap-2'>
+          {(onViewAll || cards.length > maxVisible) && (
+            <button
+              onClick={onViewAll ?? handleViewAll}
+              className='flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-primary border border-primary/40 rounded-full hover:bg-primary/10 transition-colors'
+            >
+              View All
+              <ChevronRight className='w-4 h-4' />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Card Stack */}
-      <div className='px-6'>
-        <div className='relative min-h-[220px] pt-6 pb-4'>
+      <div className='px-6 space-y-4'>
+        <div className='relative h-[300px] pt-6 pb-10'>
           {visibleCards.map((card, index) => {
             const isTop = index === 0;
-            const offset = index * 18;
-            const scale = 1 - index * 0.03;
-            const brightness = 1 - index * 0.08;
+            const offset = index * 28;
+            const scale = 1 - index * 0.05;
+            const brightness = 1 - index * 0.15;
             const zIndex = visibleCards.length - index;
 
             return (
@@ -68,7 +103,7 @@ export const CardsStack = ({
                   y: offset,
                   scale,
                 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.08 }}
                 className='absolute top-0 left-0 right-0 cursor-pointer'
                 style={{
                   zIndex,
@@ -76,20 +111,57 @@ export const CardsStack = ({
                   filter: index > 0 ? `brightness(${brightness})` : 'none',
                   boxShadow:
                     index === 0
-                      ? '0 20px 40px rgba(0, 0, 0, 0.4)'
-                      : `0 ${8 + index * 4}px ${16 + index * 8}px rgba(0, 0, 0, 0.3)`,
+                      ? '0 28px 60px rgba(15, 23, 42, 0.55)'
+                      : `0 ${12 + index * 6}px ${
+                          20 + index * 12
+                        }px rgba(15, 23, 42, 0.35)`,
                 }}
                 onClick={() => isTop && handleCardClick(card.id)}
+                drag={isTop ? 'y' : false}
+                dragSnapToOrigin
+                dragConstraints={{ top: -110, bottom: 110 }}
+                dragElastic={0.18}
+                onDragEnd={(_event, info) => {
+                  if (!isTop) return;
+                  if (info.offset.y > 80) {
+                    cycleDown();
+                  } else if (info.offset.y < -80) {
+                    cycleUp();
+                  }
+                }}
                 whileTap={isTop ? { scale: 0.98 } : {}}
               >
                 <CardPreview
                   card={card}
                   showFlipAction={false}
-                  className='h-[240px] w-full'
+                  className='h-[250px] w-full'
                 />
               </motion.div>
             );
           })}
+
+          {visibleCards.length > 1 && (
+            <div className='absolute top-1/2 right-0 -translate-y-1/2'>
+              <div className='flex flex-col gap-2 p-2 bg-slate-900/80 border border-slate-700/60 rounded-full shadow-[0_12px_30px_-18px_rgba(15,23,42,0.7)] backdrop-blur'>
+                <button
+                  type='button'
+                  onClick={cycleUp}
+                  className='p-1.5 rounded-full hover:bg-slate-800 text-slate-300 transition-colors'
+                  aria-label='Show previous card'
+                >
+                  <ChevronUp className='w-4 h-4' />
+                </button>
+                <button
+                  type='button'
+                  onClick={cycleDown}
+                  className='p-1.5 rounded-full hover:bg-slate-800 text-slate-300 transition-colors'
+                  aria-label='Show next card'
+                >
+                  <ChevronDown className='w-4 h-4' />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

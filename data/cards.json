@@ -57,7 +57,7 @@
         "cardName": "millennia",
         "displayName": "HDFC Millennia Credit Card",
         "cardType": "credit",
-        "network": "visa",
+        "network": "mastercard",
         "rewardType": "points",
         "annualFee": 1000,
         "joiningFee": 1000,

@@ -21,6 +21,8 @@ interface CardPreviewProps {
   showCVV?: boolean;
   showFlipAction?: boolean;
   networkIconVariant?: NetworkIconVariant;
+  isFlipped?: boolean;
+  onFlipChange?: (flipped: boolean) => void;
   className?: string;
 }
 
@@ -29,9 +31,25 @@ export const CardPreview = ({
   showCVV = false,
   showFlipAction = true,
   networkIconVariant = 'flat-rounded',
+  isFlipped: controlledFlipped,
+  onFlipChange,
   className,
 }: CardPreviewProps) => {
-  const [isFlipped, setIsFlipped] = useState(false);
+  const isControlled = controlledFlipped !== undefined;
+  const [internalFlipped, setInternalFlipped] = useState(false);
+  const isFlipped = isControlled ? controlledFlipped! : internalFlipped;
+
+  const toggleFlip = () => {
+    if (isControlled) {
+      onFlipChange?.(!isFlipped);
+    } else {
+      setInternalFlipped(prev => {
+        const next = !prev;
+        onFlipChange?.(next);
+        return next;
+      });
+    }
+  };
 
   // Get card colors from cardMetadata or bank, with fallback
   const primaryColor =
@@ -180,7 +198,7 @@ export const CardPreview = ({
       {/* Flip Button */}
       {showFlipAction && (
         <button
-          onClick={() => setIsFlipped(!isFlipped)}
+          onClick={toggleFlip}
           className='absolute -bottom-8 right-0 flex flex-col items-center gap-1 text-gray-400 hover:text-gray-300 transition-colors'
         >
           <div className='w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center'>

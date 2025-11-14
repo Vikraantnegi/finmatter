@@ -1,11 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { Edit2, ExternalLink } from 'lucide-react';
+import {
+  Edit2,
+  ExternalLink,
+  Eye,
+  RefreshCw,
+  Trash2,
+  UploadCloud,
+} from 'lucide-react';
 import { CardPreview } from './CardPreview';
-import { Button } from '@/components/ui/Button';
-import { formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import type { Card } from '@finmatter/types';
 
 interface CardDetailsViewProps {
@@ -20,6 +26,11 @@ export const CardDetailsView = ({
   onDelete,
 }: CardDetailsViewProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
+
+  useEffect(() => {
+    setIsCardFlipped(false);
+  }, [card.id]);
 
   const handleDelete = async () => {
     if (
@@ -80,17 +91,49 @@ export const CardDetailsView = ({
   };
 
   return (
-    <div className='space-y-6 pb-6'>
+    <div className='space-y-7 pb-10'>
       {/* Card Visual */}
       <div className='px-6 pt-4'>
-        <div className='h-64'>
-          <CardPreview card={card} className='h-64 w-full' />
+        <div className='h-60'>
+          <CardPreview
+            card={card}
+            className='h-60 w-full'
+            showFlipAction={false}
+            isFlipped={isCardFlipped}
+            onFlipChange={setIsCardFlipped}
+          />
+        </div>
+      </div>
+
+      {/* Quick Actions Row */}
+      <div className='px-6 mt-2'>
+        <div className='grid grid-cols-5 gap-4'>
+          <QuickAction
+            icon={Edit2}
+            label='Edit'
+            onClick={onEdit}
+            intent='primary'
+          />
+          <QuickAction icon={Eye} label='Transactions' disabled />
+          <QuickAction icon={UploadCloud} label='Upload' disabled />
+          <QuickAction
+            icon={RefreshCw}
+            label={isCardFlipped ? 'Show Front' : 'Flip'}
+            onClick={() => setIsCardFlipped(prev => !prev)}
+          />
+          <QuickAction
+            icon={Trash2}
+            label={isDeleting ? 'Deleting…' : 'Delete'}
+            onClick={handleDelete}
+            intent='danger'
+            disabled={isDeleting}
+          />
         </div>
       </div>
 
       {/* Card Info Section */}
-      <div className='px-6 space-y-4'>
-        <div className='bg-gray-800 rounded-xl p-4 border border-gray-700 space-y-3'>
+      <div className='px-6 space-y-6'>
+        <div className='bg-gray-800 rounded-2xl p-5 border border-gray-700/80 space-y-3'>
           <h3 className='text-lg font-semibold text-white mb-4'>Card Info</h3>
 
           {/* Bank */}
@@ -171,7 +214,7 @@ export const CardDetailsView = ({
         </div>
 
         {/* Card Details Section */}
-        <div className='bg-gray-800 rounded-xl p-4 border border-gray-700 space-y-3'>
+        <div className='bg-gray-800 rounded-2xl p-5 border border-gray-700/80 space-y-3'>
           <h3 className='text-lg font-semibold text-white mb-4'>
             Card Details
           </h3>
@@ -231,7 +274,7 @@ export const CardDetailsView = ({
 
         {/* Card Metadata Section */}
         {card.cardMetadata && (
-          <div className='bg-gray-800 rounded-xl p-4 border border-gray-700 space-y-3'>
+          <div className='bg-gray-800 rounded-2xl p-5 border border-gray-700/80 space-y-3'>
             <h3 className='text-lg font-semibold text-white mb-4'>
               Card Metadata
             </h3>
@@ -290,48 +333,54 @@ export const CardDetailsView = ({
             </div>
           </div>
         )}
-
-        {/* Quick Actions Section */}
-        <div className='bg-gray-800 rounded-xl p-4 border border-gray-700 space-y-3'>
-          <h3 className='text-lg font-semibold text-white mb-4'>
-            Quick Actions
-          </h3>
-
-          <div className='grid grid-cols-1 gap-3'>
-            <Button
-              onClick={onEdit}
-              className='w-full bg-primary hover:bg-primary/90 text-white font-semibold'
-            >
-              Edit Card
-            </Button>
-
-            <Button
-              variant='outline'
-              className='w-full border-gray-600 text-white hover:bg-gray-700'
-              disabled
-            >
-              View Transactions
-            </Button>
-
-            <Button
-              variant='outline'
-              className='w-full border-gray-600 text-white hover:bg-gray-700'
-              disabled
-            >
-              Upload Statement
-            </Button>
-
-            <Button
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className='w-full bg-red-600 hover:bg-red-700 text-white font-semibold'
-              variant='error'
-            >
-              {isDeleting ? 'Deleting...' : 'Delete Card'}
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
+  );
+};
+
+interface QuickActionProps {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  intent?: 'primary' | 'danger' | 'neutral';
+}
+
+const QuickAction = ({
+  icon: Icon,
+  label,
+  onClick,
+  disabled,
+  intent = 'neutral',
+}: QuickActionProps) => {
+  const circleClasses =
+    intent === 'primary'
+      ? 'bg-primary text-white'
+      : intent === 'danger'
+        ? 'bg-red-600 text-white'
+        : 'bg-slate-800 text-slate-100';
+
+  return (
+    <button
+      type='button'
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'flex flex-col items-center gap-2 text-sm font-medium',
+        disabled ? 'opacity-35 cursor-not-allowed' : 'hover:opacity-90',
+      )}
+    >
+      <span
+        className={cn(
+          'w-16 h-16 rounded-full flex items-center justify-center shadow-[0_18px_32px_-18px_rgba(15,23,42,0.65)] transition-all',
+          circleClasses,
+        )}
+      >
+        <Icon className='w-5 h-5' />
+      </span>
+      <span className='text-xs text-gray-200 text-center leading-tight'>
+        {label}
+      </span>
+    </button>
   );
 };

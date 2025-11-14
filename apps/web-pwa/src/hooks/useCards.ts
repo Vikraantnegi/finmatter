@@ -1,18 +1,20 @@
 /**
  * Cards Hook
- * Manages card operations and state
+ * Consumes the shared cards store (Zustand) so card state is consistent
+ * across dashboard, list, detail views, and sheets.
  */
 
-import { useState, useCallback } from 'react';
-import { apiClient } from '@/lib/apiClient';
-import { CARD_ROUTES } from '@/constants/apiRoutes';
+import { useCallback } from 'react';
 import type { Card } from '@finmatter/types';
+import { shallow } from 'zustand/shallow';
+import { useCardsStore, type CardsState } from '@/stores/cardsStore';
 
 interface UseCardsReturn {
   cards: Card[];
   isLoading: boolean;
   error: string | null;
-  addCard: (cardData: {
+  fetchCards: (options?: { force?: boolean }) => Promise<void>;
+  addCard: (payload: {
     cardNumber: string;
     cardHolderName: string;
     expiryMonth: number;
@@ -21,38 +23,41 @@ interface UseCardsReturn {
     bankId?: string;
     cardMetadataId?: string;
   }) => Promise<Card | null>;
-  fetchCards: () => Promise<void>;
   deleteCard: (cardId: string) => Promise<void>;
   updateCard: (cardId: string, updates: Partial<Card>) => Promise<Card | null>;
+  clearError: () => void;
 }
 
+const selector = (state: CardsState) => ({
+  cards: state.cards,
+  isLoading: state.isLoading,
+  error: state.error,
+  fetchCardsInternal: state.fetchCards,
+  addCardInternal: state.addCard,
+  deleteCardInternal: state.deleteCard,
+  updateCardInternal: state.updateCard,
+  clearError: state.clearError,
+});
+
 export function useCards(): UseCardsReturn {
-  const [cards, setCards] = useState<Card[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    cards,
+    isLoading,
+    error,
+    fetchCardsInternal,
+    addCardInternal,
+    deleteCardInternal,
+    updateCardInternal,
+    clearError,
+  } = useCardsStore(selector, shallow);
 
-  const fetchCards = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await apiClient.get<{
-        success: boolean;
-        cards: Card[];
-      }>(CARD_ROUTES.LIST);
-
-      if (response.success && response.cards) {
-        setCards(response.cards);
-      }
-    } catch (err: any) {
-      console.error('Error fetching cards:', err);
-      setError(err.message || 'Failed to fetch cards');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const fetchCards = useCallback(
+    (options?: { force?: boolean }) => fetchCardsInternal(options),
+    [fetchCardsInternal],
+  );
 
   const addCard = useCallback(
-    async (cardData: {
+    (payload: {
       cardNumber: string;
       cardHolderName: string;
       expiryMonth: number;
@@ -60,81 +65,29 @@ export function useCards(): UseCardsReturn {
       cvv: string;
       bankId?: string;
       cardMetadataId?: string;
-    }): Promise<Card | null> => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const response = await apiClient.post<{
-          success: boolean;
-          card: Card;
-        }>(CARD_ROUTES.ADD, cardData);
-
-        if (response.success && response.card) {
-          setCards(prev => [response.card!, ...prev]);
-          return response.card;
-        }
-        return null;
-      } catch (err: any) {
-        console.error('Error adding card:', err);
-        setError(err.message || 'Failed to add card');
-        return null;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [],
+    }) => addCardInternal(payload),
+    [addCardInternal],
   );
 
-  const deleteCard = useCallback(async (cardId: string) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      await apiClient.delete(CARD_ROUTES.DELETE(cardId));
-      setCards(prev => prev.filter(card => card.id !== cardId));
-    } catch (err: any) {
-      console.error('Error deleting card:', err);
-      setError(err.message || 'Failed to delete card');
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const deleteCard = useCallback(
+    (cardId: string) => deleteCardInternal(cardId),
+    [deleteCardInternal],
+  );
 
   const updateCard = useCallback(
-    async (cardId: string, updates: Partial<Card>): Promise<Card | null> => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const response = await apiClient.put<{
-          success: boolean;
-          card: Card;
-        }>(CARD_ROUTES.UPDATE(cardId), updates);
-
-        if (response.success && response.card) {
-          setCards(prev =>
-            prev.map(card => (card.id === cardId ? response.card! : card)),
-          );
-          return response.card;
-        }
-        return null;
-      } catch (err: any) {
-        console.error('Error updating card:', err);
-        setError(err.message || 'Failed to update card');
-        return null;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [],
+    (cardId: string, updates: Partial<Card>) =>
+      updateCardInternal(cardId, updates),
+    [updateCardInternal],
   );
 
   return {
     cards,
     isLoading,
     error,
-    addCard,
     fetchCards,
+    addCard,
     deleteCard,
     updateCard,
+    clearError,
   };
 }

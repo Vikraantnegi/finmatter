@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import axios from 'axios';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -77,7 +78,8 @@ export const AddCardBottomSheet = ({
     useState<BinLookupResult | null>(null);
   const [lastLookedUpBin, setLastLookedUpBin] = useState<string | null>(null);
   const [inFlightBin, setInFlightBin] = useState<string | null>(null);
-  const networkLogoUrl = getNetworkIconUrl(binLookupResult?.network, 'logo');
+  const normalizedNetwork = binLookupResult?.network?.toLowerCase();
+  const networkLogoUrl = getNetworkIconUrl(normalizedNetwork, 'logo');
   const formatCardNumberDisplay = (value?: string) =>
     value && value.length > 0
       ? (value.match(/.{1,4}/g)?.join(' ') ?? value)
@@ -89,6 +91,8 @@ export const AddCardBottomSheet = ({
     handleSubmit,
     watch,
     setValue,
+    setError,
+    clearErrors,
     formState: { errors, isValid },
     reset,
   } = useForm<AddCardFormData>({
@@ -118,6 +122,7 @@ export const AddCardBottomSheet = ({
         `${CARD_ROUTES.BIN_LOOKUP}?bin=${bin}`,
       );
       setBinLookupResult(result);
+      clearErrors('cvv');
     } catch (error) {
       console.error('BIN lookup error:', error);
       setBinLookupResult(null);
@@ -167,6 +172,15 @@ export const AddCardBottomSheet = ({
   };
 
   const onSubmit = async (data: AddCardFormData) => {
+    const normalizedNetwork = binLookupResult?.network?.toLowerCase();
+    if (normalizedNetwork === 'amex' && data.cvv.trim().length !== 4) {
+      setError('cvv', {
+        type: 'manual',
+        message: 'American Express CVV must be 4 digits',
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -196,6 +210,30 @@ export const AddCardBottomSheet = ({
         }, 300);
       }
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const apiError = error.response?.data;
+        const errorCode =
+          apiError?.code || apiError?.error?.code || apiError?.errorCode;
+        const message =
+          apiError?.error ||
+          apiError?.message ||
+          apiError?.error?.message ||
+          error.message;
+
+        if (
+          (errorCode &&
+            String(errorCode).toUpperCase().includes('INVALID_CVV')) ||
+          (typeof message === 'string' && message.toLowerCase().includes('cvv'))
+        ) {
+          setError('cvv', {
+            type: 'server',
+            message:
+              typeof message === 'string'
+                ? message
+                : 'Please double-check the CVV for this network.',
+          });
+        }
+      }
       console.error('Error adding card:', error);
       setIsSubmitting(false);
       // Error handling is done by apiClient (toast notifications)
@@ -331,13 +369,51 @@ export const AddCardBottomSheet = ({
                 <label className='block text-sm font-medium text-white mb-2'>
                   CVV
                 </label>
-                <input
-                  {...register('cvv')}
-                  type='text'
-                  placeholder='123'
-                  maxLength={4}
-                  className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
-                  autoComplete='cc-csc'
+                <Controller
+                  name='cvv'
+                  control={control}
+                  rules={{
+                    validate: value => {
+                      const trimmed = value?.replace(/\D/g, '') || '';
+                      if (normalizedNetwork === 'amex') {
+                        return (
+                          trimmed.length === 4 ||
+                          'American Express CVV must be 4 digits'
+                        );
+                      }
+                      return (
+                        trimmed.length === 3 ||
+                        trimmed.length === 4 ||
+                        'CVV must be 3 digits (4 for American Express)'
+                      );
+                    },
+                  }}
+                  render={({ field: { value, onChange, onBlur, ref } }) => (
+                    <input
+                      ref={ref}
+                      onBlur={onBlur}
+                      type='text'
+                      value={value || ''}
+                      placeholder={
+                        normalizedNetwork === 'amex' ? '1234' : '123'
+                      }
+                      maxLength={normalizedNetwork === 'amex' ? 4 : 3}
+                      onChange={event => {
+                        const cleaned = event.target.value.replace(/\D/g, '');
+                        const limited =
+                          normalizedNetwork === 'amex'
+                            ? cleaned.slice(0, 4)
+                            : cleaned.slice(0, 3);
+                        onChange(limited);
+                        setValue('cvv', limited, {
+                          shouldValidate: true,
+                          shouldDirty: true,
+                        });
+                      }}
+                      className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
+                      autoComplete='cc-csc'
+                    />
+                  )}
                 />
                 {errors.cvv && (
                   <p className='mt-1 text-sm text-red-400'>

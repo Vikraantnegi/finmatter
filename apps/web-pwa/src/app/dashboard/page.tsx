@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { DashboardErrorBoundary } from '@/components/ErrorBoundary';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import { NoCardsEmptyState } from '@/components/dashboard/EmptyStates';
@@ -13,6 +14,7 @@ import { FinnyWidget } from '@/components/dashboard/FinnyWidget';
 function DashboardContent() {
   const { cards, isLoading, fetchCards } = useCards();
   const [showAddCard, setShowAddCard] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     fetchCards();
@@ -54,8 +56,8 @@ function DashboardContent() {
     <>
       <div className='min-h-screen flex flex-col pb-24'>
         <DashboardHeader />
-        <div className='flex-1 space-y-6 pb-6'>
-          <CardsStack cards={cards} />
+        <div className='flex-1 space-y-4 pb-10'>
+          <CardsStack cards={cards} onViewAll={() => router.push('/cards')} />
           <FinnyWidget />
         </div>
       </div>

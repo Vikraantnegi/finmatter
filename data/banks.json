@@ -2,144 +2,144 @@
   {
     "name": "hdfc",
     "displayName": "HDFC Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/hdfc/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/hdfc/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/hdfc/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/hdfc/logo.svg",
     "primaryColor": "#004C8F",
     "secondaryColor": "#ED232A"
   },
   {
     "name": "icici",
     "displayName": "ICICI Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/icici/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/icici/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/icici/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/icici/logo.svg",
     "primaryColor": "#F37021",
     "secondaryColor": "#532D8E"
   },
   {
     "name": "sbi",
     "displayName": "SBI Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/sbi/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/sbi/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/sbi/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/sbi/logo.svg",
     "primaryColor": "#22409A",
     "secondaryColor": "#6DA3E8"
   },
   {
     "name": "axis",
     "displayName": "Axis Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/axis/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/axis/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/axis/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/axis/logo.svg",
     "primaryColor": "#97144D",
     "secondaryColor": "#800020"
   },
   {
     "name": "amex",
     "displayName": "American Express",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/amex/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/amex/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/amex/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/amex/logo.svg",
     "primaryColor": "#006FCF",
     "secondaryColor": "#00175A"
   },
   {
     "name": "hsbc",
     "displayName": "HSBC Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/hsbc/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/hsbc/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/hsbc/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/hsbc/logo.svg",
     "primaryColor": "#DB0011",
     "secondaryColor": "#000000"
   },
   {
     "name": "yes",
     "displayName": "YES Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/yes/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/yes/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/yes/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/yes/logo.svg",
     "primaryColor": "#00428F",
     "secondaryColor": "#FFD200"
   },
   {
     "name": "indusind",
     "displayName": "IndusInd Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/indusind/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/indusind/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/indusind/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/indusind/logo.svg",
     "primaryColor": "#ED1C24",
     "secondaryColor": "#00A651"
   },
   {
     "name": "idfc",
     "displayName": "IDFC First Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/idfc/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/idfc/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/idfc/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/idfc/logo.svg",
     "primaryColor": "#7F0A31",
     "secondaryColor": "#D4AF37"
   },
   {
     "name": "kotak",
     "displayName": "Kotak Mahindra Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/kotak/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/kotak/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/kotak/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/kotak/logo.svg",
     "primaryColor": "#ED232A",
     "secondaryColor": "#000000"
   },
   {
     "name": "rbl",
     "displayName": "RBL Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/rbl/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/rbl/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/rbl/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/rbl/logo.svg",
     "primaryColor": "#003A70",
     "secondaryColor": "#00A0DF"
   },
   {
     "name": "au",
     "displayName": "AU Small Finance Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/au/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/au/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/au/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/au/logo.svg",
     "primaryColor": "#FFB300",
     "secondaryColor": "#1A1A1A"
   },
   {
     "name": "federal",
     "displayName": "Federal Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/federal/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/federal/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/federal/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/federal/logo.svg",
     "primaryColor": "#FDB813",
     "secondaryColor": "#004E8C"
   },
   {
     "name": "bob",
     "displayName": "Bank of Baroda",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/bob/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/bob/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/bob/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/bob/logo.svg",
     "primaryColor": "#F26522",
     "secondaryColor": "#231F20"
   },
   {
     "name": "union",
     "displayName": "Union Bank of India",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/union/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/union/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/union/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/union/logo.svg",
     "primaryColor": "#FF6B00",
     "secondaryColor": "#003D7A"
   },
   {
     "name": "pnb",
     "displayName": "Punjab National Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/pnb/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/pnb/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/pnb/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/pnb/logo.svg",
     "primaryColor": "#0D4584",
     "secondaryColor": "#E5252A"
   },
   {
     "name": "scb",
     "displayName": "Standard Chartered Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/scb/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/scb/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/scb/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/scb/logo.svg",
     "primaryColor": "#007A33",
     "secondaryColor": "#0066B2"
   },
   {
     "name": "csb",
     "displayName": "CSB Bank",
-    "logoUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/csb/symbol.svg",
-    "logoWithNameUrl": "https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/banks/csb/logo.svg",
+    "logoUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/csb/symbol.svg",
+    "logoWithNameUrl": "https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/banks/csb/logo.svg",
     "primaryColor": "#0066CC",
     "secondaryColor": "#000000"
   },

@@ -24,12 +24,12 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
   process.env.SUPABASE_URL ||
-  'https://gzjlausszwdrrpyzdjwl.supabase.co';
+  'https://tpiemcfwrodnxbrvjsvx.supabase.co';
 const supabaseServiceKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_SERVICE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6amxhdXNzendkcnJweXpkandsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDQ0Njg5MCwiZXhwIjoyMDc2MDIyODkwfQ.0G06kvMXr9jDzIPCUEWhEgHZ4vGLPixeGmpSUumR3DA';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwaWVtY2Z3cm9kbnhicnZqc3Z4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTU4ODU0OSwiZXhwIjoyMDc1MTY0NTQ5fQ.fkXJte1bKUVqNP3R4k7hbwSVpyMTRDiGg-JiO7LFQe0';
 
 if (!supabaseUrl || !supabaseServiceKey) {
   throw new Error(
@@ -49,9 +49,9 @@ const NETWORKS_DATA = [
     name: 'visa',
     displayName: 'Visa',
     iconUrl:
-      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/visa/logo.png',
+      'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/visa/logo.png',
     logoUrl:
-      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/visa/logo.png',
+      'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/visa/logo.png',
     primaryColor: '#1A1F71',
     secondaryColor: '#FFFFFF',
   },
@@ -59,9 +59,9 @@ const NETWORKS_DATA = [
     name: 'mastercard',
     displayName: 'Mastercard',
     iconUrl:
-      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/mastercard/logo.png',
+      'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/mastercard/logo.png',
     logoUrl:
-      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/mastercard/logo.png',
+      'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/mastercard/logo.png',
     primaryColor: '#EB001B',
     secondaryColor: '#F79E1B',
   },
@@ -69,9 +69,9 @@ const NETWORKS_DATA = [
     name: 'rupay',
     displayName: 'RuPay',
     iconUrl:
-      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/rupay/flat-rounded.png',
+      'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/rupay/flat-rounded.png',
     logoUrl:
-      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/rupay/logo.png',
+      'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/rupay/logo.png',
     primaryColor: '#0066B2',
     secondaryColor: '#003D7A',
   },
@@ -79,9 +79,9 @@ const NETWORKS_DATA = [
     name: 'amex',
     displayName: 'American Express',
     iconUrl:
-      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/amex/logo.png',
+      'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/amex/logo.png',
     logoUrl:
-      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/amex/logo.png',
+      'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/amex/logo.png',
     primaryColor: '#006FCF',
     secondaryColor: '#00175A',
   },
@@ -89,9 +89,9 @@ const NETWORKS_DATA = [
     name: 'discover',
     displayName: 'Discover',
     iconUrl:
-      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/discover/logo.png',
+      'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/discover/logo.png',
     logoUrl:
-      'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network/discover/logo.png',
+      'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/discover/logo.png',
     primaryColor: '#FF6000',
     secondaryColor: '#000000',
   },
@@ -349,6 +349,16 @@ async function seedBinRanges(bankIdMap: Map<string, string>): Promise<void> {
         continue;
       }
 
+      // Process BIN ranges
+      // Handle both formats:
+      // 1. String array: ["453282", "453283", "453284"] -> create range if consecutive, or individual entries
+      // 2. Object array: [{binStart: "453282", binEnd: "453284"}]
+
+      // First, normalize all BINs to numbers for sorting and range detection
+      const binNumbers: number[] = [];
+      const binRangesToProcess: Array<{ binStart: string; binEnd: string }> =
+        [];
+
       for (const binRange of card.binRanges) {
         // Handle both formats:
         // 1. String format: "453282" or ["453282", "453283"]
@@ -380,6 +390,37 @@ async function seedBinRanges(bankIdMap: Map<string, string>): Promise<void> {
         ) {
           continue;
         }
+      }
+
+      // Process string array: group consecutive numbers into ranges
+      if (binNumbers.length > 0) {
+        // Sort numbers
+        binNumbers.sort((a, b) => a - b);
+
+        // Group consecutive numbers into ranges
+        let rangeStart = binNumbers[0];
+        let rangeEnd = binNumbers[0];
+
+        for (let i = 1; i < binNumbers.length; i++) {
+          if (binNumbers[i] === rangeEnd + 1) {
+            // Consecutive, extend range
+            rangeEnd = binNumbers[i];
+          } else {
+            // Not consecutive, save current range and start new one
+            binRangesToProcess.push({
+              binStart: rangeStart.toString().padStart(6, '0'),
+              binEnd: rangeEnd.toString().padStart(6, '0'),
+            });
+            rangeStart = binNumbers[i];
+            rangeEnd = binNumbers[i];
+          }
+        }
+        // Don't forget the last range
+        binRangesToProcess.push({
+          binStart: rangeStart.toString().padStart(6, '0'),
+          binEnd: rangeEnd.toString().padStart(6, '0'),
+        });
+      }
 
         // Validate binEnd if provided
         if (binEnd && (binEnd.length !== 6 || !/^\d{6}$/.test(binEnd))) {

@@ -16,7 +16,7 @@ const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const CARDS_JSON_PATH = path.resolve(PROJECT_ROOT, 'data', 'cards.json');
 const SUPABASE_STORAGE_BASE =
-  'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network';
+  'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network';
 
 // Bank name mapping: issuer name -> bankName slug
 const BANK_NAME_MAP: Record<string, string> = {

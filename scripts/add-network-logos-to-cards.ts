@@ -19,7 +19,7 @@ const CARDS_JSON_PATH = path.resolve(PROJECT_ROOT, 'data', 'cards.json');
 
 // Supabase storage base URL
 const SUPABASE_STORAGE_BASE =
-  'https://gzjlausszwdrrpyzdjwl.supabase.co/storage/v1/object/public/network';
+  'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network';
 
 /**
  * Generate network logo URLs based on network name

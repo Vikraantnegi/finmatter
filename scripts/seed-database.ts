@@ -120,7 +120,12 @@ interface CardData {
     offers?: any[];
     rewards?: any;
     milestones?: any[];
-    binRanges?: Array<{ binStart: string; binEnd?: string }>;
+    // Support both string array and object array formats
+    binRanges?: Array<
+      | string
+      | { binStart: string; binEnd?: string }
+      | { bin_start: string; bin_end?: string }
+    >;
     networkLogoUrl?: string;
     networkIconUrl?: string;
     primaryColor?: string;
@@ -355,31 +360,35 @@ async function seedBinRanges(bankIdMap: Map<string, string>): Promise<void> {
         [];
 
       for (const binRange of card.binRanges) {
+        // Handle both formats:
+        // 1. String format: "453282" or ["453282", "453283"]
+        // 2. Object format: { binStart: "453282", binEnd: "453282" }
         let binStart: string;
         let binEnd: string;
 
         if (typeof binRange === 'string') {
-          // String format: "453282"
-          if (!/^\d{6}$/.test(binRange)) {
-            continue; // Skip invalid BIN format
-          }
-          binNumbers.push(parseInt(binRange, 10));
-        } else if (typeof binRange === 'object' && binRange.binStart) {
-          // Object format: {binStart: "453282", binEnd: "453284"}
-          if (!/^\d{6}$/.test(binRange.binStart)) {
-            continue;
-          }
-          binEnd = binRange.binEnd || binRange.binStart;
-          if (!/^\d{6}$/.test(binEnd)) {
-            continue;
-          }
-          // Add object ranges directly
-          binRangesToProcess.push({
-            binStart: binRange.binStart,
-            binEnd: binEnd,
-          });
+          // String format: use as both start and end
+          binStart = binRange;
+          binEnd = binRange;
+        } else if (typeof binRange === 'object' && binRange !== null) {
+          // Object format: extract binStart and binEnd
+          // Handle both camelCase and snake_case formats
+          const obj = binRange as any;
+          binStart = obj.binStart || obj.bin_start;
+          binEnd = obj.binEnd || obj.bin_end || binStart;
         } else {
-          continue; // Skip invalid format
+          // Invalid format, skip
+          continue;
+        }
+
+        // Validate BIN format (must be exactly 6 digits)
+        if (
+          !binStart ||
+          typeof binStart !== 'string' ||
+          binStart.length !== 6 ||
+          !/^\d{6}$/.test(binStart)
+        ) {
+          continue;
         }
       }
 
@@ -413,14 +422,23 @@ async function seedBinRanges(bankIdMap: Map<string, string>): Promise<void> {
         });
       }
 
-      // Insert all BIN ranges
-      for (const binRange of binRangesToProcess) {
+        // Validate binEnd if provided
+        if (binEnd && (binEnd.length !== 6 || !/^\d{6}$/.test(binEnd))) {
+          // If binEnd is invalid, use binStart as binEnd
+          binEnd = binStart;
+        }
+
+        // Ensure binEnd >= binStart
+        if (parseInt(binEnd, 10) < parseInt(binStart, 10)) {
+          binEnd = binStart;
+        }
+
         totalBinRanges++;
 
         const { error } = await supabase.from('bin_lookup').upsert(
           {
-            bin_start: binRange.binStart,
-            bin_end: binRange.binEnd,
+            bin_start: binStart,
+            bin_end: binEnd,
             bank_id: bankId,
             card_metadata_id: cardMetadata.id,
             card_type: card.cardType,
@@ -435,7 +453,7 @@ async function seedBinRanges(bankIdMap: Map<string, string>): Promise<void> {
 
         if (error) {
           console.error(
-            `  ❌ Error seeding BIN range ${binRange.binStart}-${binRange.binEnd}:`,
+            `  ❌ Error seeding BIN range ${binStart}:`,
             error.message,
           );
           continue;

@@ -1,35 +1,73 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { DashboardErrorBoundary } from '@/components/ErrorBoundary';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import { NoCardsEmptyState } from '@/components/dashboard/EmptyStates';
+import { DashboardLoader } from '@/components/dashboard/SectionLoader';
+import { CardsStack } from '@/components/cards/CardsStack';
+import { AddCardFlow } from '@/components/cards/AddCardFlow';
+import { useCards } from '@/hooks/useCards';
+import { FinnyWidget } from '@/components/dashboard/FinnyWidget';
 
 function DashboardContent() {
-  // TODO: Add loading state when fetching data
-  // TODO: Add condition to check if user has cards
+  const { cards, isLoading, fetchCards } = useCards();
+  const [showAddCard, setShowAddCard] = useState(false);
+  const router = useRouter();
 
-  // Currently showing empty state by default
-  return (
-    <div className='min-h-screen flex flex-col'>
-      <DashboardHeader />
-      <div className='flex-1 flex items-center justify-center px-6'>
-        <NoCardsEmptyState />
+  useEffect(() => {
+    fetchCards();
+  }, [fetchCards]);
+
+  const handleAddCardSuccess = () => {
+    setShowAddCard(false);
+    fetchCards();
+  };
+
+  if (isLoading) {
+    return (
+      <div className='min-h-screen flex flex-col'>
+        <DashboardHeader />
+        <DashboardLoader />
       </div>
-    </div>
-  );
+    );
+  }
 
-  // Future: Main dashboard with cards
-  // return (
-  //   <div className='space-y-6 pb-6'>
-  //     <DashboardHeader />
-  //     <CardsStack cards={cards} />
-  //     <SpendingAnalysis />
-  //     <RecentTransactions />
-  //     <RewardsWidget />
-  //     <FinnyWidget />
-  //   </div>
-  // );
+  if (cards.length === 0) {
+    return (
+      <>
+        <div className='min-h-screen flex flex-col'>
+          <DashboardHeader />
+          <div className='flex-1 flex items-center justify-center px-6'>
+            <NoCardsEmptyState onAddCard={() => setShowAddCard(true)} />
+          </div>
+        </div>
+        <AddCardFlow
+          isOpen={showAddCard}
+          onClose={() => setShowAddCard(false)}
+          onSuccess={handleAddCardSuccess}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className='min-h-screen flex flex-col pb-24'>
+        <DashboardHeader />
+        <div className='flex-1 space-y-4 pb-10'>
+          <CardsStack cards={cards} onViewAll={() => router.push('/cards')} />
+          <FinnyWidget />
+        </div>
+      </div>
+      <AddCardFlow
+        isOpen={showAddCard}
+        onClose={() => setShowAddCard(false)}
+        onSuccess={handleAddCardSuccess}
+      />
+    </>
+  );
 }
 
 export default function DashboardPage() {

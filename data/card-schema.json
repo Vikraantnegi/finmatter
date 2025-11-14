@@ -1,0 +1,121 @@
+{
+  "id": "hdfc-millennia",
+  "name": "HDFC Bank Millennia Credit Card",
+  "slug": "millennia",
+  "bankId": "hdfc",
+  "bankName": "HDFC Bank",
+  "network": "visa",
+  "type": "credit",
+  "rewardProgram": "cashback",
+  "status": "active",
+  "lastUpdated": "2024-11-10",
+  "officialUrl": "https://www.hdfcbank.com/personal/pay/cards/credit-cards/millennia-credit-card",
+
+  "visual": {
+    "brandColor": "#004C8F",
+    "secondaryColor": "#ED232A",
+    "cardImage": "https://cdn.finmatter/cards/hdfc-millennia.png",
+    "bankLogo": "https://cdn.finmatter/banks/hdfc/logo.svg",
+    "networkLogo": "https://cdn.finmatter/networks/visa/logo.svg"
+  },
+
+  "fees": {
+    "joiningFee": 1000,
+    "annualFee": 1000,
+    "feeWaiver": {
+      "type": "spend",
+      "amount": 100000,
+      "period": "annual",
+      "notes": "Waived if annual spends ≥ ₹1L"
+    },
+    "lateFee": {
+      "min": 100,
+      "max": 1300
+    },
+    "financeChargeApr": 41.88
+  },
+
+  "rewards": {
+    "baseRateType": "cashback",
+    "baseRateValue": 1,
+    "rewardValuePerPoint": 0.25,
+    "categoryRewards": [
+      {
+        "category": "online-shopping",
+        "description": "PayZapp + SmartBuy",
+        "rewardRateType": "cashback",
+        "rewardRateValue": 5,
+        "capPerMonth": 1000,
+        "minTxnAmount": 100,
+        "merchantCodes": ["5311", "5732"],
+        "notes": "Max ₹1000 cashback per month"
+      },
+      {
+        "category": "food-delivery",
+        "merchantKeywords": ["swiggy", "zomato"],
+        "rewardRateType": "cashback",
+        "rewardRateValue": 5
+      }
+    ],
+    "milestones": [
+      {
+        "spendAmount": 100000,
+        "period": "quarterly",
+        "rewardType": "voucher",
+        "rewardValue": 1000,
+        "notes": "₹1000 vouchers per quarter on ₹1L spend"
+      }
+    ],
+    "bonusRewards": [
+      {
+        "trigger": "welcome",
+        "description": "₹1000 cashback on first transaction",
+        "conditions": ["First txn within 30 days"]
+      }
+    ],
+    "redemption": {
+      "modes": ["cashback"],
+      "conversionRates": [{ "type": "points-to-cash", "ratio": "1:0.25" }]
+    }
+  },
+
+  "benefits": {
+    "loungeAccess": {
+      "domestic": 8,
+      "international": 0,
+      "network": "Visa",
+      "priorityPass": false
+    },
+    "insurance": [
+      {
+        "type": "lost-card-liability",
+        "coverage": 100000,
+        "notes": "Reporting required within 24 hours"
+      }
+    ],
+    "fuelSurcharge": {
+      "waiver": true,
+      "minTransaction": 400,
+      "maxWaiverPerTxn": 250,
+      "monthlyCap": 500
+    },
+    "otherBenefits": ["Dineout 20% discount", "1% forex markup"]
+  },
+
+  "eligibility": {
+    "minAge": 21,
+    "maxAge": 60,
+    "salariedMinIncome": 30000,
+    "selfEmployedMinIncome": 500000,
+    "creditScore": 750,
+    "residency": "India"
+  },
+
+  "binRanges": [
+    { "start": "453282", "end": "453289" },
+    { "start": "489377", "end": "489380" }
+  ],
+
+  "tags": ["popular", "cashback", "millennials"],
+  "notes": "Verify PayZapp integration quarterly"
+}

@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
+import Image from 'next/image';
+import axios from 'axios';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -12,6 +14,7 @@ import { CARD_ROUTES } from '@/constants/apiRoutes';
 import { Lock } from 'lucide-react';
 import type { Card } from '@finmatter/types';
 import { useDebounce } from '@/hooks/useDebounce';
+import { getNetworkIconUrl } from '@/lib/networkIcons';
 
 // Form validation schema
 const addCardSchema = z.object({
@@ -40,10 +43,20 @@ interface BinLookupResult {
   cardMetadata?: {
     id: string;
     displayName: string;
-    bank: any;
-    network: any;
-    benefits: any[];
-    offers: any[];
+    bank: {
+      id: string;
+      name: string;
+      displayName?: string | null;
+      logoUrl?: string | null;
+      logoWithNameUrl?: string | null;
+    } | null;
+    network: {
+      id: string;
+      name: string;
+      displayName?: string | null;
+    } | null;
+    benefits: Record<string, unknown>[];
+    offers: Record<string, unknown>[];
   };
   source?: 'internal' | 'binlist_api';
 }
@@ -51,7 +64,7 @@ interface BinLookupResult {
 interface AddCardBottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (card: Card) => void; // This will be used to show the success bottom sheet
+  onSuccess: (card: Card) => void;
 }
 
 export const AddCardBottomSheet = ({
@@ -63,12 +76,23 @@ export const AddCardBottomSheet = ({
   const [isLookingUpBin, setIsLookingUpBin] = useState(false);
   const [binLookupResult, setBinLookupResult] =
     useState<BinLookupResult | null>(null);
+  const [lastLookedUpBin, setLastLookedUpBin] = useState<string | null>(null);
+  const [inFlightBin, setInFlightBin] = useState<string | null>(null);
+  const normalizedNetwork = binLookupResult?.network?.toLowerCase();
+  const networkLogoUrl = getNetworkIconUrl(normalizedNetwork, 'logo');
+  const formatCardNumberDisplay = (value?: string) =>
+    value && value.length > 0
+      ? (value.match(/.{1,4}/g)?.join(' ') ?? value)
+      : '';
 
   const {
+    control,
     register,
     handleSubmit,
     watch,
     setValue,
+    setError,
+    clearErrors,
     formState: { errors, isValid },
     reset,
   } = useForm<AddCardFormData>({
@@ -93,15 +117,19 @@ export const AddCardBottomSheet = ({
 
     try {
       setIsLookingUpBin(true);
+      setInFlightBin(bin);
       const result = await apiClient.get<BinLookupResult>(
         `${CARD_ROUTES.BIN_LOOKUP}?bin=${bin}`,
       );
       setBinLookupResult(result);
+      clearErrors('cvv');
     } catch (error) {
       console.error('BIN lookup error:', error);
       setBinLookupResult(null);
     } finally {
       setIsLookingUpBin(false);
+      setInFlightBin(null);
+      setLastLookedUpBin(bin);
     }
   }, []);
 
@@ -111,12 +139,16 @@ export const AddCardBottomSheet = ({
 
     if (cleanCardNumber.length >= 6) {
       const bin = cleanCardNumber.substring(0, 6);
-      performBinLookup(bin);
+      if (bin !== lastLookedUpBin && bin !== inFlightBin) {
+        performBinLookup(bin);
+      }
     } else {
       setBinLookupResult(null);
       setIsLookingUpBin(false);
+      setLastLookedUpBin(null);
+      setInFlightBin(null);
     }
-  }, [debouncedCardNumber, performBinLookup]);
+  }, [debouncedCardNumber, performBinLookup, lastLookedUpBin, inFlightBin]);
 
   // Handle expiry date input
   const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,6 +172,15 @@ export const AddCardBottomSheet = ({
   };
 
   const onSubmit = async (data: AddCardFormData) => {
+    const normalizedNetwork = binLookupResult?.network?.toLowerCase();
+    if (normalizedNetwork === 'amex' && data.cvv.trim().length !== 4) {
+      setError('cvv', {
+        type: 'manual',
+        message: 'American Express CVV must be 4 digits',
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -169,6 +210,30 @@ export const AddCardBottomSheet = ({
         }, 300);
       }
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const apiError = error.response?.data;
+        const errorCode =
+          apiError?.code || apiError?.error?.code || apiError?.errorCode;
+        const message =
+          apiError?.error ||
+          apiError?.message ||
+          apiError?.error?.message ||
+          error.message;
+
+        if (
+          (errorCode &&
+            String(errorCode).toUpperCase().includes('INVALID_CVV')) ||
+          (typeof message === 'string' && message.toLowerCase().includes('cvv'))
+        ) {
+          setError('cvv', {
+            type: 'server',
+            message:
+              typeof message === 'string'
+                ? message
+                : 'Please double-check the CVV for this network.',
+          });
+        }
+      }
       console.error('Error adding card:', error);
       setIsSubmitting(false);
       // Error handling is done by apiClient (toast notifications)
@@ -190,7 +255,7 @@ export const AddCardBottomSheet = ({
           </p>
         </div>
       ) : (
-        <div className='px-6 py-4 space-y-6'>
+        <div className='px-6 py-4 pb-10 space-y-6'>
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className='space-y-5'>
             {/* Card Number */}
@@ -199,28 +264,54 @@ export const AddCardBottomSheet = ({
                 Card Number
               </label>
               <div className='relative'>
-                <input
-                  {...register('cardNumber')}
-                  type='text'
-                  placeholder='1234 5678 9012 3456'
-                  maxLength={19}
-                  onChange={e => {
-                    const cleaned = e.target.value.replace(/\D/g, '');
-                    setValue('cardNumber', cleaned, { shouldValidate: true });
-                    // Format display
-                    const formatted =
-                      cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
-                    e.target.value = formatted;
-                  }}
-                  className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors font-mono tracking-wider'
-                  autoComplete='cc-number'
+                <Controller
+                  name='cardNumber'
+                  control={control}
+                  render={({
+                    field: { value, onChange, onBlur, ref, name },
+                  }) => (
+                    <input
+                      name={name}
+                      ref={ref}
+                      onBlur={onBlur}
+                      type='text'
+                      placeholder='1234 5678 9012 3456'
+                      value={formatCardNumberDisplay(value)}
+                      inputMode='numeric'
+                      maxLength={23}
+                      onChange={event => {
+                        const cleaned = event.target.value
+                          .replace(/\D/g, '')
+                          .slice(0, 19);
+
+                        onChange(cleaned);
+                        setValue('cardNumber', cleaned, {
+                          shouldValidate: true,
+                          shouldDirty: true,
+                          shouldTouch: true,
+                        });
+                      }}
+                      className='w-full h-14 pl-4 pr-12 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors font-mono tracking-wider'
+                      autoComplete='cc-number'
+                    />
+                  )}
                 />
                 {/* BIN Lookup Indicator */}
-                {isLookingUpBin && (
-                  <div className='absolute right-4 top-1/2 -translate-y-1/2'>
+                <div className='absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8'>
+                  {isLookingUpBin ? (
                     <div className='w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin' />
-                  </div>
-                )}
+                  ) : (
+                    networkLogoUrl && (
+                      <Image
+                        src={networkLogoUrl}
+                        alt={`${binLookupResult?.network ?? 'card'} network`}
+                        fill
+                        sizes='32px'
+                        className='object-contain'
+                      />
+                    )
+                  )}
+                </div>
               </div>
               {errors.cardNumber && (
                 <p className='mt-1 text-sm text-red-400'>
@@ -244,7 +335,7 @@ export const AddCardBottomSheet = ({
                 {...register('cardHolderName')}
                 type='text'
                 placeholder='John Doe'
-                className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
+                className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
                 autoComplete='cc-name'
               />
               {errors.cardHolderName && (
@@ -265,7 +356,7 @@ export const AddCardBottomSheet = ({
                   placeholder='MM/YY'
                   maxLength={5}
                   onChange={handleExpiryChange}
-                  className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
+                  className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
                   autoComplete='cc-exp'
                 />
                 {(errors.expiryMonth || errors.expiryYear) && (
@@ -278,13 +369,51 @@ export const AddCardBottomSheet = ({
                 <label className='block text-sm font-medium text-white mb-2'>
                   CVV
                 </label>
-                <input
-                  {...register('cvv')}
-                  type='text'
-                  placeholder='123'
-                  maxLength={4}
-                  className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
-                  autoComplete='cc-csc'
+                <Controller
+                  name='cvv'
+                  control={control}
+                  rules={{
+                    validate: value => {
+                      const trimmed = value?.replace(/\D/g, '') || '';
+                      if (normalizedNetwork === 'amex') {
+                        return (
+                          trimmed.length === 4 ||
+                          'American Express CVV must be 4 digits'
+                        );
+                      }
+                      return (
+                        trimmed.length === 3 ||
+                        trimmed.length === 4 ||
+                        'CVV must be 3 digits (4 for American Express)'
+                      );
+                    },
+                  }}
+                  render={({ field: { value, onChange, onBlur, ref } }) => (
+                    <input
+                      ref={ref}
+                      onBlur={onBlur}
+                      type='text'
+                      value={value || ''}
+                      placeholder={
+                        normalizedNetwork === 'amex' ? '1234' : '123'
+                      }
+                      maxLength={normalizedNetwork === 'amex' ? 4 : 3}
+                      onChange={event => {
+                        const cleaned = event.target.value.replace(/\D/g, '');
+                        const limited =
+                          normalizedNetwork === 'amex'
+                            ? cleaned.slice(0, 4)
+                            : cleaned.slice(0, 3);
+                        onChange(limited);
+                        setValue('cvv', limited, {
+                          shouldValidate: true,
+                          shouldDirty: true,
+                        });
+                      }}
+                      className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
+                      autoComplete='cc-csc'
+                    />
+                  )}
                 />
                 {errors.cvv && (
                   <p className='mt-1 text-sm text-red-400'>
@@ -304,7 +433,7 @@ export const AddCardBottomSheet = ({
             <Button
               type='submit'
               disabled={!isValid || isSubmitting}
-              className='w-full h-14 bg-primary hover:opacity-90 text-white font-semibold rounded-xl disabled:opacity-40 transition-all'
+              className='w-full h-14 bg-primary hover:opacity-90 text-white text-base font-semibold rounded-xl disabled:opacity-40 transition-all'
               loading={isSubmitting}
             >
               Add Card

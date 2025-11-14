@@ -128,8 +128,10 @@ class ApiClient {
           toast.error(errorMessage);
         } else if (error.response?.status === 422) {
           // Validation errors - show specific message from server
+          const rawError = error.response?.data?.error;
           const errorMessage =
-            error.response?.data?.error?.message ||
+            (typeof rawError === 'string' ? rawError : rawError?.message) ||
+            error.response?.data?.message ||
             'Invalid input. Please check your details.';
           toast.error(errorMessage);
         } else if (error.response?.status === 429) {
@@ -148,12 +150,17 @@ class ApiClient {
           error.message === 'Network Error'
         ) {
           toast.error('Network error. Please check your connection.');
-        } else if (error.response?.data?.error?.message) {
-          // Show specific error message from server
-          toast.error(error.response.data.error.message);
         } else {
-          // Fallback error message
-          toast.error('Something went wrong. Please try again.');
+          const apiError =
+            error.response?.data?.error ?? error.response?.data?.message;
+          if (typeof apiError === 'string') {
+            toast.error(apiError);
+          } else if (typeof apiError?.message === 'string') {
+            toast.error(apiError.message);
+          } else {
+            // Fallback error message
+            toast.error('Something went wrong. Please try again.');
+          }
         }
 
         return Promise.reject(error);

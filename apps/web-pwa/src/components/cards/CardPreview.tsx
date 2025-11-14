@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { RefreshCw } from 'lucide-react';
 import type { Card, Bank, CardMetadata } from '@finmatter/types';
 import { cn } from '@/lib/utils';
+import { getNetworkIconUrl, type NetworkIconVariant } from '@/lib/networkIcons';
 
 interface CardPreviewProps {
   card:
@@ -18,15 +19,37 @@ interface CardPreviewProps {
         cardMetadata?: CardMetadata;
       };
   showCVV?: boolean;
+  showFlipAction?: boolean;
+  networkIconVariant?: NetworkIconVariant;
+  isFlipped?: boolean;
+  onFlipChange?: (flipped: boolean) => void;
   className?: string;
 }
 
 export const CardPreview = ({
   card,
   showCVV = false,
+  showFlipAction = true,
+  networkIconVariant = 'flat-rounded',
+  isFlipped: controlledFlipped,
+  onFlipChange,
   className,
 }: CardPreviewProps) => {
-  const [isFlipped, setIsFlipped] = useState(false);
+  const isControlled = controlledFlipped !== undefined;
+  const [internalFlipped, setInternalFlipped] = useState(false);
+  const isFlipped = isControlled ? controlledFlipped! : internalFlipped;
+
+  const toggleFlip = () => {
+    if (isControlled) {
+      onFlipChange?.(!isFlipped);
+    } else {
+      setInternalFlipped(prev => {
+        const next = !prev;
+        onFlipChange?.(next);
+        return next;
+      });
+    }
+  };
 
   // Get card colors from cardMetadata or bank, with fallback
   const primaryColor =
@@ -49,22 +72,13 @@ export const CardPreview = ({
   const network = card.cardMetadata?.network || (card as Card).network;
 
   // Get network logo URL
-  const networkLogoUrl =
-    network === 'visa'
-      ? 'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/visa/flat-rounded.svg'
-      : network === 'mastercard'
-        ? 'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/mastercard/flat-rounded.svg'
-        : network === 'rupay'
-          ? 'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/rupay/flat-rounded.png'
-          : network === 'amex'
-            ? 'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/amex/flat-rounded.svg'
-            : network === 'discover'
-              ? 'https://tpiemcfwrodnxbrvjsvx.supabase.co/storage/v1/object/public/network/discover/flat-rounded.svg'
-              : undefined;
+  const networkLogoUrl = getNetworkIconUrl(network, networkIconVariant);
 
   // Extract height class if provided, otherwise default to h-48
   const heightMatch = className?.match(/h-\d+/);
-  const heightClass = heightMatch ? heightMatch[0] : 'h-48';
+  const heightClass = heightMatch
+    ? heightMatch[0]
+    : 'h-[-webkit-fill-available]';
   const otherClasses = className?.replace(/h-\d+/g, '').trim() || '';
 
   return (
@@ -182,15 +196,17 @@ export const CardPreview = ({
       </div>
 
       {/* Flip Button */}
-      <button
-        onClick={() => setIsFlipped(!isFlipped)}
-        className='absolute -bottom-8 right-0 flex flex-col items-center gap-1 text-gray-400 hover:text-gray-300 transition-colors'
-      >
-        <div className='w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center'>
-          <RefreshCw className='w-4 h-4' />
-        </div>
-        <span className='text-xs'>Flip</span>
-      </button>
+      {showFlipAction && (
+        <button
+          onClick={toggleFlip}
+          className='absolute -bottom-8 right-0 flex flex-col items-center gap-1 text-gray-400 hover:text-gray-300 transition-colors'
+        >
+          <div className='w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center'>
+            <RefreshCw className='w-4 h-4' />
+          </div>
+          <span className='text-xs'>Flip</span>
+        </button>
+      )}
     </div>
   );
 };

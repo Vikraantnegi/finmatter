@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -75,21 +76,24 @@ export const BottomSheet = ({
 
   return (
     <div
-      className='fixed inset-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm m-0'
+      className='fixed inset-0 z-[100] bg-black bg-opacity-50 backdrop-blur-sm m-0'
       onClick={handleBackdropClick}
       style={{ touchAction: 'none', margin: 0 }}
     >
       <div
         ref={sheetRef}
-        className={`fixed bottom-0 left-0 right-0 rounded-t-3xl shadow-2xl transform transition-transform duration-300 ease-out max-h-[90vh] flex flex-col ${
-          dark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
-        } ${className || ''}`}
+        className={cn(
+          'fixed bottom-0 left-0 right-0 rounded-t-3xl shadow-2xl transform transition-transform duration-300 ease-out max-h-[90vh] flex flex-col pb-safe-area-inset-bottom',
+          dark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900',
+          className,
+        )}
         style={{
           transform: isDragging
             ? `translateY(${Math.max(0, currentY)}px)`
             : isOpen
               ? 'translateY(0)'
               : 'translateY(100%)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))', // Account for bottom navigation with safe spacing
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -104,24 +108,27 @@ export const BottomSheet = ({
         {/* Header */}
         {title && (
           <div
-            className={`flex items-center justify-between px-6 py-4 border-b ${
-              dark ? 'border-gray-700' : 'border-gray-200'
-            }`}
+            className={cn(
+              'flex items-center justify-between px-6 py-4 border-b',
+              dark ? 'border-gray-700' : 'border-gray-200',
+            )}
           >
             <h3
-              className={`text-lg font-semibold ${
-                dark ? 'text-white' : 'text-gray-900'
-              }`}
+              className={cn(
+                'text-base font-semibold',
+                dark ? 'text-white' : 'text-gray-900',
+              )}
             >
               {title}
             </h3>
             <button
               onClick={onClose}
-              className={`${
+              className={cn(
+                'transition-colors p-2 -mr-2',
                 dark
                   ? 'text-gray-400 hover:text-gray-300'
-                  : 'text-gray-400 hover:text-gray-600'
-              } transition-colors p-2 -mr-2`}
+                  : 'text-gray-400 hover:text-gray-600',
+              )}
             >
               <X className='w-5 h-5' />
             </button>

@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { ChevronRight } from 'lucide-react';
 import { CardPreview } from './CardPreview';
-import { Button } from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/utils';
 import type { Card } from '@finmatter/types';
 import { cn } from '@/lib/utils';
@@ -28,19 +28,23 @@ export const CardGridItem = ({ card, className }: CardGridItemProps) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden hover:border-gray-600 transition-all',
+        'bg-gray-900/60 rounded-3xl border border-gray-800/70 overflow-hidden hover:border-gray-700 transition-all',
         className,
       )}
     >
       {/* Card Visual Preview */}
-      <div className='p-4'>
-        <div className='h-32 -mb-8'>
-          <CardPreview card={card} className='h-32 w-full' />
+      <div className='p-5'>
+        <div className='h-32'>
+          <CardPreview
+            card={card}
+            showFlipAction={false}
+            className='h-32 w-full'
+          />
         </div>
       </div>
 
       {/* Card Info */}
-      <div className='px-4 pt-8 pb-4 space-y-3'>
+      <div className='px-5 pb-5 space-y-4'>
         {/* Card Name */}
         <div>
           <h3 className='text-lg font-bold text-white'>
@@ -54,7 +58,7 @@ export const CardGridItem = ({ card, className }: CardGridItemProps) => {
         </div>
 
         {/* Divider */}
-        <div className='h-px bg-gray-700' />
+        <div className='h-px bg-gray-800' />
 
         {/* Spending Data */}
         <div>
@@ -67,13 +71,13 @@ export const CardGridItem = ({ card, className }: CardGridItemProps) => {
         </div>
 
         {/* View Details Button */}
-        <Button
+        <button
           onClick={handleViewDetails}
-          className='w-full bg-primary hover:bg-primary/90 text-white font-semibold'
-          size='sm'
+          className='w-full flex items-center justify-center gap-2 rounded-full border border-primary/40 text-primary font-semibold py-3 hover:bg-primary/10 transition-colors'
         >
           View Details
-        </Button>
+          <ChevronRight className='w-4 h-4' />
+        </button>
       </div>
     </motion.div>
   );

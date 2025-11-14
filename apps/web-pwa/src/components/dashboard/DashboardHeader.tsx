@@ -6,16 +6,31 @@ import { Settings } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { Avatar } from '@/components/ui/Avatar';
 import { motion } from 'framer-motion';
+import { Skeleton } from './SectionLoader';
 
 const DashboardHeader = () => {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, isLoading } = useAuthStore();
 
   const firstName = user?.profileData?.firstName || 'User';
   const fullName = user?.profileData?.lastName
     ? `${firstName} ${user.profileData.lastName}`
     : firstName;
   const avatar = user?.profileData?.avatar;
+
+  if (isLoading) {
+    return (
+      <div className='px-6 py-4 bg-gradient-to-b from-gray-900/50 to-transparent mb-2'>
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center gap-3'>
+            <Skeleton className='w-12 h-12 rounded-full' />
+            <Skeleton className='w-40 h-6' />
+          </div>
+          <Skeleton className='w-10 h-10 rounded-full' />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div

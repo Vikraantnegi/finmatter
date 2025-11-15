@@ -1,14 +1,9 @@
 'use client';
 
-/**
- * Cards Page
- * Full card list with visual cards
- */
-
 import { useEffect, useState } from 'react';
 import { CardList } from '@/components/cards';
-import PageHeader from '@/components/common/PageHeader';
 import { AddCardFlow } from '@/components/cards/AddCardFlow';
+import { BottomNavigation } from '@/components/navigation/BottomNavigation';
 import { useCards } from '@/hooks/useCards';
 
 export default function CardsPage() {
@@ -17,7 +12,7 @@ export default function CardsPage() {
 
   const handleAddCardSuccess = () => {
     setShowAddCard(false);
-    fetchCards({ force: true }); // Refresh list
+    fetchCards({ force: true });
   };
 
   useEffect(() => {
@@ -25,13 +20,14 @@ export default function CardsPage() {
   }, [fetchCards]);
 
   return (
-    <div className='min-h-screen bg-background-dark pb-24'>
-      <PageHeader title={cards.length ? `Cards (${cards.length})` : 'Cards'} />
-      <div className='container mx-auto px-4 py-6'>
+    <div className='min-h-screen bg-background-dark flex flex-col'>
+      <div className='flex-1 py-6'>
+        <div className='mb-4 text-white font-semibold text-lg mx-auto'>
+          <span>{cards.length ? `Cards (${cards.length})` : 'Cards'}</span>
+        </div>
         <CardList />
       </div>
-
-      {/* Add Card Flow */}
+      <BottomNavigation />
       <AddCardFlow
         isOpen={showAddCard}
         onClose={() => setShowAddCard(false)}

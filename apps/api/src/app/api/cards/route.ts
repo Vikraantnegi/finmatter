@@ -443,10 +443,28 @@ export async function GET(request: NextRequest) {
 
       return {
         id: card.id,
+        userId: card.user_id,
         lastFourDigits: card.last_four_digits,
         cardHolderName: card.card_holder_name,
         expiryMonth: card.expiry_month,
         expiryYear: card.expiry_year,
+        cardType: card.card_type,
+        network: card.network,
+        rewardType: card.reward_type || undefined,
+        annualFee: Number(card.annual_fee) || 0,
+        currency: card.currency,
+        detectedFromBin: card.detected_from_bin,
+        binLookupSource: card.bin_lookup_source,
+        issueDate: card.issue_date || undefined,
+        billingDay: card.billing_day || undefined,
+        creditLimit:
+          typeof card.credit_limit === 'number'
+            ? Number(card.credit_limit)
+            : undefined,
+        availableCredit:
+          typeof card.available_credit === 'number'
+            ? Number(card.available_credit)
+            : undefined,
         bank: bank
           ? {
               id: bank.id,

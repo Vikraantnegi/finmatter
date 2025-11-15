@@ -133,8 +133,8 @@ export const CardsStack = ({
               >
                 <CardPreview
                   card={card}
-                  showFlipAction={false}
                   className='h-[250px] w-full'
+                  networkIconVariant='logo'
                 />
               </motion.div>
             );

@@ -27,7 +27,7 @@ function DashboardContent() {
 
   if (isLoading) {
     return (
-      <div className='min-h-screen flex flex-col'>
+      <div className='min-h-full flex flex-col'>
         <DashboardHeader />
         <DashboardLoader />
       </div>
@@ -37,7 +37,7 @@ function DashboardContent() {
   if (cards.length === 0) {
     return (
       <>
-        <div className='min-h-screen flex flex-col'>
+        <div className='h-[calc(100vh-92px)] flex flex-col'>
           <DashboardHeader />
           <div className='flex-1 flex items-center justify-center px-6'>
             <NoCardsEmptyState onAddCard={() => setShowAddCard(true)} />
@@ -54,7 +54,7 @@ function DashboardContent() {
 
   return (
     <>
-      <div className='min-h-screen flex flex-col pb-24'>
+      <div className='flex flex-col pb-24'>
         <DashboardHeader />
         <div className='flex-1 space-y-4 pb-10'>
           <CardsStack cards={cards} onViewAll={() => router.push('/cards')} />

@@ -10,11 +10,8 @@ const DashboardLayoutContent = ({
   children: React.ReactNode;
 }) => {
   return (
-    <div className='min-h-screen bg-background-dark pb-20'>
-      {/* Page content */}
-      <main className='max-w-lg mx-auto'>{children}</main>
-
-      {/* Bottom Navigation */}
+    <div className='min-h-screen bg-background-dark flex flex-col'>
+      <main className='flex-1 w-full max-w-lg mx-auto pb-24'>{children}</main>
       <BottomNavigation />
     </div>
   );
@@ -23,7 +20,7 @@ const DashboardLayoutContent = ({
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <AuthGuard requireAuth={true} requireOnboarding={true}>
-      <DashboardLayoutContent>{children}</DashboardLayoutContent>;
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
     </AuthGuard>
   );
 };

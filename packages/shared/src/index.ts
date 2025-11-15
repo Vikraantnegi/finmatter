@@ -3,6 +3,7 @@ export * from './constants';
 
 // Utilities
 export * from './utils';
+export * from './cardDetection';
 
 // Validators
 export * from './validators';

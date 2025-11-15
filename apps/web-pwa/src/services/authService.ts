@@ -153,7 +153,10 @@ export class AuthService {
   async completeOnboarding(userData: {
     firstName: string;
     lastName?: string;
+    avatar?: string;
     notificationsEnabled: boolean;
+    locationEnabled?: boolean;
+    smsEnabled?: boolean;
   }): Promise<any> {
     const response = await apiClient.put(API_ROUTES.USER.ONBOARDING, userData);
     return response;

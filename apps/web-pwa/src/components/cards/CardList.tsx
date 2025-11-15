@@ -15,20 +15,16 @@ export const CardList = () => {
 
   const handleAddCardSuccess = () => {
     setShowAddCard(false);
-    fetchCards(); // Refresh list
+    fetchCards();
   };
 
   if (isLoading) {
-    return (
-      <div className='space-y-4'>
-        <CardsStackLoader />
-      </div>
-    );
+    return <CardsStackLoader hideHeader={true} />;
   }
 
   if (cards.length === 0) {
     return (
-      <>
+      <div className='px-4'>
         <EmptyState
           title='No Cards Added Yet'
           description='Add your first card to unlock app features and start tracking your spending.'
@@ -41,19 +37,16 @@ export const CardList = () => {
           onClose={() => setShowAddCard(false)}
           onSuccess={handleAddCardSuccess}
         />
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <div className='space-y-6 pb-24'>
-        {/* Grid Layout */}
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-          {cards.map(card => (
-            <CardGridItem key={card.id} card={card} />
-          ))}
-        </div>
+    <div className='px-4'>
+      <div className='space-y-5 pb-24'>
+        {cards.map(card => (
+          <CardGridItem key={card.id} card={card} />
+        ))}
       </div>
 
       {/* Floating Action Button */}
@@ -74,6 +67,6 @@ export const CardList = () => {
         onClose={() => setShowAddCard(false)}
         onSuccess={handleAddCardSuccess}
       />
-    </>
+    </div>
   );
 };

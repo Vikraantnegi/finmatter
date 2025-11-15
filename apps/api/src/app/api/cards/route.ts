@@ -13,14 +13,10 @@ import {
   validateCardNumber,
   validateCardFormat,
   validateExpiry,
-  validateCVV,
   extractBIN,
   detectNetwork,
-} from '@/lib/cardValidation';
-import {
-  encryptCVV,
   extractLastFour as extractLastFourDigits,
-} from '@/lib/cardEncryption';
+} from '@/lib/cardValidation';
 import { z } from 'zod';
 import type {
   DatabaseCard,
@@ -63,7 +59,6 @@ const AddCardSchema = z.object({
   cardHolderName: z.string().min(1, 'Card holder name is required').max(100),
   expiryMonth: z.number().int().min(1).max(12),
   expiryYear: z.number().int().min(2000).max(2099),
-  cvv: z.string().regex(/^\d{3,4}$/, 'CVV must be 3 or 4 digits'),
   // Optional fields that might be pre-filled from BIN lookup
   bankId: z.string().uuid().optional(),
   cardMetadataId: z.string().uuid().optional(),
@@ -115,7 +110,6 @@ export async function POST(request: NextRequest) {
       cardHolderName,
       expiryMonth,
       expiryYear,
-      cvv,
       bankId: providedBankId,
       cardMetadataId: providedCardMetadataId,
       issueDate,
@@ -170,24 +164,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 3: Validate CVV
-    const detectedNetwork = detectNetwork(cardNumber);
-    const cvvValidation = validateCVV(cvv, detectedNetwork || undefined);
-    if (!cvvValidation.valid) {
-      return createCorsResponse(
-        {
-          success: false,
-          error: cvvValidation.message || 'Invalid CVV',
-          code: 'INVALID_CVV',
-        },
-        {
-          status: 400,
-          origin: origin || undefined,
-        },
-      );
-    }
-
-    // Step 4: Extract BIN and run lookup
+    // Step 3: Extract BIN and run lookup
     const bin = extractBIN(cardNumber);
     if (!bin) {
       return createCorsResponse(
@@ -232,9 +209,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Step 5: Encrypt sensitive data
-    const lastFourDigits = extractLastFourDigits(cardNumber);
-    const encryptedCVV = await encryptCVV(cvv);
+    // Step 5: Prepare card data
+    const lastFourDigits =
+      extractLastFourDigits(cardNumber) ||
+      cardNumber.replace(/\D/g, '').slice(-4);
+    const detectedNetwork = detectNetwork(cardNumber);
 
     // Step 6: Create card record
     const cardData: Partial<DatabaseCard> = {
@@ -247,14 +226,14 @@ export async function POST(request: NextRequest) {
       last_four_digits: lastFourDigits,
       card_type:
         (detectedCardType as any) || formatValidation.cardType || 'credit',
-      network: (detectedNetworkFromBin as any) || 'visa', // Fallback to visa
+      network:
+        (detectedNetworkFromBin as any) || (detectedNetwork as any) || 'visa', // Fallback to visa
       reward_type: null,
       annual_fee: 0,
       currency: 'INR',
       status: 'active',
       expiry_month: expiryMonth,
       expiry_year: expiryYear,
-      cvv_encrypted: encryptedCVV,
       detected_from_bin: detectedFromBin,
       bin_lookup_source: binLookupSource,
       issue_date: issueDate || null,
@@ -464,10 +443,28 @@ export async function GET(request: NextRequest) {
 
       return {
         id: card.id,
+        userId: card.user_id,
         lastFourDigits: card.last_four_digits,
         cardHolderName: card.card_holder_name,
         expiryMonth: card.expiry_month,
         expiryYear: card.expiry_year,
+        cardType: card.card_type,
+        network: card.network,
+        rewardType: card.reward_type || undefined,
+        annualFee: Number(card.annual_fee) || 0,
+        currency: card.currency,
+        detectedFromBin: card.detected_from_bin,
+        binLookupSource: card.bin_lookup_source,
+        issueDate: card.issue_date || undefined,
+        billingDay: card.billing_day || undefined,
+        creditLimit:
+          typeof card.credit_limit === 'number'
+            ? Number(card.credit_limit)
+            : undefined,
+        availableCredit:
+          typeof card.available_credit === 'number'
+            ? Number(card.available_credit)
+            : undefined,
         bank: bank
           ? {
               id: bank.id,

@@ -5,6 +5,10 @@
  */
 
 import { CardNetwork, CardType } from '@finmatter/types';
+import {
+  detectNetwork as sharedDetectNetwork,
+  toCardNetwork,
+} from '@finmatter/shared/cardDetection';
 
 /**
  * Validate card number using Luhn algorithm
@@ -40,53 +44,8 @@ export function validateCardNumber(cardNumber: string): boolean {
   return sum % 10 === 0;
 }
 
-/**
- * Detect network from card number
- */
 export function detectNetwork(cardNumber: string): CardNetwork | null {
-  const cleaned = cardNumber.replace(/\D/g, '');
-
-  // Visa: starts with 4
-  if (cleaned.startsWith('4')) {
-    return 'visa';
-  }
-
-  // Mastercard: 51-55 or 2221-2720
-  if (/^5[1-5]/.test(cleaned) || /^22[2-7]/.test(cleaned)) {
-    return 'mastercard';
-  }
-
-  // American Express: 34, 37
-  if (/^3[47]/.test(cleaned)) {
-    return 'amex';
-  }
-
-  // Discover: 6011, 622126-622925, 644-649, 65
-  if (
-    cleaned.startsWith('6011') ||
-    /^62212[6-9]/.test(cleaned) ||
-    /^6229[0-2]/.test(cleaned) ||
-    /^64[4-9]/.test(cleaned) ||
-    cleaned.startsWith('65')
-  ) {
-    return 'discover';
-  }
-
-  // RuPay: 60, 6521-6522
-  if (cleaned.startsWith('60') || /^652[12]/.test(cleaned)) {
-    return 'rupay';
-  }
-
-  // Diners Club: 300-305, 36, 38
-  if (
-    /^30[0-5]/.test(cleaned) ||
-    cleaned.startsWith('36') ||
-    cleaned.startsWith('38')
-  ) {
-    return 'diners';
-  }
-
-  return null;
+  return toCardNetwork(sharedDetectNetwork(cardNumber)) as CardNetwork | null;
 }
 
 /**
@@ -197,47 +156,6 @@ export function validateExpiry(
     return {
       valid: false,
       message: 'Card has expired',
-    };
-  }
-
-  return { valid: true };
-}
-
-/**
- * Validate CVV based on network
- */
-export function validateCVV(
-  cvv: string,
-  network?: CardNetwork,
-): {
-  valid: boolean;
-  message?: string;
-} {
-  const cleaned = cvv.replace(/\D/g, '');
-
-  // Amex requires 4 digits
-  if (network === 'amex') {
-    if (cleaned.length !== 4) {
-      return {
-        valid: false,
-        message: 'American Express CVV must be 4 digits',
-      };
-    }
-  } else {
-    // All other networks require 3 digits
-    if (cleaned.length !== 3) {
-      return {
-        valid: false,
-        message: 'CVV must be 3 digits',
-      };
-    }
-  }
-
-  // Check if all digits
-  if (!/^\d+$/.test(cleaned)) {
-    return {
-      valid: false,
-      message: 'CVV must contain only digits',
     };
   }
 

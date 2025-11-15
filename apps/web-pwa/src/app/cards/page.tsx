@@ -22,8 +22,8 @@ export default function CardsPage() {
   return (
     <div className='min-h-screen bg-background-dark flex flex-col'>
       <div className='flex-1 py-6'>
-        <div className='mb-4 text-white font-semibold text-lg mx-auto'>
-          <span>{cards.length ? `Cards (${cards.length})` : 'Cards'}</span>
+        <div className='mb-4 text-white font-semibold text-lg text-center'>
+          {cards.length ? `Cards (${cards.length})` : 'Cards'}
         </div>
         <CardList />
       </div>

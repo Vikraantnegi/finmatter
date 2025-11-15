@@ -15,6 +15,97 @@ import type {
   CardType,
 } from '@finmatter/types';
 
+const BIN_CACHE_TTL_MS = 1000 * 60 * 5; // 5 minutes
+const BANK_CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
+
+type BinCacheEntry = {
+  result: BinLookupResult | null;
+  expiresAt: number;
+};
+
+const binCache = new Map<string, BinCacheEntry>();
+
+type BankCacheEntry = {
+  id: string;
+  slug: string;
+  displaySlug: string;
+};
+
+let bankCache: BankCacheEntry[] | null = null;
+let bankCacheExpiresAt = 0;
+
+function normalizeBankName(name?: string | null): string | null {
+  if (!name) {
+    return null;
+  }
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+async function getBankCache(): Promise<BankCacheEntry[]> {
+  const now = Date.now();
+  if (bankCache && now < bankCacheExpiresAt) {
+    return bankCache;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('banks')
+    .select('id,name,display_name')
+    .eq('is_active', true);
+
+  if (error || !data) {
+    bankCache = [];
+  } else {
+    bankCache = data.map(bank => ({
+      id: bank.id,
+      slug: normalizeBankName(bank.name) || '',
+      displaySlug:
+        normalizeBankName(bank.display_name) ||
+        normalizeBankName(bank.name) ||
+        '',
+    }));
+  }
+
+  bankCacheExpiresAt = now + BANK_CACHE_TTL_MS;
+  return bankCache;
+}
+
+async function resolveBankIdByName(name: string): Promise<string | null> {
+  const normalized = normalizeBankName(name);
+  if (!normalized) {
+    return null;
+  }
+
+  const banks = await getBankCache();
+  const match = banks.find(
+    bank =>
+      bank.slug === normalized ||
+      (bank.displaySlug && bank.displaySlug === normalized),
+  );
+
+  return match?.id || null;
+}
+
+function getCachedBinResult(bin: string): BinLookupResult | null | undefined {
+  const cached = binCache.get(bin);
+  if (!cached) {
+    return undefined;
+  }
+
+  if (cached.expiresAt < Date.now()) {
+    binCache.delete(bin);
+    return undefined;
+  }
+
+  return cached.result;
+}
+
+function setCachedBinResult(bin: string, result: BinLookupResult | null) {
+  binCache.set(bin, {
+    result,
+    expiresAt: Date.now() + BIN_CACHE_TTL_MS,
+  });
+}
+
 /**
  * BIN Lookup Result
  */
@@ -170,7 +261,7 @@ export async function lookupBINInternal(
 
     const result: BinLookupResult = {
       bankId: data.bank_id,
-      bankName: bank?.name,
+      bankName: bank?.display_name || bank?.name,
       cardMetadataId: data.card_metadata_id || undefined,
       cardName: cardMetadata?.card_name,
       cardDisplayName: cardMetadata?.display_name,
@@ -236,6 +327,7 @@ export async function lookupBINInternal(
       };
     }
 
+    setCachedBinResult(bin, result);
     return result;
   } catch (error) {
     console.error('Internal BIN lookup error:', error);
@@ -376,17 +468,8 @@ export async function cacheBinLookup(
     let bankId = result.bankId;
 
     if (!bankId && result.bankName) {
-      const { data: bank } = await supabaseAdmin
-        .from('banks')
-        .select('id')
-        .ilike('name', result.bankName.toLowerCase().replace(/\s+/g, ''))
-        .eq('is_active', true)
-        .limit(1)
-        .single();
-
-      if (bank) {
-        bankId = bank.id;
-      }
+      const resolved = await resolveBankIdByName(result.bankName);
+      bankId = resolved || undefined;
     }
 
     // If we found a bank, cache the BIN lookup
@@ -402,6 +485,7 @@ export async function cacheBinLookup(
         is_active: true,
       });
 
+      result.bankId = bankId;
       // BIN lookup result cached for future use
     }
   } catch (error) {
@@ -424,9 +508,15 @@ export async function lookupBIN(bin: string): Promise<BinLookupResult | null> {
     return null;
   }
 
+  const cached = getCachedBinResult(bin);
+  if (cached !== undefined) {
+    return cached;
+  }
+
   // Step 1: Try internal lookup
   const internalResult = await lookupBINInternal(bin);
   if (internalResult) {
+    setCachedBinResult(bin, internalResult);
     return internalResult;
   }
 
@@ -435,9 +525,11 @@ export async function lookupBIN(bin: string): Promise<BinLookupResult | null> {
   if (externalResult) {
     // Step 3: Cache external result for future use
     await cacheBinLookup(bin, externalResult);
+    setCachedBinResult(bin, externalResult);
     return externalResult;
   }
 
   // No result found
+  setCachedBinResult(bin, null);
   return null;
 }

@@ -1,15 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
-import {
-  Edit2,
-  ExternalLink,
-  Eye,
-  RefreshCw,
-  Trash2,
-  UploadCloud,
-} from 'lucide-react';
+import { Edit2, ExternalLink, Eye, Trash2, UploadCloud } from 'lucide-react';
 import { CardPreview } from './CardPreview';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { Card } from '@finmatter/types';
@@ -26,11 +19,6 @@ export const CardDetailsView = ({
   onDelete,
 }: CardDetailsViewProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isCardFlipped, setIsCardFlipped] = useState(false);
-
-  useEffect(() => {
-    setIsCardFlipped(false);
-  }, [card.id]);
 
   const handleDelete = async () => {
     if (
@@ -95,19 +83,13 @@ export const CardDetailsView = ({
       {/* Card Visual */}
       <div className='px-6 pt-4'>
         <div className='h-60'>
-          <CardPreview
-            card={card}
-            className='h-60 w-full'
-            showFlipAction={false}
-            isFlipped={isCardFlipped}
-            onFlipChange={setIsCardFlipped}
-          />
+          <CardPreview card={card} className='h-60 w-full' />
         </div>
       </div>
 
       {/* Quick Actions Row */}
       <div className='px-6 mt-2'>
-        <div className='grid grid-cols-5 gap-4'>
+        <div className='grid grid-cols-4 gap-4'>
           <QuickAction
             icon={Edit2}
             label='Edit'
@@ -116,11 +98,6 @@ export const CardDetailsView = ({
           />
           <QuickAction icon={Eye} label='Transactions' disabled />
           <QuickAction icon={UploadCloud} label='Upload' disabled />
-          <QuickAction
-            icon={RefreshCw}
-            label={isCardFlipped ? 'Show Front' : 'Flip'}
-            onClick={() => setIsCardFlipped(prev => !prev)}
-          />
           <QuickAction
             icon={Trash2}
             label={isDeleting ? 'Deleting…' : 'Delete'}

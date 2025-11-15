@@ -218,16 +218,6 @@ BEGIN
 END $$;
 
 -- Add encrypted CVV (stored as TEXT for encrypted value)
-DO $$ 
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'cards' AND column_name = 'cvv_encrypted'
-  ) THEN
-    ALTER TABLE cards ADD COLUMN cvv_encrypted TEXT; -- Encrypted CVV for display purposes only
-  END IF;
-END $$;
-
 -- Add BIN detection fields
 DO $$ 
 BEGIN
@@ -386,7 +376,6 @@ COMMENT ON COLUMN cards_metadata.rewards IS 'JSONB object with baseRate, acceler
 COMMENT ON COLUMN cards_metadata.milestones IS 'JSONB array of milestone objects with spending thresholds';
 COMMENT ON COLUMN bin_lookup.bin_start IS 'First 6 digits of card number (range start)';
 COMMENT ON COLUMN bin_lookup.bin_end IS 'Last 6 digits of card number range (or same as bin_start for exact match)';
-COMMENT ON COLUMN cards.cvv_encrypted IS 'Encrypted CVV for display purposes only. Consider not storing CVV in production.';
 COMMENT ON COLUMN cards.last_four_digits IS 'Last 4 digits of card number (plain text for display purposes)';
 COMMENT ON COLUMN cards.detected_from_bin IS 'Whether card details were auto-detected from BIN lookup';
 COMMENT ON COLUMN cards.bin_lookup_source IS 'Source of BIN lookup: internal (our DB), binlist_api, or manual entry';

@@ -35,11 +35,7 @@ export const CardGridItem = ({ card, className }: CardGridItemProps) => {
       {/* Card Visual Preview */}
       <div className='p-5'>
         <div className='h-32'>
-          <CardPreview
-            card={card}
-            showFlipAction={false}
-            className='h-32 w-full'
-          />
+          <CardPreview card={card} className='h-32 w-full' />
         </div>
       </div>
 

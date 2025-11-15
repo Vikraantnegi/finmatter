@@ -15,8 +15,8 @@ import {
   validateExpiry,
   extractBIN,
   detectNetwork,
+  extractLastFour as extractLastFourDigits,
 } from '@/lib/cardValidation';
-import { extractLastFour as extractLastFourDigits } from '@/lib/cardEncryption';
 import { z } from 'zod';
 import type {
   DatabaseCard,
@@ -210,7 +210,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 5: Prepare card data
-    const lastFourDigits = extractLastFourDigits(cardNumber);
+    const lastFourDigits =
+      extractLastFourDigits(cardNumber) ||
+      cardNumber.replace(/\D/g, '').slice(-4);
     const detectedNetwork = detectNetwork(cardNumber);
 
     // Step 6: Create card record

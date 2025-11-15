@@ -77,7 +77,6 @@ export type DatabaseCard = {
   status: CardStatus;
   expiry_month?: number | null;
   expiry_year?: number | null;
-  cvv_encrypted?: string | null;
   detected_from_bin: boolean;
   bin_lookup_source: BinLookupSource;
   issue_date?: string | null; // DATE type

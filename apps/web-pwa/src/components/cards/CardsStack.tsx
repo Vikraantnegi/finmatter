@@ -131,11 +131,7 @@ export const CardsStack = ({
                 }}
                 whileTap={isTop ? { scale: 0.98 } : {}}
               >
-                <CardPreview
-                  card={card}
-                  showFlipAction={false}
-                  className='h-[250px] w-full'
-                />
+                <CardPreview card={card} className='h-[250px] w-full' />
               </motion.div>
             );
           })}

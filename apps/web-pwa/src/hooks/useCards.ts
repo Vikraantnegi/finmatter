@@ -19,7 +19,6 @@ interface UseCardsReturn {
     cardHolderName: string;
     expiryMonth: number;
     expiryYear: number;
-    cvv: string;
     bankId?: string;
     cardMetadataId?: string;
   }) => Promise<Card | null>;
@@ -62,7 +61,6 @@ export function useCards(): UseCardsReturn {
       cardHolderName: string;
       expiryMonth: number;
       expiryYear: number;
-      cvv: string;
       bankId?: string;
       cardMetadataId?: string;
     }) => addCardInternal(payload),

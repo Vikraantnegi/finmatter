@@ -21,6 +21,10 @@ const UpdateUserSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(50).optional(),
   lastName: z.string().max(50).optional(),
   email: z.string().email().optional(),
+  phoneNumber: z.string().min(10).max(20).optional(),
+  displayName: z.string().max(150).optional(),
+  avatar: z.string().max(2048).optional(),
+  dateOfBirth: z.string().optional(),
   notificationsEnabled: z.boolean().optional(),
   onboardingCompleted: z.boolean().optional(),
 });
@@ -84,7 +88,7 @@ export async function GET(
       .from('users')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       logError(error, {
@@ -117,7 +121,7 @@ export async function GET(
         ErrorCodes.USER_NOT_FOUND,
         'User profile not found',
         { userId },
-        { statusCode: 404 },
+        { statusCode: 404, retryable: false },
       );
       return createCorsResponse(errorResponse, {
         status: 404,
@@ -253,21 +257,80 @@ export async function PUT(
 
     const updateData = validation.data;
 
-    // Prepare the update object for database
-    const dbUpdateData: any = {
-      updated_at: new Date().toISOString(),
+    const { data: existingUser, error: fetchError } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (fetchError) {
+      logError(fetchError, {
+        userId,
+        endpoint: `/api/users/${userId}`,
+        additionalData: { error: fetchError.message },
+      });
+
+      const appError = handleSupabaseError(fetchError, 'select');
+      const errorResponse = createErrorResponse(
+        appError.code as keyof typeof ErrorCodes,
+        appError.message,
+        { originalError: fetchError.message, userId },
+        {
+          statusCode: appError.statusCode,
+          retryable: appError.statusCode >= 500,
+        },
+      );
+
+      return createCorsResponse(errorResponse, {
+        status: appError.statusCode,
+        origin: origin || undefined,
+      });
+    }
+
+    if (!existingUser) {
+      const errorResponse = createErrorResponse(
+        ErrorCodes.USER_NOT_FOUND,
+        'User profile not found',
+        { userId },
+        { statusCode: 404, retryable: false },
+      );
+      return createCorsResponse(errorResponse, {
+        status: 404,
+        origin: origin || undefined,
+      });
+    }
+
+    const profileData: Record<string, any> = {
+      ...(existingUser.profile_data || {}),
     };
 
-    if (
-      updateData.firstName !== undefined ||
-      updateData.lastName !== undefined
-    ) {
-      const firstName = updateData.firstName || '';
-      const lastName = updateData.lastName || '';
-      dbUpdateData.profile_data = {
-        firstName,
-        lastName,
-      };
+    if (updateData.firstName !== undefined) {
+      profileData.firstName = updateData.firstName;
+    }
+
+    if (updateData.lastName !== undefined) {
+      profileData.lastName = updateData.lastName;
+    }
+
+    if (updateData.displayName !== undefined) {
+      profileData.displayName = updateData.displayName;
+    }
+
+    if (updateData.avatar !== undefined) {
+      profileData.avatar = updateData.avatar || '';
+    }
+
+    if (updateData.dateOfBirth !== undefined) {
+      profileData.dateOfBirth = updateData.dateOfBirth;
+    }
+
+    const dbUpdateData: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+      profile_data: profileData,
+    };
+
+    if (updateData.phoneNumber !== undefined) {
+      dbUpdateData.phone_number = updateData.phoneNumber;
     }
 
     if (updateData.email !== undefined) {

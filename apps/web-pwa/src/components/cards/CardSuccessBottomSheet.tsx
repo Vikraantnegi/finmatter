@@ -53,8 +53,6 @@ export const CardSuccessBottomSheet = ({
               bank: card.bank,
               cardMetadata: card.cardMetadata,
             }}
-            showCVV={false}
-            showFlipAction={false}
             className='h-52 w-full'
           />
         </div>

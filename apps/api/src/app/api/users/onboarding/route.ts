@@ -12,6 +12,7 @@ import {
   logError,
   ErrorCodes,
 } from '@/lib/errorHandler';
+import { dbUserToApiUser } from '@/lib/dataTransform';
 import { z } from 'zod';
 
 // Request validation schema
@@ -110,10 +111,10 @@ export async function PUT(request: NextRequest) {
     const { data: currentUser, error: fetchError } = await supabaseAdmin
       .from('users')
       .select(
-        'onboarding_completed, profile_data, phone_number, is_verified, biometric_enabled, created_at, updated_at',
+        'id, phone_number, profile_data, onboarding_completed, is_verified, biometric_enabled, notifications_enabled, location_enabled, sms_enabled, created_at, updated_at, last_login',
       )
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (fetchError) {
       logError(fetchError, {
@@ -142,24 +143,27 @@ export async function PUT(request: NextRequest) {
       });
     }
 
+    if (!currentUser) {
+      const errorResponse = createErrorResponse(
+        ErrorCodes.USER_NOT_FOUND,
+        'User profile not found',
+        { userId },
+        { statusCode: 404, retryable: false },
+      );
+      return createCorsResponse(errorResponse, {
+        status: 404,
+        origin: origin || undefined,
+      });
+    }
+
     // If already onboarded, return success with current data (idempotent)
-    if (currentUser?.onboarding_completed) {
+    if (currentUser.onboarding_completed) {
       return createCorsResponse(
         {
           success: true,
           message: 'Onboarding already completed',
           data: {
-            user: {
-              id: userId,
-              phoneNumber: currentUser.phone_number,
-              firstName: currentUser.profile_data?.firstName || '',
-              lastName: currentUser.profile_data?.lastName || '',
-              onboardingCompleted: true,
-              isVerified: currentUser.is_verified,
-              biometricEnabled: currentUser.biometric_enabled,
-              createdAt: currentUser.created_at,
-              updatedAt: currentUser.updated_at,
-            },
+            user: dbUserToApiUser(currentUser),
           },
         },
         { origin: origin || undefined },
@@ -217,17 +221,7 @@ export async function PUT(request: NextRequest) {
       {
         success: true,
         data: {
-          user: {
-            id: user.id,
-            phoneNumber: user.phone_number,
-            firstName: user.profile_data?.firstName || '',
-            lastName: user.profile_data?.lastName || '',
-            onboardingCompleted: user.onboarding_completed,
-            isVerified: user.is_verified,
-            biometricEnabled: user.biometric_enabled,
-            createdAt: user.created_at,
-            updatedAt: user.updated_at,
-          },
+          user: dbUserToApiUser(user),
         },
       },
       { origin: origin || undefined },

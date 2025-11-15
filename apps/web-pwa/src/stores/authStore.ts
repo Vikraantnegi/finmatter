@@ -200,6 +200,9 @@ export const useAuthStore = create<AuthState>()(
           const activeToken = cookieAccessToken || currentSessionToken;
 
           if (activeToken && currentSessionExpiry && currentUser) {
+            // Ensure API client uses the persisted token for subsequent requests
+            apiClient.setAuthToken(activeToken);
+
             const now = new Date();
             const expiresAt = new Date(currentSessionExpiry);
 

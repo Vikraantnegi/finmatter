@@ -10,7 +10,6 @@ type AddCardPayload = {
   cardHolderName: string;
   expiryMonth: number;
   expiryYear: number;
-  cvv: string;
   bankId?: string;
   cardMetadataId?: string;
 };
@@ -66,12 +65,13 @@ export const useCardsStore = create<CardsState>((set, get) => ({
             : response.error?.message || 'Failed to fetch cards';
         set({ error: message });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching cards:', error);
+      const apiError = error as any;
       set({
         error:
-          error?.response?.data?.error ||
-          error?.message ||
+          apiError?.response?.data?.error ||
+          apiError?.message ||
           'Failed to fetch cards',
       });
       throw error;
@@ -101,10 +101,13 @@ export const useCardsStore = create<CardsState>((set, get) => ({
         'Unable to add this card. Please verify the details and try again.';
       set({ error: message });
       throw new Error(message);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding card:', error);
+      const apiError = error as any;
       const message =
-        error?.response?.data?.error || error?.message || 'Failed to add card';
+        apiError?.response?.data?.error ||
+        apiError?.message ||
+        'Failed to add card';
       set({ error: message });
       throw error;
     } finally {
@@ -119,11 +122,12 @@ export const useCardsStore = create<CardsState>((set, get) => ({
       set(state => ({
         cards: state.cards.filter(card => card.id !== cardId),
       }));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting card:', error);
+      const apiError = error as any;
       const message =
-        error?.response?.data?.error ||
-        error?.message ||
+        apiError?.response?.data?.error ||
+        apiError?.message ||
         'Failed to delete card';
       set({ error: message });
       throw error;
@@ -155,11 +159,12 @@ export const useCardsStore = create<CardsState>((set, get) => ({
         'Unable to update this card. Please verify the details and try again.';
       set({ error: message });
       throw new Error(message);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating card:', error);
+      const apiError = error as any;
       const message =
-        error?.response?.data?.error ||
-        error?.message ||
+        apiError?.response?.data?.error ||
+        apiError?.message ||
         'Failed to update card';
       set({ error: message });
       throw error;

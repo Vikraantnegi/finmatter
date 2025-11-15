@@ -30,19 +30,25 @@ export const Skeleton = ({ className = '' }: SkeletonProps) => {
 /**
  * Card Stack Loader
  */
-export const CardsStackLoader = () => {
+export const CardsStackLoader = ({
+  hideHeader = false,
+}: {
+  hideHeader?: boolean;
+}) => {
   return (
     <div>
       {/* Header */}
-      <div className='px-6 mb-6'>
-        <div className='flex items-center justify-between'>
-          <div className='flex items-center gap-2'>
-            <Skeleton className='w-24 h-6' />
-            <Skeleton className='w-6 h-6 rounded-full' />
+      {!hideHeader ? (
+        <div className='px-6 mb-6'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center gap-2'>
+              <Skeleton className='w-24 h-6' />
+              <Skeleton className='w-6 h-6 rounded-full' />
+            </div>
+            <Skeleton className='w-16 h-5' />
           </div>
-          <Skeleton className='w-16 h-5' />
         </div>
-      </div>
+      ) : null}
 
       {/* Card Stack */}
       <div className='px-6'>

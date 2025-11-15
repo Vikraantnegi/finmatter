@@ -16,6 +16,7 @@ export type User = {
   isVerified: boolean;
   biometricEnabled: boolean;
   onboardingCompleted?: boolean;
+  avatar?: string;
   notificationsEnabled?: boolean;
   locationEnabled?: boolean;
   smsEnabled?: boolean;

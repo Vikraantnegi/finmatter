@@ -111,24 +111,3 @@ export function extractLastFour(cardNumber: string): string {
 
   return cleaned.substring(cleaned.length - 4);
 }
-
-/**
- * Encrypt CVV
- */
-export async function encryptCVV(cvv: string): Promise<string> {
-  // Validate CVV format
-  const cleaned = cvv.replace(/\D/g, '');
-
-  if (cleaned.length < 3 || cleaned.length > 4) {
-    throw new Error('CVV must be 3 or 4 digits');
-  }
-
-  return encryptCardData(cleaned);
-}
-
-/**
- * Decrypt CVV (for display purposes only, should be done server-side)
- */
-export async function decryptCVV(encrypted: string): Promise<string> {
-  return decryptCardData(encrypted);
-}

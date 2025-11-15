@@ -32,7 +32,6 @@ export type Card = {
   status: CardStatus;
   expiryMonth?: number;
   expiryYear?: number;
-  cvvEncrypted?: string; // Encrypted CVV (if stored)
   detectedFromBin: boolean;
   binLookupSource: BinLookupSource;
   issueDate?: Date | string;

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import axios from 'axios';
 import { Controller, useForm } from 'react-hook-form';
@@ -11,10 +11,15 @@ import { Button } from '@/components/ui/Button';
 import { CardLoader } from './CardLoader';
 import { apiClient } from '@/lib/apiClient';
 import { CARD_ROUTES } from '@/constants/apiRoutes';
-import { Lock } from 'lucide-react';
 import type { Card } from '@finmatter/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { getNetworkIconUrl } from '@/lib/networkIcons';
+import {
+  detectNetwork,
+  formatCardNumberDisplay,
+  getCardNumberError,
+  type DetectedNetwork,
+} from '@finmatter/shared/cardDetection';
 
 // Form validation schema
 const addCardSchema = z.object({
@@ -29,7 +34,6 @@ const addCardSchema = z.object({
     .max(100, 'Card holder name must be less than 100 characters'),
   expiryMonth: z.number().int().min(1).max(12),
   expiryYear: z.number().int().min(2000).max(2099),
-  cvv: z.string().regex(/^\d{3,4}$/, 'CVV must be 3 or 4 digits'),
 });
 
 type AddCardFormData = z.infer<typeof addCardSchema>;
@@ -78,12 +82,6 @@ export const AddCardBottomSheet = ({
     useState<BinLookupResult | null>(null);
   const [lastLookedUpBin, setLastLookedUpBin] = useState<string | null>(null);
   const [inFlightBin, setInFlightBin] = useState<string | null>(null);
-  const normalizedNetwork = binLookupResult?.network?.toLowerCase();
-  const networkLogoUrl = getNetworkIconUrl(normalizedNetwork, 'logo');
-  const formatCardNumberDisplay = (value?: string) =>
-    value && value.length > 0
-      ? (value.match(/.{1,4}/g)?.join(' ') ?? value)
-      : '';
 
   const {
     control,
@@ -91,8 +89,6 @@ export const AddCardBottomSheet = ({
     handleSubmit,
     watch,
     setValue,
-    setError,
-    clearErrors,
     formState: { errors, isValid },
     reset,
   } = useForm<AddCardFormData>({
@@ -103,11 +99,27 @@ export const AddCardBottomSheet = ({
       cardHolderName: '',
       expiryMonth: 12,
       expiryYear: 2025,
-      cvv: '',
     },
   });
 
   const cardNumber = watch('cardNumber');
+  const detectedNetwork = useMemo(
+    () => detectNetwork(cardNumber || ''),
+    [cardNumber],
+  );
+  const binNetwork = useMemo<DetectedNetwork | null>(() => {
+    const net = binLookupResult?.network?.toLowerCase();
+    return net ? (net as DetectedNetwork) : null;
+  }, [binLookupResult?.network]);
+  const effectiveNetwork = binNetwork || detectedNetwork || null;
+  const networkLogoUrl = getNetworkIconUrl(
+    effectiveNetwork ?? undefined,
+    'logo',
+  );
+  const cardNumberHelperError = getCardNumberError(
+    cardNumber || '',
+    effectiveNetwork,
+  );
 
   // Debounce card number for BIN lookup
   const debouncedCardNumber = useDebounce(cardNumber, 500);
@@ -122,7 +134,6 @@ export const AddCardBottomSheet = ({
         `${CARD_ROUTES.BIN_LOOKUP}?bin=${bin}`,
       );
       setBinLookupResult(result);
-      clearErrors('cvv');
     } catch (error) {
       console.error('BIN lookup error:', error);
       setBinLookupResult(null);
@@ -172,15 +183,6 @@ export const AddCardBottomSheet = ({
   };
 
   const onSubmit = async (data: AddCardFormData) => {
-    const normalizedNetwork = binLookupResult?.network?.toLowerCase();
-    if (normalizedNetwork === 'amex' && data.cvv.trim().length !== 4) {
-      setError('cvv', {
-        type: 'manual',
-        message: 'American Express CVV must be 4 digits',
-      });
-      return;
-    }
-
     try {
       setIsSubmitting(true);
 
@@ -193,7 +195,6 @@ export const AddCardBottomSheet = ({
         cardHolderName: data.cardHolderName,
         expiryMonth: data.expiryMonth,
         expiryYear: data.expiryYear,
-        cvv: data.cvv,
         // Include BIN lookup results if available
         bankId: binLookupResult?.bank?.id,
         cardMetadataId: binLookupResult?.cardMetadata?.id,
@@ -219,24 +220,11 @@ export const AddCardBottomSheet = ({
           apiError?.message ||
           apiError?.error?.message ||
           error.message;
-
-        if (
-          (errorCode &&
-            String(errorCode).toUpperCase().includes('INVALID_CVV')) ||
-          (typeof message === 'string' && message.toLowerCase().includes('cvv'))
-        ) {
-          setError('cvv', {
-            type: 'server',
-            message:
-              typeof message === 'string'
-                ? message
-                : 'Please double-check the CVV for this network.',
-          });
-        }
+        console.log('errorCode', errorCode);
+        console.log('message', message);
       }
       console.error('Error adding card:', error);
       setIsSubmitting(false);
-      // Error handling is done by apiClient (toast notifications)
     }
   };
 
@@ -276,7 +264,10 @@ export const AddCardBottomSheet = ({
                       onBlur={onBlur}
                       type='text'
                       placeholder='1234 5678 9012 3456'
-                      value={formatCardNumberDisplay(value)}
+                      value={formatCardNumberDisplay(
+                        value || '',
+                        effectiveNetwork,
+                      )}
                       inputMode='numeric'
                       maxLength={23}
                       onChange={event => {
@@ -313,9 +304,9 @@ export const AddCardBottomSheet = ({
                   )}
                 </div>
               </div>
-              {errors.cardNumber && (
+              {(errors.cardNumber || cardNumberHelperError) && (
                 <p className='mt-1 text-sm text-red-400'>
-                  {errors.cardNumber.message}
+                  {errors.cardNumber?.message || cardNumberHelperError}
                 </p>
               )}
               {/* BIN Lookup Result */}
@@ -345,88 +336,24 @@ export const AddCardBottomSheet = ({
               )}
             </div>
 
-            {/* Expiry and CVV */}
-            <div className='grid grid-cols-2 gap-4'>
-              <div>
-                <label className='block text-sm font-medium text-white mb-2'>
-                  Expiry Date
-                </label>
-                <input
-                  type='text'
-                  placeholder='MM/YY'
-                  maxLength={5}
-                  onChange={handleExpiryChange}
-                  className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
-                  autoComplete='cc-exp'
-                />
-                {(errors.expiryMonth || errors.expiryYear) && (
-                  <p className='mt-1 text-sm text-red-400'>
-                    {errors.expiryMonth?.message || errors.expiryYear?.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className='block text-sm font-medium text-white mb-2'>
-                  CVV
-                </label>
-                <Controller
-                  name='cvv'
-                  control={control}
-                  rules={{
-                    validate: value => {
-                      const trimmed = value?.replace(/\D/g, '') || '';
-                      if (normalizedNetwork === 'amex') {
-                        return (
-                          trimmed.length === 4 ||
-                          'American Express CVV must be 4 digits'
-                        );
-                      }
-                      return (
-                        trimmed.length === 3 ||
-                        trimmed.length === 4 ||
-                        'CVV must be 3 digits (4 for American Express)'
-                      );
-                    },
-                  }}
-                  render={({ field: { value, onChange, onBlur, ref } }) => (
-                    <input
-                      ref={ref}
-                      onBlur={onBlur}
-                      type='text'
-                      value={value || ''}
-                      placeholder={
-                        normalizedNetwork === 'amex' ? '1234' : '123'
-                      }
-                      maxLength={normalizedNetwork === 'amex' ? 4 : 3}
-                      onChange={event => {
-                        const cleaned = event.target.value.replace(/\D/g, '');
-                        const limited =
-                          normalizedNetwork === 'amex'
-                            ? cleaned.slice(0, 4)
-                            : cleaned.slice(0, 3);
-                        onChange(limited);
-                        setValue('cvv', limited, {
-                          shouldValidate: true,
-                          shouldDirty: true,
-                        });
-                      }}
-                      className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
-                      autoComplete='cc-csc'
-                    />
-                  )}
-                />
-                {errors.cvv && (
-                  <p className='mt-1 text-sm text-red-400'>
-                    {errors.cvv.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Security Message */}
-            <div className='flex items-center gap-2 text-sm text-gray-400'>
-              <Lock className='w-4 h-4' />
-              <span>Your information is securely encrypted.</span>
+            {/* Expiry */}
+            <div>
+              <label className='block text-sm font-medium text-white mb-2'>
+                Expiry Date
+              </label>
+              <input
+                type='text'
+                placeholder='MM/YY'
+                maxLength={5}
+                onChange={handleExpiryChange}
+                className='w-full h-14 px-4 bg-gray-800/50 border-2 border-gray-700 rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors'
+                autoComplete='cc-exp'
+              />
+              {(errors.expiryMonth || errors.expiryYear) && (
+                <p className='mt-1 text-sm text-red-400'>
+                  {errors.expiryMonth?.message || errors.expiryYear?.message}
+                </p>
+              )}
             </div>
 
             {/* Submit Button */}

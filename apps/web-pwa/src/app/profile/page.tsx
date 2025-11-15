@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Edit3, Camera, Loader2 } from 'lucide-react';
+import { Camera, Loader2 } from 'lucide-react';
 import PageHeader from '@/components/common/PageHeader';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -47,18 +47,7 @@ const ProfilePage = () => {
   return (
     <div className='min-h-screen bg-background-dark pb-20'>
       {/* Header */}
-      <PageHeader
-        title='Profile'
-        action={
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => router.push('/profile/edit')}
-            className='flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors'
-          >
-            <Edit3 className='w-4 h-4 text-primary' />
-          </motion.button>
-        }
-      />
+      <PageHeader title='Profile' />
 
       <form onSubmit={handleSubmit} className='px-6 py-6 space-y-8'>
         {/* Avatar Section */}

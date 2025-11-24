@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { Edit2, ExternalLink, Eye, Trash2, UploadCloud } from 'lucide-react';
 import { CardPreview } from './CardPreview';
+import { UploadStatementBottomSheet } from '@/components/statements/UploadStatementBottomSheet';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { Card } from '@finmatter/types';
 
@@ -19,6 +20,7 @@ export const CardDetailsView = ({
   onDelete,
 }: CardDetailsViewProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showUploadSheet, setShowUploadSheet] = useState(false);
 
   const handleDelete = async () => {
     if (
@@ -101,7 +103,11 @@ export const CardDetailsView = ({
             intent='primary'
           />
           <QuickAction icon={Eye} label='Transactions' disabled />
-          <QuickAction icon={UploadCloud} label='Upload' disabled />
+          <QuickAction
+            icon={UploadCloud}
+            label='Upload'
+            onClick={() => setShowUploadSheet(true)}
+          />
           <QuickAction
             icon={Trash2}
             label={isDeleting ? 'Deleting…' : 'Delete'}
@@ -315,6 +321,16 @@ export const CardDetailsView = ({
           </div>
         )}
       </div>
+
+      {/* Upload Statement Bottom Sheet */}
+      <UploadStatementBottomSheet
+        isOpen={showUploadSheet}
+        onClose={() => setShowUploadSheet(false)}
+        card={card}
+        onSuccess={() => {
+          // Optionally refresh card data or show success message
+        }}
+      />
     </div>
   );
 };

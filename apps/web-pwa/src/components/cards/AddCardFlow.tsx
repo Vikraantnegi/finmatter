@@ -29,19 +29,29 @@ export const AddCardFlow = ({
   const handleCardAdded = (card: Card) => {
     setAddedCard(card);
     setShowSuccessSheet(true);
-    onSuccess?.(card);
+    // Don't call onSuccess here - wait until success sheet closes
   };
 
   const handleSuccessContinue = () => {
     setShowSuccessSheet(false);
+    const card = addedCard;
     setAddedCard(null);
     onClose();
+    // Refresh cards when success sheet closes
+    if (card) {
+      onSuccess?.(card);
+    }
   };
 
   const handleSuccessClose = () => {
     setShowSuccessSheet(false);
+    const card = addedCard;
     setAddedCard(null);
     onClose();
+    // Refresh cards when success sheet closes
+    if (card) {
+      onSuccess?.(card);
+    }
   };
 
   return (

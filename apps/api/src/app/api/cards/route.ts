@@ -14,7 +14,6 @@ import {
   validateCardFormat,
   validateExpiry,
   extractBIN,
-  detectNetwork,
   extractLastFour as extractLastFourDigits,
 } from '@/lib/cardValidation';
 import { z } from 'zod';
@@ -195,27 +194,27 @@ export async function POST(request: NextRequest) {
       detectedBankId = binLookupResult.bankId || detectedBankId;
       detectedCardMetadataId =
         binLookupResult.cardMetadataId || detectedCardMetadataId;
-      detectedNetworkFromBin = binLookupResult.network;
+      // Only use network from BIN lookup if it was actually detected
+      // Don't fall back to pattern detection
+      detectedNetworkFromBin = binLookupResult.network || null;
       detectedCardType = binLookupResult.cardType;
-
-      // Use detected network if available, otherwise use format validation
-      if (!detectedNetworkFromBin && formatValidation.network) {
-        detectedNetworkFromBin = formatValidation.network;
-      }
-    } else {
-      // Use network from format validation if BIN lookup failed
-      if (formatValidation.network) {
-        detectedNetworkFromBin = formatValidation.network;
-      }
     }
+    // If BIN lookup fails, leave detectedNetworkFromBin as null
+    // Don't use pattern detection as fallback
 
     // Step 5: Prepare card data
     const lastFourDigits =
       extractLastFourDigits(cardNumber) ||
       cardNumber.replace(/\D/g, '').slice(-4);
-    const detectedNetwork = detectNetwork(cardNumber);
 
     // Step 6: Create card record
+    // Only use network from BIN lookup if it was actually detected
+    // Don't fall back to pattern detection - if BIN lookup fails, network is unknown
+    const finalNetwork =
+      detectedFromBin && detectedNetworkFromBin
+        ? (detectedNetworkFromBin as any)
+        : null;
+
     const cardData: Partial<DatabaseCard> = {
       user_id: userId,
       bank_id: detectedBankId || null,
@@ -226,8 +225,7 @@ export async function POST(request: NextRequest) {
       last_four_digits: lastFourDigits,
       card_type:
         (detectedCardType as any) || formatValidation.cardType || 'credit',
-      network:
-        (detectedNetworkFromBin as any) || (detectedNetwork as any) || 'visa', // Fallback to visa
+      network: finalNetwork, // Only use BIN-detected network, null if unknown
       reward_type: null,
       annual_fee: 0,
       currency: 'INR',
@@ -301,6 +299,7 @@ export async function POST(request: NextRequest) {
           cardHolderName: newCard.card_holder_name,
           expiryMonth: newCard.expiry_month,
           expiryYear: newCard.expiry_year,
+          network: newCard.network,
           bank: bankData
             ? {
                 id: bankData.id,

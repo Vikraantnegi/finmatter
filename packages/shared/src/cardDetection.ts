@@ -65,9 +65,12 @@ export function luhnCheck(cardNumber: string): boolean {
   if (cleaned.length < 12) return false;
 
   let sum = 0;
-  let shouldDouble = false;
+  // Start with shouldDouble = true because we skip the rightmost (check) digit
+  // We'll process from second-to-last digit
+  let shouldDouble = true;
 
-  for (let i = cleaned.length - 1; i >= 0; i -= 1) {
+  // Process from right to left, starting from second-to-last digit
+  for (let i = cleaned.length - 2; i >= 0; i -= 1) {
     let digit = parseInt(cleaned.charAt(i), 10);
     if (Number.isNaN(digit)) return false;
 
@@ -79,6 +82,11 @@ export function luhnCheck(cardNumber: string): boolean {
     sum += digit;
     shouldDouble = !shouldDouble;
   }
+
+  // Add the check digit (rightmost) without doubling
+  const checkDigit = parseInt(cleaned.charAt(cleaned.length - 1), 10);
+  if (Number.isNaN(checkDigit)) return false;
+  sum += checkDigit;
 
   return sum % 10 === 0;
 }

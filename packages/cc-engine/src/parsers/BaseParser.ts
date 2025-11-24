@@ -3,9 +3,9 @@
  * Provides common functionality for all bank statement parsers
  */
 
-import pdfParse from 'pdf-parse';
 import { parse, isValid } from 'date-fns';
 import type { ParseResult } from '../types';
+import { extractTextFromPDF } from '../utils/pdfExtractor';
 
 export abstract class BaseParser {
   protected abstract bankName: string;
@@ -13,26 +13,23 @@ export abstract class BaseParser {
   /**
    * Extract text from PDF buffer
    * Handles both password-protected and unprotected PDFs
+   * Uses pdf-parse for unprotected PDFs and pdfjs-dist for password-protected PDFs
    */
   protected async extractText(
     pdfBuffer: Buffer,
     password?: string,
   ): Promise<string> {
     try {
-      // Try pdf-parse (note: password-protected PDFs are not currently supported)
-      const data = await pdfParse(pdfBuffer);
-      return data.text;
-    } catch (parseError) {
-      // If parsing fails, provide helpful error message
+      return await extractTextFromPDF(pdfBuffer, password);
+    } catch (error) {
       const errorMessage =
-        parseError instanceof Error ? parseError.message : 'Unknown error';
-      if (password) {
-        throw new Error(
-          `Failed to extract text from PDF. Note: Password-protected PDFs are not currently supported. Error: ${errorMessage}`,
-        );
-      }
+        error instanceof Error ? error.message : 'Unknown error';
       throw new Error(
-        `PDF parsing failed. The PDF may be password-protected or corrupted. Error: ${errorMessage}`,
+        `Failed to extract text from PDF: ${errorMessage}. ${
+          password
+            ? 'Please verify the password is correct.'
+            : 'If the PDF is password-protected, please provide the password.'
+        }`,
       );
     }
   }

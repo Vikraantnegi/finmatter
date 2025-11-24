@@ -22,7 +22,8 @@ function DashboardContent() {
 
   const handleAddCardSuccess = () => {
     setShowAddCard(false);
-    fetchCards();
+    // Force refresh to get the newly added card
+    fetchCards({ force: true });
   };
 
   if (isLoading) {

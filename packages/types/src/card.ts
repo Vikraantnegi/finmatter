@@ -25,7 +25,7 @@ export type Card = {
   cardHolderName?: string;
   lastFourDigits: string;
   cardType: CardType;
-  network: CardNetwork;
+  network: CardNetwork | null; // Nullable - can be unknown if BIN lookup fails
   rewardType?: RewardType;
   annualFee: number;
   currency: string;
@@ -70,7 +70,7 @@ export type DatabaseCard = {
   card_holder_name?: string | null;
   last_four_digits: string;
   card_type: CardType;
-  network: CardNetwork;
+  network: CardNetwork | null; // Nullable - can be unknown if BIN lookup fails
   reward_type?: RewardType | null;
   annual_fee: number;
   currency: string;

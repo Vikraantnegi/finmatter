@@ -83,7 +83,11 @@ export const CardDetailsView = ({
       {/* Card Visual */}
       <div className='px-6 pt-4'>
         <div className='h-60'>
-          <CardPreview card={card} className='h-60 w-full' />
+          <CardPreview
+            card={card}
+            className='h-60 w-full'
+            networkIconVariant='logo'
+          />
         </div>
       </div>
 

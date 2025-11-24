@@ -140,6 +140,8 @@ export async function GET(
           cardHolderName: card.card_holder_name,
           expiryMonth: card.expiry_month,
           expiryYear: card.expiry_year,
+          cardType: card.card_type,
+          network: card.network,
           bank: bankData
             ? {
                 id: bankData.id,
@@ -350,6 +352,8 @@ export async function PUT(
           cardHolderName: updatedCard.card_holder_name,
           expiryMonth: updatedCard.expiry_month,
           expiryYear: updatedCard.expiry_year,
+          cardType: updatedCard.card_type,
+          network: updatedCard.network,
           status: updatedCard.status,
           issueDate: updatedCard.issue_date,
           billingDay: updatedCard.billing_day,

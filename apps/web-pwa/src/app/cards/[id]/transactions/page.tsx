@@ -130,9 +130,14 @@ export default function CardTransactionsPage() {
                 {/* Transactions for this month */}
                 <div className='space-y-3'>
                   {monthData.transactions.map(transaction => (
-                    <div
+                    <button
                       key={transaction.id}
-                      className='bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-gray-600 transition-colors'
+                      onClick={() =>
+                        window.location.assign(
+                          `/transactions/${transaction.id}`,
+                        )
+                      }
+                      className='w-full text-left bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-gray-600 transition-colors'
                     >
                       <div className='flex items-start justify-between mb-2'>
                         <div className='flex-1'>
@@ -191,7 +196,7 @@ export default function CardTransactionsPage() {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>

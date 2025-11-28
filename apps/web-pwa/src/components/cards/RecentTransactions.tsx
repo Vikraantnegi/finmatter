@@ -53,9 +53,12 @@ export function RecentTransactions({
 
       <div className='space-y-3'>
         {transactions.map(transaction => (
-          <div
+          <button
             key={transaction.id}
-            className='bg-gray-900 rounded-xl p-3 border border-gray-700 hover:border-gray-600 transition-colors'
+            onClick={() =>
+              window.location.assign(`/transactions/${transaction.id}`)
+            }
+            className='w-full text-left bg-gray-900 rounded-xl p-3 border border-gray-700 hover:border-gray-600 transition-colors'
           >
             <div className='flex items-start justify-between'>
               <div className='flex-1 min-w-0'>
@@ -111,7 +114,7 @@ export function RecentTransactions({
                 </div>
               </div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>

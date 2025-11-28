@@ -38,3 +38,6 @@ export * from './errors';
 
 // API helpers
 export * from './api';
+
+// Transaction utilities
+export * from './transactions';

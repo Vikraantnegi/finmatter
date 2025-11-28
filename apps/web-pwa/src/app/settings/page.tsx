@@ -35,9 +35,9 @@ const SettingsPage = () => {
     router.push('/auth/login');
   };
 
+  // TODO: Implement delete account functionality (Phase 2)
   // const handleDeleteAccount = () => {
-  //   // TODO: Implement delete account flow
-  //   console.log('Delete account');
+  //   // Implementation pending
   // };
 
   return (

@@ -54,6 +54,7 @@ export const CardSuccessBottomSheet = ({
               cardMetadata: card.cardMetadata,
             }}
             className='h-52 w-full'
+            networkIconVariant='logo'
           />
         </div>
 

@@ -74,15 +74,6 @@ export class AuthService {
       const errorCode = apiError?.code || errorInfo.code;
       const errorMessage = apiError?.message || errorInfo.message;
 
-      console.log('AuthService verifyOTP error details:', {
-        error,
-        response: error?.response,
-        responseData: error?.response?.data,
-        apiError,
-        extractedCode: errorCode,
-        extractedMessage: errorMessage,
-      });
-
       return {
         success: false,
         error: {

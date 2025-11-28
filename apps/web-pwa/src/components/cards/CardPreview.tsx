@@ -4,6 +4,7 @@ import Image from 'next/image';
 import type { Card, Bank, CardMetadata } from '@finmatter/types';
 import { cn } from '@/lib/utils';
 import { getNetworkIconUrl, type NetworkIconVariant } from '@/lib/networkIcons';
+import { getBankLogoUrl } from '@/lib/bankLogos';
 
 interface CardPreviewProps {
   card:
@@ -41,6 +42,19 @@ export const CardPreview = ({
   const network = card.cardMetadata?.network || (card as Card).network;
   const networkLogoUrl = getNetworkIconUrl(network, networkIconVariant);
 
+  // Get bank logo - prefer from bank object, fallback to bank name
+  const bankLogoUrl =
+    card.bank?.logoUrl ||
+    getBankLogoUrl(
+      card.bank?.name || card.bank?.displayName || (card as Card).bankName,
+      'logo',
+    );
+  const bankDisplayName =
+    card.bank?.displayName ||
+    card.bank?.name ||
+    (card as Card).bankName ||
+    'Bank';
+
   return (
     <div
       className={cn(
@@ -52,19 +66,18 @@ export const CardPreview = ({
       }}
     >
       <div className='flex items-center justify-between'>
-        {card.bank?.logoUrl ? (
+        {bankLogoUrl ? (
           <div className='relative w-16 h-16'>
             <Image
-              src={card.bank.logoUrl}
-              alt={card.bank.displayName || card.bank.name}
+              src={bankLogoUrl}
+              alt={bankDisplayName}
               fill
               className='object-contain'
+              unoptimized
             />
           </div>
         ) : (
-          <div className='text-2xl font-bold'>
-            {card.bank?.displayName || card.bank?.name || 'Bank'}
-          </div>
+          <div className='text-2xl font-bold'>{bankDisplayName}</div>
         )}
 
         {networkLogoUrl && (

@@ -6,7 +6,7 @@ export class NotificationService {
   static async requestPermission(): Promise<boolean> {
     if (!('Notification' in window)) {
       // eslint-disable-next-line no-console
-      console.log('This browser does not support notifications');
+      // Browser does not support notifications
       return false;
     }
 

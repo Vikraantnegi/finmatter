@@ -34,7 +34,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       try {
         await initializeAuth();
       } catch (error) {
-        console.log(error);
+        // Error handled by error handler
       } finally {
         if (mounted) {
           setInitialized(true);
@@ -68,7 +68,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
             useAuthStore.setState(newAuthState);
           }
         } catch (error) {
-          console.log(error);
+          // Error handled by error handler
         }
       }
     };

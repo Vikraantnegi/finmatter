@@ -102,7 +102,12 @@ export const BottomSheet = ({
       >
         {/* Drag Handle */}
         <div className='flex justify-center pt-3 pb-2'>
-          <div className='w-12 h-1.5 bg-gray-300 rounded-full' />
+          <div
+            className={cn(
+              'w-12 h-1.5 rounded-full',
+              dark ? 'bg-gray-600' : 'bg-gray-300',
+            )}
+          />
         </div>
 
         {/* Header */}

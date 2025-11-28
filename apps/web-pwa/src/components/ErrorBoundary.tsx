@@ -1,9 +1,8 @@
 'use client';
 
 import React, { Component, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
-import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import { ErrorBoundaryActions } from './ErrorBoundaryActions';
 
 interface Props {
   children: ReactNode;
@@ -41,7 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
     // Call optional error handler (for logging to external services)
     this.props.onError?.(error, errorInfo);
 
-    // TODO: Send to error tracking service (Sentry, LogRocket, etc.)
+    // TODO: Send to error tracking service (Sentry, LogRocket, etc.) - Phase 2
     // if (process.env.NODE_ENV === 'production') {
     //   Sentry.captureException(error, { contexts: { react: errorInfo } });
     // }
@@ -101,32 +100,7 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
 
             {/* Actions */}
-            <div className='flex gap-3'>
-              <Button
-                variant='outline'
-                onClick={() => {
-                  // Use router for CSR navigation
-                  const router = useRouter();
-                  router.push('/dashboard');
-                  router.refresh();
-                }}
-                className='flex-1 flex items-center justify-center gap-2'
-              >
-                <Home className='w-4 h-4' />
-                Dashboard
-              </Button>
-              <Button
-                onClick={() => {
-                  // Use router for refresh
-                  const router = useRouter();
-                  router.refresh();
-                }}
-                className='flex-1 flex items-center justify-center gap-2'
-              >
-                <RefreshCw className='w-4 h-4' />
-                Refresh
-              </Button>
-            </div>
+            <ErrorBoundaryActions onReset={this.handleReset} />
           </div>
         </div>
       );
@@ -145,7 +119,7 @@ export function CardErrorBoundary({ children }: { children: ReactNode }) {
     <ErrorBoundary
       onError={error => {
         console.error('[Card Section Error]:', error);
-        // TODO: Log to analytics or error tracking
+        // TODO: Log to analytics or error tracking - Phase 2
       }}
     >
       {children}

@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Edit2, ExternalLink, Eye, Trash2, UploadCloud } from 'lucide-react';
 import { CardPreview } from './CardPreview';
 import { UploadStatementBottomSheet } from '@/components/statements/UploadStatementBottomSheet';
+import { StatementMetadata } from '@/components/statements/StatementMetadata';
+import { apiClient } from '@/lib/apiClient';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { Card } from '@finmatter/types';
 
@@ -21,6 +23,7 @@ export const CardDetailsView = ({
 }: CardDetailsViewProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showUploadSheet, setShowUploadSheet] = useState(false);
+  const [latestStatement, setLatestStatement] = useState<any>(null);
 
   const handleDelete = async () => {
     if (
@@ -80,6 +83,28 @@ export const CardDetailsView = ({
     expired: 'bg-orange-500/20 text-orange-400',
   };
 
+  // Fetch latest statement for this card
+  useEffect(() => {
+    const fetchLatestStatement = async () => {
+      try {
+        const response = await apiClient.get<{
+          success: boolean;
+          data: { statement: any | null };
+        }>(`/api/cards/${card.id}/latest-statement`);
+
+        if (response.success && response.data.statement) {
+          setLatestStatement(response.data.statement);
+        }
+      } catch (error) {
+        console.error('Error fetching latest statement:', error);
+      }
+    };
+
+    if (card.id) {
+      fetchLatestStatement();
+    }
+  }, [card.id]);
+
   return (
     <div className='space-y-7 pb-10'>
       {/* Card Visual */}
@@ -138,17 +163,21 @@ export const CardDetailsView = ({
                 </div>
               )}
               <span className='text-sm font-medium text-white'>
-                {card.bank?.displayName || card.bank?.name || 'Unknown Bank'}
+                {card.bank?.displayName ||
+                  card.bank?.name ||
+                  (card.bankName
+                    ? `${card.bankName.toUpperCase()} Bank`
+                    : 'Unknown Bank')}
               </span>
             </div>
           </div>
 
           {/* Card Name */}
-          {card.cardMetadata?.displayName && (
+          {(card.cardMetadata?.displayName || card.cardName) && (
             <div className='flex items-center justify-between'>
               <span className='text-sm text-gray-400'>Card Name</span>
               <span className='text-sm font-medium text-white'>
-                {card.cardMetadata.displayName}
+                {card.cardMetadata?.displayName || card.cardName}
               </span>
             </div>
           )}
@@ -320,6 +349,9 @@ export const CardDetailsView = ({
             </div>
           </div>
         )}
+
+        {/* Latest Statement Metadata */}
+        {latestStatement && <StatementMetadata statement={latestStatement} />}
       </div>
 
       {/* Upload Statement Bottom Sheet */}
@@ -327,8 +359,20 @@ export const CardDetailsView = ({
         isOpen={showUploadSheet}
         onClose={() => setShowUploadSheet(false)}
         card={card}
-        onSuccess={() => {
-          // Optionally refresh card data or show success message
+        onSuccess={async () => {
+          // Refresh latest statement after upload
+          try {
+            const response = await apiClient.get<{
+              success: boolean;
+              data: { statement: any | null };
+            }>(`/api/cards/${card.id}/latest-statement`);
+
+            if (response.success && response.data.statement) {
+              setLatestStatement(response.data.statement);
+            }
+          } catch (error) {
+            console.error('Error refreshing statement:', error);
+          }
         }}
       />
     </div>

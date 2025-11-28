@@ -183,6 +183,8 @@ export async function GET(
           availableCredit: card.available_credit
             ? Number(card.available_credit)
             : undefined,
+          bankName: card.bank_name || undefined,
+          cardName: card.card_name || undefined,
           createdAt: card.created_at,
           updatedAt: card.updated_at,
         },

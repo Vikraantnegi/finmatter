@@ -6,6 +6,7 @@ import { ArrowLeft, CreditCard, Calendar, Tag } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatementMetadata } from '@/components/statements/StatementMetadata';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
@@ -35,13 +36,30 @@ export default function StatementTransactionsPage() {
   const statementId = params.id as string;
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [statement, setStatement] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (statementId) {
+      fetchStatement();
       fetchTransactions();
     }
   }, [statementId]);
+
+  const fetchStatement = async () => {
+    try {
+      const response = await apiClient.get<{
+        success: boolean;
+        data: { statement: any };
+      }>(`/api/statements/${statementId}`);
+
+      if (response.success) {
+        setStatement(response.data.statement);
+      }
+    } catch (error: any) {
+      console.error('Error fetching statement:', error);
+    }
+  };
 
   const fetchTransactions = async () => {
     try {
@@ -107,11 +125,23 @@ export default function StatementTransactionsPage() {
           <ArrowLeft className='w-4 h-4' />
           <span>Back</span>
         </button>
-        <h1 className='text-2xl font-bold text-white'>Transactions</h1>
+        <h1 className='text-2xl font-bold text-white'>Statement Details</h1>
         <p className='text-sm text-gray-400 mt-1'>
           {transactions.length} transaction
           {transactions.length !== 1 ? 's' : ''}
         </p>
+      </div>
+
+      {/* Statement Metadata */}
+      {statement && (
+        <div className='px-6 py-4'>
+          <StatementMetadata statement={statement} />
+        </div>
+      )}
+
+      {/* Transactions Header */}
+      <div className='px-6 py-4 border-t border-gray-800'>
+        <h2 className='text-xl font-bold text-white'>Transactions</h2>
       </div>
 
       {/* Transactions List */}

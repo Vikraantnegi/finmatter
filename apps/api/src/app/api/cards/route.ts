@@ -464,6 +464,8 @@ export async function GET(request: NextRequest) {
           typeof card.available_credit === 'number'
             ? Number(card.available_credit)
             : undefined,
+        bankName: card.bank_name || undefined,
+        cardName: card.card_name || undefined,
         bank: bank
           ? {
               id: bank.id,

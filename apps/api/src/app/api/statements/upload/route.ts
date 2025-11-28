@@ -285,10 +285,11 @@ export async function POST(request: NextRequest) {
       fileBuffer,
       normalizedBankName,
       password || undefined,
-    ).catch(error => {
-      // Log error but don't throw - statement is already created
+    ).catch(async error => {
+      // Log error and update statement status to failed
       const errorToLog =
         error instanceof Error ? error : new Error(String(error));
+
       logError(errorToLog, {
         userId,
         additionalData: {
@@ -297,6 +298,20 @@ export async function POST(request: NextRequest) {
           error: errorToLog.message,
         },
       });
+
+      // Update statement status to failed with error message
+      try {
+        await supabaseAdmin
+          .from('statements')
+          .update({
+            parsing_status: 'failed',
+            parsing_error: errorToLog.message,
+          })
+          .eq('id', statementId);
+      } catch (updateError) {
+        // Log update error but don't throw
+        console.error('Failed to update statement status:', updateError);
+      }
     });
 
     // Return success immediately with processing status
@@ -427,34 +442,181 @@ async function parseStatementAsync(
       transaction_count: parseResult.transactions.length,
     };
 
-    if (parseResult.metadata.statementPeriodStart) {
-      updateData.statement_period_start =
-        parseResult.metadata.statementPeriodStart.toISOString().split('T')[0];
-    }
-    if (parseResult.metadata.statementPeriodEnd) {
-      updateData.statement_period_end = parseResult.metadata.statementPeriodEnd
+    const meta = parseResult.metadata;
+
+    // Statement periods
+    if (meta.statementPeriodStart) {
+      updateData.statement_period_start = meta.statementPeriodStart
         .toISOString()
         .split('T')[0];
     }
-    if (parseResult.metadata.billingCycleStart) {
-      updateData.billing_cycle_start = parseResult.metadata.billingCycleStart
+    if (meta.statementPeriodEnd) {
+      updateData.statement_period_end = meta.statementPeriodEnd
         .toISOString()
         .split('T')[0];
     }
-    if (parseResult.metadata.billingCycleEnd) {
-      updateData.billing_cycle_end = parseResult.metadata.billingCycleEnd
+
+    // Billing cycles
+    if (meta.billingCycleStart) {
+      updateData.billing_cycle_start = meta.billingCycleStart
         .toISOString()
         .split('T')[0];
+    }
+    if (meta.billingCycleEnd) {
+      updateData.billing_cycle_end = meta.billingCycleEnd
+        .toISOString()
+        .split('T')[0];
+    }
+
+    // Payment information
+    if (meta.paymentDueDate) {
+      updateData.payment_due_date = meta.paymentDueDate
+        .toISOString()
+        .split('T')[0];
+    }
+    if (meta.totalAmount !== undefined) {
+      updateData.total_amount_due = meta.totalAmount;
+    }
+    if (meta.minimumDue !== undefined) {
+      updateData.minimum_due = meta.minimumDue;
+    }
+    if (meta.statementDate) {
+      updateData.statement_date = meta.statementDate
+        .toISOString()
+        .split('T')[0];
+    }
+
+    // Reward Points
+    if (meta.rewardPoints !== undefined) {
+      updateData.reward_points_total = meta.rewardPoints;
+    }
+    if (meta.rewardPointsOpeningBalance !== undefined) {
+      updateData.reward_points_opening_balance =
+        meta.rewardPointsOpeningBalance;
+    }
+    if (meta.rewardPointsEarned !== undefined) {
+      updateData.reward_points_earned = meta.rewardPointsEarned;
+    }
+    if (meta.rewardPointsDisbursed !== undefined) {
+      updateData.reward_points_disbursed = meta.rewardPointsDisbursed;
+    }
+    if (meta.rewardPointsAdjustedLapsed !== undefined) {
+      updateData.reward_points_adjusted_lapsed =
+        meta.rewardPointsAdjustedLapsed;
+    }
+    if (meta.rewardPointsExpiring30Days !== undefined) {
+      updateData.reward_points_expiring_30_days =
+        meta.rewardPointsExpiring30Days;
+    }
+    if (meta.rewardPointsExpiring60Days !== undefined) {
+      updateData.reward_points_expiring_60_days =
+        meta.rewardPointsExpiring60Days;
+    }
+
+    // Financial Summary
+    if (meta.previousStatementDues !== undefined) {
+      updateData.previous_statement_dues = meta.previousStatementDues;
+    }
+    if (meta.paymentsCreditsReceived !== undefined) {
+      updateData.payments_credits_received = meta.paymentsCreditsReceived;
+    }
+    if (meta.purchasesDebit !== undefined) {
+      updateData.purchases_debit = meta.purchasesDebit;
+    }
+    if (meta.financeCharges !== undefined) {
+      updateData.finance_charges = meta.financeCharges;
+    }
+
+    // Credit Limits (store as snapshots in statement for historical tracking)
+    if (meta.totalCreditLimit !== undefined) {
+      updateData.total_credit_limit = meta.totalCreditLimit;
+    }
+    if (meta.availableCreditLimit !== undefined) {
+      updateData.available_credit_limit = meta.availableCreditLimit;
+    }
+    if (meta.availableCashLimit !== undefined) {
+      updateData.available_cash_limit = meta.availableCashLimit;
+    }
+
+    // JSON fields
+    if (meta.spendingCategories && meta.spendingCategories.length > 0) {
+      updateData.spending_categories = meta.spendingCategories;
+    }
+    if (meta.rewardsProgramSummary && meta.rewardsProgramSummary.length > 0) {
+      updateData.rewards_program_summary = meta.rewardsProgramSummary;
+    }
+    if (meta.emiLoans && meta.emiLoans.length > 0) {
+      // Convert Date objects to ISO strings for JSON storage
+      updateData.emi_loans = meta.emiLoans.map(loan => ({
+        ...loan,
+        bookedDate: loan.bookedDate.toISOString(),
+      }));
+    }
+    if (meta.gstSummary) {
+      updateData.gst_summary = meta.gstSummary;
     }
 
     if (!parseResult.success && parseResult.errors) {
       updateData.parsing_error = parseResult.errors.join('; ');
     }
 
+    // Update statement with metadata
     await supabaseAdmin
       .from('statements')
       .update(updateData)
       .eq('id', statementId);
+
+    // Update card-level data in cards table
+    // These are persistent attributes that should be updated on the card itself
+    const cardUpdateData: any = {};
+
+    // Update bank name if found in statement and not already set
+    if (meta.bankName) {
+      // Check if card already has a bank name, if not, update it
+      const { data: currentCard } = await supabaseAdmin
+        .from('cards')
+        .select('bank_name')
+        .eq('id', cardId)
+        .single();
+
+      if (!currentCard?.bank_name) {
+        // Normalize bank name to lowercase for consistency
+        cardUpdateData.bank_name = meta.bankName
+          .toLowerCase()
+          .replace(' bank', '');
+      }
+    }
+
+    // Update card name if found in statement and not already set
+    if (meta.cardName) {
+      // Check if card already has a name, if not, update it
+      const { data: currentCard } = await supabaseAdmin
+        .from('cards')
+        .select('card_name')
+        .eq('id', cardId)
+        .single();
+
+      if (!currentCard?.card_name) {
+        cardUpdateData.card_name = meta.cardName;
+      }
+    }
+
+    // Update credit limits (latest values from statement)
+    if (meta.totalCreditLimit !== undefined) {
+      cardUpdateData.credit_limit = meta.totalCreditLimit;
+    }
+    if (meta.availableCreditLimit !== undefined) {
+      cardUpdateData.available_credit = meta.availableCreditLimit;
+    }
+
+    // Only update if there's something to update
+    if (Object.keys(cardUpdateData).length > 0) {
+      await supabaseAdmin
+        .from('cards')
+        .update(cardUpdateData)
+        .eq('id', cardId)
+        .eq('user_id', userId);
+    }
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown parsing error';

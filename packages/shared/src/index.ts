@@ -45,4 +45,9 @@ export type { DateGroupedTransactions } from './transactions';
 
 // Analytics utilities
 export * from './analytics';
-export type { CategorySpending, MonthlySpending } from './analytics';
+export type {
+  CategorySpending,
+  MonthlySpending,
+  MerchantSpending,
+  MonthlyTrend,
+} from './analytics';

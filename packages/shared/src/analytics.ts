@@ -2,7 +2,15 @@
  * Analytics utilities for FinMatter
  */
 
-import { parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import {
+  parseISO,
+  startOfMonth,
+  endOfMonth,
+  isWithinInterval,
+  subMonths,
+  format,
+  eachMonthOfInterval,
+} from 'date-fns';
 import type { Transaction } from '@finmatter/types';
 
 export interface CategorySpending {
@@ -157,4 +165,120 @@ export const getCategoryIcon = (
     color: 'text-gray-400',
     bgColor: 'bg-gray-500',
   };
+};
+
+export interface MerchantSpending {
+  merchant: string;
+  amount: number;
+  transactionCount: number;
+}
+
+export interface MonthlyTrend {
+  month: string;
+  monthKey: string;
+  amount: number;
+  date: Date;
+}
+
+/**
+ * Calculate top merchants by spending
+ */
+export const calculateTopMerchants = (
+  transactions: Transaction[],
+  limit: number = 5,
+): MerchantSpending[] => {
+  const merchantMap = new Map<string, { amount: number; count: number }>();
+
+  transactions.forEach(txn => {
+    if (txn.type === 'debit') {
+      const existing = merchantMap.get(txn.merchant_name) || {
+        amount: 0,
+        count: 0,
+      };
+      merchantMap.set(txn.merchant_name, {
+        amount: existing.amount + txn.amount,
+        count: existing.count + 1,
+      });
+    }
+  });
+
+  return Array.from(merchantMap.entries())
+    .map(([merchant, data]) => ({
+      merchant,
+      amount: data.amount,
+      transactionCount: data.count,
+    }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, limit);
+};
+
+/**
+ * Calculate spending trends over last N months
+ */
+export const calculateSpendingTrends = (
+  transactions: Transaction[],
+  months: number = 6,
+): MonthlyTrend[] => {
+  const now = new Date();
+  const startDate = subMonths(now, months - 1);
+  const startOfStartMonth = startOfMonth(startDate);
+
+  // Get all months in the range
+  const monthsList = eachMonthOfInterval({
+    start: startOfStartMonth,
+    end: startOfMonth(now),
+  });
+
+  // Initialize all months with 0 spending
+  const monthlyData = new Map<string, { amount: number; date: Date }>();
+
+  monthsList.forEach(month => {
+    const monthKey = format(month, 'MMM yyyy');
+    monthlyData.set(monthKey, { amount: 0, date: month });
+  });
+
+  // Calculate spending per month
+  transactions.forEach(txn => {
+    if (txn.type === 'debit') {
+      const txnDate = parseISO(txn.transaction_date);
+      const monthKey = format(txnDate, 'MMM yyyy');
+      const existing = monthlyData.get(monthKey);
+      if (existing) {
+        existing.amount += txn.amount;
+      }
+    }
+  });
+
+  return Array.from(monthlyData.entries())
+    .map(([monthKey, data]) => ({
+      month: format(data.date, 'MMM'),
+      monthKey,
+      amount: data.amount,
+      date: data.date,
+    }))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+};
+
+/**
+ * Calculate percentage change between two values
+ */
+export const calculatePercentageChange = (
+  current: number,
+  previous: number,
+): number => {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return ((current - previous) / previous) * 100;
+};
+
+/**
+ * Calculate average spending per month
+ */
+export const calculateAverageMonthlySpending = (
+  transactions: Transaction[],
+  months: number = 3,
+): number => {
+  const trends = calculateSpendingTrends(transactions, months);
+  if (trends.length === 0) return 0;
+  const total = trends.reduce((sum, trend) => sum + trend.amount, 0);
+  return total / trends.length;
 };

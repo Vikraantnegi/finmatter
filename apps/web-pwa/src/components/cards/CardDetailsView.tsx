@@ -8,6 +8,7 @@ import { CardPreview } from './CardPreview';
 import { UploadStatementBottomSheet } from '@/components/statements/UploadStatementBottomSheet';
 import { StatementMetadata } from '@/components/statements/StatementMetadata';
 import { RecentTransactions } from './RecentTransactions';
+import { RewardsAndOffers } from './RewardsAndOffers';
 import { apiClient } from '@/lib/apiClient';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useCardTransactions } from '@/hooks/useCardTransactions';
@@ -369,6 +370,15 @@ export const CardDetailsView = ({
           </div>
         )}
 
+        {/* Latest Statement Metadata */}
+        {latestStatement && <StatementMetadata statement={latestStatement} />}
+
+        {/* Rewards & Offers */}
+        <RewardsAndOffers
+          card={card}
+          rewardPoints={latestStatement?.reward_points_total}
+        />
+
         {/* Recent Transactions */}
         {recentTransactions.length > 0 && (
           <RecentTransactions
@@ -376,9 +386,6 @@ export const CardDetailsView = ({
             cardId={card.id}
           />
         )}
-
-        {/* Latest Statement Metadata */}
-        {latestStatement && <StatementMetadata statement={latestStatement} />}
       </div>
 
       {/* Upload Statement Bottom Sheet */}

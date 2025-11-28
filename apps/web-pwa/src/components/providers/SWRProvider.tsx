@@ -40,7 +40,7 @@ const swrConfig: SWRConfiguration = {
   // Callbacks
   onError: (error, key) => {
     console.error(`[SWR Error] ${key}:`, error);
-    // TODO: Send to error tracking service (Sentry)
+    // TODO: Send to error tracking service (Sentry) - Phase 2
     // if (process.env.NODE_ENV === 'production') {
     //   Sentry.captureException(error, { tags: { swrKey: key } });
     // }

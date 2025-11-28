@@ -46,9 +46,8 @@ export const calculateMonthlySpending = (
       if (txn.type === 'debit') {
         totalSpend += txn.amount;
         transactionCount++;
-      } else if (txn.type === 'credit' || txn.type === 'refund') {
-        // Calculate rewards (simplified - in real app, this would come from rewards API)
-        // For now, we'll estimate rewards as a percentage of spending
+        // Calculate rewards from spending (simplified - in real app, this would come from rewards API)
+        // For now, we'll estimate rewards as a percentage of spending (e.g., 1% cashback)
         totalRewards += txn.amount * 0.01; // 1% cashback estimate
       }
     }

@@ -218,16 +218,7 @@ export const AddCardBottomSheet = ({
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const apiError = error.response?.data;
-        const errorCode =
-          apiError?.code || apiError?.error?.code || apiError?.errorCode;
-        const message =
-          apiError?.error ||
-          apiError?.message ||
-          apiError?.error?.message ||
-          error.message;
-        console.log('errorCode', errorCode);
-        console.log('message', message);
+        // Error details logged via error handler
       }
       console.error('Error adding card:', error);
       setIsSubmitting(false);

@@ -2,16 +2,16 @@
 
 import { format } from 'date-fns';
 import {
-  Calendar,
+  // Calendar,
   CreditCard,
   DollarSign,
-  TrendingUp,
+  // TrendingUp,
   Award,
   PieChart,
   Building2,
-  Receipt,
+  // Receipt,
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency } from '@finmatter/shared';
 
 interface StatementMetadataProps {
   statement: {
@@ -94,6 +94,13 @@ export function StatementMetadata({ statement }: StatementMetadataProps) {
 
   return (
     <div className='space-y-6'>
+      {/* Section Heading */}
+      <div className='flex items-center justify-between mb-2'>
+        <h2 className='text-xl font-bold text-white'>
+          Latest Statement Insights
+        </h2>
+      </div>
+
       {/* Payment Information */}
       {hasPaymentInfo && (
         <div className='bg-gray-800 rounded-xl p-3 border border-gray-700'>
@@ -134,8 +141,53 @@ export function StatementMetadata({ statement }: StatementMetadataProps) {
         </div>
       )}
 
+      {/* Credit Limits */}
+      {hasCreditLimits && (
+        <div className='bg-gray-800 rounded-xl p-3 border border-gray-700'>
+          <div className='flex items-center gap-2 mb-3'>
+            <CreditCard className='w-5 h-5 text-primary' />
+            <h2 className='text-lg font-semibold text-white'>Credit Limits</h2>
+          </div>
+          <div className='space-y-2'>
+            {statement.total_credit_limit !== null &&
+              statement.total_credit_limit !== undefined && (
+                <div className='flex justify-between items-center'>
+                  <span className='text-sm text-gray-400'>
+                    Total Credit Limit
+                  </span>
+                  <span className='text-sm font-medium text-white'>
+                    {formatCurrency(statement.total_credit_limit)}
+                  </span>
+                </div>
+              )}
+            {statement.available_credit_limit !== null &&
+              statement.available_credit_limit !== undefined && (
+                <div className='flex justify-between items-center'>
+                  <span className='text-sm text-gray-400'>
+                    Available Credit Limit
+                  </span>
+                  <span className='text-sm font-medium text-success-500'>
+                    {formatCurrency(statement.available_credit_limit)}
+                  </span>
+                </div>
+              )}
+            {statement.available_cash_limit !== null &&
+              statement.available_cash_limit !== undefined && (
+                <div className='flex justify-between items-center'>
+                  <span className='text-sm text-gray-400'>
+                    Available Cash Limit
+                  </span>
+                  <span className='text-sm font-medium text-primary'>
+                    {formatCurrency(statement.available_cash_limit)}
+                  </span>
+                </div>
+              )}
+          </div>
+        </div>
+      )}
+
       {/* Billing Period */}
-      {(statement.billing_cycle_start || statement.billing_cycle_end) && (
+      {/* {(statement.billing_cycle_start || statement.billing_cycle_end) && (
         <div className='bg-gray-800 rounded-xl p-3 border border-gray-700'>
           <div className='flex items-center gap-2 mb-3'>
             <Calendar className='w-5 h-5 text-primary' />
@@ -151,7 +203,7 @@ export function StatementMetadata({ statement }: StatementMetadataProps) {
               format(new Date(statement.billing_cycle_end), 'MMM dd, yyyy')}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Reward Points */}
       {hasRewardPoints && (
@@ -258,7 +310,7 @@ export function StatementMetadata({ statement }: StatementMetadataProps) {
         )}
 
       {/* Rewards Program Summary */}
-      {statement.rewards_program_summary &&
+      {/* {statement.rewards_program_summary &&
         statement.rewards_program_summary.length > 0 && (
           <div className='bg-gray-800 rounded-xl p-3 border border-gray-700'>
             <div className='flex items-center gap-2 mb-3'>
@@ -283,10 +335,10 @@ export function StatementMetadata({ statement }: StatementMetadataProps) {
               ))}
             </div>
           </div>
-        )}
+        )} */}
 
       {/* Financial Summary */}
-      {hasFinancialSummary && (
+      {/* {hasFinancialSummary && (
         <div className='bg-gray-800 rounded-xl p-3 border border-gray-700'>
           <div className='flex items-center gap-2 mb-3'>
             <TrendingUp className='w-5 h-5 text-primary' />
@@ -338,52 +390,7 @@ export function StatementMetadata({ statement }: StatementMetadataProps) {
               )}
           </div>
         </div>
-      )}
-
-      {/* Credit Limits */}
-      {hasCreditLimits && (
-        <div className='bg-gray-800 rounded-xl p-3 border border-gray-700'>
-          <div className='flex items-center gap-2 mb-3'>
-            <CreditCard className='w-5 h-5 text-primary' />
-            <h2 className='text-lg font-semibold text-white'>Credit Limits</h2>
-          </div>
-          <div className='space-y-2'>
-            {statement.total_credit_limit !== null &&
-              statement.total_credit_limit !== undefined && (
-                <div className='flex justify-between items-center'>
-                  <span className='text-sm text-gray-400'>
-                    Total Credit Limit
-                  </span>
-                  <span className='text-sm font-medium text-white'>
-                    {formatCurrency(statement.total_credit_limit)}
-                  </span>
-                </div>
-              )}
-            {statement.available_credit_limit !== null &&
-              statement.available_credit_limit !== undefined && (
-                <div className='flex justify-between items-center'>
-                  <span className='text-sm text-gray-400'>
-                    Available Credit Limit
-                  </span>
-                  <span className='text-sm font-medium text-success-500'>
-                    {formatCurrency(statement.available_credit_limit)}
-                  </span>
-                </div>
-              )}
-            {statement.available_cash_limit !== null &&
-              statement.available_cash_limit !== undefined && (
-                <div className='flex justify-between items-center'>
-                  <span className='text-sm text-gray-400'>
-                    Available Cash Limit
-                  </span>
-                  <span className='text-sm font-medium text-primary'>
-                    {formatCurrency(statement.available_cash_limit)}
-                  </span>
-                </div>
-              )}
-          </div>
-        </div>
-      )}
+      )} */}
 
       {/* EMI Loans */}
       {statement.emi_loans && statement.emi_loans.length > 0 && (
@@ -448,7 +455,7 @@ export function StatementMetadata({ statement }: StatementMetadataProps) {
       )}
 
       {/* GST Summary */}
-      {statement.gst_summary && statement.gst_summary.total > 0 && (
+      {/* {statement.gst_summary && statement.gst_summary.total > 0 && (
         <div className='bg-gray-800 rounded-xl p-3 border border-gray-700'>
           <div className='flex items-center gap-2 mb-3'>
             <Receipt className='w-5 h-5 text-primary' />
@@ -495,7 +502,7 @@ export function StatementMetadata({ statement }: StatementMetadataProps) {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

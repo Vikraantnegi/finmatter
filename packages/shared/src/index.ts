@@ -11,9 +11,13 @@ export * from './validators';
 // Formatters (only existing exports)
 export {
   formatCurrency,
+  formatCurrencyCompact,
   formatNumber,
   formatPercentage,
   formatDate,
+  formatDateIST,
+  formatDateTimeIST,
+  formatTimeIST,
   formatRelativeTime,
   formatPhoneNumber,
   formatAddress,

@@ -40,7 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
     // Call optional error handler (for logging to external services)
     this.props.onError?.(error, errorInfo);
 
-    // TODO: Send to error tracking service (Sentry, LogRocket, etc.)
+    // TODO: Send to error tracking service (Sentry, LogRocket, etc.) - Phase 2
     // if (process.env.NODE_ENV === 'production') {
     //   Sentry.captureException(error, { contexts: { react: errorInfo } });
     // }
@@ -119,7 +119,7 @@ export function CardErrorBoundary({ children }: { children: ReactNode }) {
     <ErrorBoundary
       onError={error => {
         console.error('[Card Section Error]:', error);
-        // TODO: Log to analytics or error tracking
+        // TODO: Log to analytics or error tracking - Phase 2
       }}
     >
       {children}

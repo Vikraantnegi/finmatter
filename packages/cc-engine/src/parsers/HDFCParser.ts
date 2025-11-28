@@ -16,12 +16,6 @@ export class HDFCParser extends BaseParser {
   async parse(pdfBuffer: Buffer, password?: string): Promise<ParseResult> {
     const text = await this.extractText(pdfBuffer, password);
 
-    // Log extracted text for debugging
-    console.log('=== HDFC PDF Extracted Text ===');
-    console.log(text);
-    console.log('=== End Extracted Text ===');
-    console.log(`Total text length: ${text.length} characters`);
-
     // PDF extraction might not preserve line breaks properly
     // Split by newlines first, but also handle cases where everything is in one line
     let lines = text
@@ -31,7 +25,6 @@ export class HDFCParser extends BaseParser {
 
     // If we have very few lines (PDF extraction issue), try splitting by common patterns
     if (lines.length < 10) {
-      console.log('Few lines detected, attempting to split by patterns...');
       // Try splitting by "Domestic Transactions" and "International Transactions" markers
       const allText = lines.join(' ');
       const splitPoints = [
@@ -56,12 +49,6 @@ export class HDFCParser extends BaseParser {
         lines = parts.filter(p => p.length > 0);
       }
     }
-
-    console.log(`Total lines: ${lines.length}`);
-    console.log(
-      'First 5 lines (first 200 chars each):',
-      lines.slice(0, 5).map(l => l.substring(0, 200)),
-    );
 
     const transactions: ParsedTransaction[] = [];
     const metadata: StatementMetadata = {};
@@ -88,9 +75,6 @@ export class HDFCParser extends BaseParser {
     // Parse transactions from the table
     // HDFC statements have multiple transactions on the same line, separated by 'l'
     // Since PDF extraction might put everything in one line, we need to extract from within lines
-    console.log(
-      `Starting transaction parsing from index: ${transactionStartIndex}`,
-    );
 
     // Extract all transaction text from the relevant lines
     // Look for "Domestic Transactions" and "International Transactions" sections
@@ -144,15 +128,9 @@ export class HDFCParser extends BaseParser {
       }
     }
 
-    console.log(`Extracted transaction text length: ${transactionText.length}`);
-    console.log(
-      `Transaction text preview: ${transactionText.substring(0, 500)}...`,
-    );
-
     // Now parse transactions from the extracted text
     // Split by 'l' separator to get individual transaction parts
     const transactionParts = transactionText.split(/\s+l\s+/);
-    console.log(`Split into ${transactionParts.length} parts by 'l' separator`);
 
     // Parse transactions from the extracted text parts
     for (const part of transactionParts) {
@@ -182,46 +160,26 @@ export class HDFCParser extends BaseParser {
             // Skip if it's just part of the header text
             if (isHeader && transactionText.length < 20) continue;
 
-            console.log(
-              `Found potential transaction: ${transactionText.substring(0, 80)}...`,
-            );
             const transaction = this.parseTransactionLine(transactionText);
             if (transaction) {
-              console.log(
-                `✓ Parsed transaction: ${transaction.merchantName} - ${transaction.amount} - ${transaction.type}`,
-              );
               transactions.push(transaction);
-            } else {
-              console.log(
-                `✗ Failed to parse transaction: ${transactionText.substring(0, 80)}...`,
-              );
             }
           }
         }
       } else if (!isHeader) {
         // Fallback: try parsing the whole part if it's not a header
-        console.log(
-          `Trying to parse whole part: ${trimmedPart.substring(0, 80)}...`,
-        );
         const transaction = this.parseTransactionLine(trimmedPart);
         if (transaction) {
-          console.log(
-            `✓ Parsed transaction: ${transaction.merchantName} - ${transaction.amount}`,
-          );
           transactions.push(transaction);
         }
       }
     }
 
     // Also try regex-based extraction as fallback to catch any missed transactions
-    console.log('Trying regex extraction to catch any missed transactions...');
     const transactionPattern =
       /(\d{1,2}\/\d{1,2}\/\d{2,4}\s*[|]\s*\d{1,2}:\d{2}.*?(?:\+\s*)?C\s+[\d,]+\.?\d*)\s*(?:l|$)/g;
     const transactionMatches = Array.from(
       transactionText.matchAll(transactionPattern),
-    );
-    console.log(
-      `Found ${transactionMatches.length} transaction matches via regex`,
     );
 
     // Create a set to track already parsed transactions (by date + amount)
@@ -237,17 +195,11 @@ export class HDFCParser extends BaseParser {
       if (transaction) {
         const key = `${transaction.transactionDate.toISOString()}-${transaction.amount}`;
         if (!parsedKeys.has(key)) {
-          console.log(
-            `✓ Parsed additional transaction via regex: ${transaction.merchantName} - ${transaction.amount} - ${transaction.type}`,
-          );
           transactions.push(transaction);
           parsedKeys.add(key);
         }
       }
     }
-
-    console.log(`Total transactions parsed: ${transactions.length}`);
-    console.log(`Errors: ${errors.length}`);
 
     const result: ParseResult = {
       success: errors.length === 0,
@@ -265,8 +217,6 @@ export class HDFCParser extends BaseParser {
   private extractMetadata(lines: string[], metadata: StatementMetadata): void {
     const fullText = lines.join(' ');
 
-    console.log('=== Extracting Metadata ===');
-
     // Extract card number (last 4 digits) - format: 518159XXXXXX5761
     const cardMatch =
       fullText.match(/(\d{4})XXXXXX(\d{4})/i) ||
@@ -275,7 +225,6 @@ export class HDFCParser extends BaseParser {
       const lastFour = cardMatch[2] || cardMatch[1];
       if (lastFour && !metadata.cardLastFour) {
         metadata.cardLastFour = lastFour;
-        console.log(`✓ Card Last Four: ${lastFour}`);
       }
     }
 
@@ -320,14 +269,12 @@ export class HDFCParser extends BaseParser {
 
     if (cardName && !metadata.cardName) {
       metadata.cardName = cardName;
-      console.log(`✓ Card Name: ${metadata.cardName}`);
     }
 
     // Extract bank name - format: "HDFC Bank"
     const bankMatch = fullText.match(/(HDFC|ICICI|SBI|AXIS|AMEX)\s+Bank/i);
     if (bankMatch && bankMatch[1] && !metadata.bankName) {
       metadata.bankName = `${bankMatch[1].toUpperCase()} Bank`;
-      console.log(`✓ Bank Name: ${metadata.bankName}`);
     }
 
     // Extract statement date - format: "Statement Date 17 Sep, 2025" or "Credit Card No. ... Statement Date 17 Sep, 2025"
@@ -344,7 +291,6 @@ export class HDFCParser extends BaseParser {
       const date = this.parseDate(statementDateMatch[1]);
       if (date) {
         metadata.statementDate = date;
-        console.log(`✓ Statement Date: ${date.toISOString()}`);
       }
     }
 
@@ -385,7 +331,6 @@ export class HDFCParser extends BaseParser {
       const dueDate = this.parseDate(dueMatch[1]);
       if (dueDate) {
         metadata.paymentDueDate = dueDate;
-        console.log(`✓ Payment Due Date: ${dueDate.toISOString()}`);
       }
     }
 
@@ -397,7 +342,6 @@ export class HDFCParser extends BaseParser {
       const amount = this.parseAmount(totalMatch[1]);
       if (amount) {
         metadata.totalAmount = amount;
-        console.log(`✓ Total Amount Due: ${amount}`);
       }
     }
 
@@ -409,7 +353,6 @@ export class HDFCParser extends BaseParser {
       const amount = this.parseAmount(minDueMatch[1]);
       if (amount) {
         metadata.minimumDue = amount;
-        console.log(`✓ Minimum Due: ${amount}`);
       }
     }
 
@@ -419,7 +362,6 @@ export class HDFCParser extends BaseParser {
       const points = parseInt(rewardPointsMatch[1].replace(/,/g, ''), 10);
       if (!isNaN(points)) {
         metadata.rewardPoints = points;
-        console.log(`✓ Reward Points: ${points}`);
       }
     }
 
@@ -482,7 +424,6 @@ export class HDFCParser extends BaseParser {
     }
     if (spendingCategories.length > 0 && !metadata.spendingCategories) {
       metadata.spendingCategories = spendingCategories;
-      console.log(`✓ Spending Categories:`, spendingCategories);
     }
 
     // Extract rewards program summary - format: "1% CashBack on other Spends   17 pts"
@@ -515,10 +456,6 @@ export class HDFCParser extends BaseParser {
     }
     if (rewardsProgram.length > 0 && !metadata.rewardsProgramSummary) {
       metadata.rewardsProgramSummary = rewardsProgram;
-      console.log(`✓ Rewards Program Summary:`, rewardsProgram);
-      if (metadata.rewardsTotalPoints) {
-        console.log(`✓ Total Rewards Points: ${metadata.rewardsTotalPoints}`);
-      }
     }
 
     // Extract financial summary - format: "PREVIOUS STATEMENT DUES   PAYMENTS/CREDITS RECEIVED PURCHASES/DEBIT (Current Billing Cycle)   FINANCE CHARGES  C 11,332.97   C 11,333.00   C 7,658.08   C 0.00"
@@ -619,7 +556,6 @@ export class HDFCParser extends BaseParser {
     }
     if (emiLoans.length > 0 && !metadata.emiLoans) {
       metadata.emiLoans = emiLoans;
-      console.log(`✓ EMI Loans: ${emiLoans.length} loan(s)`, emiLoans);
     }
 
     // Extract GST summary - format: "IGST   CGST   SGST   REVERSAL   TOTAL GST  C 35.67   C 0   C 0   C 0   C 35.67"
@@ -641,54 +577,8 @@ export class HDFCParser extends BaseParser {
           reversal: this.parseAmount(reversalStr) || 0,
           total: this.parseAmount(totalStr) || 0,
         };
-        console.log(`✓ GST Summary:`, metadata.gstSummary);
       }
     }
-
-    // Log financial summary
-    if (
-      metadata.previousStatementDues ||
-      metadata.paymentsCreditsReceived ||
-      metadata.purchasesDebit ||
-      metadata.financeCharges
-    ) {
-      console.log(`✓ Financial Summary:`, {
-        previousStatementDues: metadata.previousStatementDues,
-        paymentsCreditsReceived: metadata.paymentsCreditsReceived,
-        purchasesDebit: metadata.purchasesDebit,
-        financeCharges: metadata.financeCharges,
-      });
-    }
-
-    // Log credit limits
-    if (
-      metadata.totalCreditLimit ||
-      metadata.availableCreditLimit ||
-      metadata.availableCashLimit
-    ) {
-      console.log(`✓ Credit Limits:`, {
-        totalCreditLimit: metadata.totalCreditLimit,
-        availableCreditLimit: metadata.availableCreditLimit,
-        availableCashLimit: metadata.availableCashLimit,
-      });
-    }
-
-    // Log reward points details
-    if (
-      metadata.rewardPointsOpeningBalance !== undefined ||
-      metadata.rewardPointsEarned !== undefined
-    ) {
-      console.log(`✓ Reward Points Details:`, {
-        openingBalance: metadata.rewardPointsOpeningBalance,
-        earned: metadata.rewardPointsEarned,
-        disbursed: metadata.rewardPointsDisbursed,
-        adjustedLapsed: metadata.rewardPointsAdjustedLapsed,
-        expiring30Days: metadata.rewardPointsExpiring30Days,
-        expiring60Days: metadata.rewardPointsExpiring60Days,
-      });
-    }
-
-    console.log('=== Metadata Extraction Complete ===');
   }
 
   private findTransactionStartIndex(lines: string[]): number {
@@ -710,9 +600,6 @@ export class HDFCParser extends BaseParser {
           /\d{1,2}\/\d{1,2}\/\d{2,4}\s*[|]\s*\d{1,2}:\d{2}/,
         );
         if (transactionMatch && transactionMatch.index !== undefined) {
-          console.log(
-            `Found transactions starting at line ${i}, position ${domesticIndex + transactionMatch.index}`,
-          );
           return i; // Return this line index - we'll parse transactions from within it
         }
       }
@@ -727,7 +614,6 @@ export class HDFCParser extends BaseParser {
           /\d{1,2}\/\d{1,2}\/\d{2,4}\s*[|]\s*\d{1,2}:\d{2}/,
         );
         if (transactionMatch) {
-          console.log(`Found transactions in line ${i}`);
           return i;
         }
         // Check next line
@@ -737,7 +623,6 @@ export class HDFCParser extends BaseParser {
             nextLine &&
             nextLine.match(/\d{1,2}\/\d{1,2}\/\d{2,4}\s*[|]\s*\d{1,2}:\d{2}/)
           ) {
-            console.log(`Found transactions in line ${i + 1}`);
             return i + 1;
           }
         }
@@ -745,11 +630,9 @@ export class HDFCParser extends BaseParser {
 
       // Fallback: look for transaction pattern directly (date with pipe)
       if (line.match(/\d{1,2}\/\d{1,2}\/\d{2,4}\s*[|]\s*\d{1,2}:\d{2}/)) {
-        console.log(`Found transaction pattern in line ${i}`);
         return i;
       }
     }
-    console.log('Could not find transaction start index');
     return -1;
   }
 

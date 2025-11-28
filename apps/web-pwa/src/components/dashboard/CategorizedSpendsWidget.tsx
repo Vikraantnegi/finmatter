@@ -6,7 +6,7 @@ import { ArrowRight } from 'lucide-react';
 import { formatCurrency } from '@finmatter/shared';
 import { useTransactions } from '@/hooks/useTransactions';
 import { calculateCategorySpending, getCategoryIcon } from '@finmatter/shared';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { CategorizedSpendsLoader } from './SectionLoader';
 
 interface CategorizedSpendsWidgetProps {
   className?: string;
@@ -25,13 +25,7 @@ export function CategorizedSpendsWidget({
   }, [transactions]);
 
   if (isLoading) {
-    return (
-      <div className={`px-6 ${className}`}>
-        <div className='bg-gray-800 rounded-xl p-5 border border-gray-700'>
-          <LoadingSpinner size='sm' />
-        </div>
-      </div>
-    );
+    return <CategorizedSpendsLoader className={className} />;
   }
 
   if (categories.length === 0) {

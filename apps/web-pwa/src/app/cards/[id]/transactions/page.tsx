@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, MoreVertical } from 'lucide-react';
-import { apiClient } from '@/lib/apiClient';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { TransactionsListLoader } from '@/components/dashboard/SectionLoader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { TransactionSearchBar } from '@/components/transactions/TransactionSearchBar';
 import { TransactionFilters } from '@/components/transactions/TransactionFilters';
@@ -12,27 +11,30 @@ import { useCardTransactions } from '@/hooks/useCardTransactions';
 import {
   groupTransactionsByDate,
   sortGroupedTransactionsByDate,
-  formatCurrency,
-  formatDate,
   filterTransactionsBySearch,
   filterTransactionsByDate,
   sortTransactions,
 } from '@finmatter/shared';
-import type { Card } from '@finmatter/types';
-import { TransactionDateFilter, TransactionSortBy } from '@finmatter/types';
+import { TransactionItem } from '@/components/transactions/TransactionItem';
+// Types imported for TypeScript only - using string literals for runtime
+import type {
+  TransactionDateFilter,
+  TransactionSortBy,
+} from '@finmatter/types';
 
 export default function CardTransactionsPage() {
   const params = useParams();
   const router = useRouter();
   const cardId = params.id as string;
 
-  const [_card, setCard] = useState<Card | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateFilter, setDateFilter] = useState(
-    TransactionDateFilter.LAST_30_DAYS,
+  const [dateFilter, setDateFilter] = useState<TransactionDateFilter | string>(
+    '30', // TransactionDateFilter.LAST_30_DAYS
   );
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [sortBy, setSortBy] = useState(TransactionSortBy.DATE_DESC);
+  const [sortBy, setSortBy] = useState<TransactionSortBy | string>(
+    'date_desc', // TransactionSortBy.DATE_DESC
+  );
 
   const { transactions: allTransactions, isLoading } = useCardTransactions({
     cardId,
@@ -83,82 +85,8 @@ export default function CardTransactionsPage() {
     [groupedTransactions],
   );
 
-  useEffect(() => {
-    const fetchCard = async () => {
-      try {
-        const response = await apiClient.get<{
-          success: boolean;
-          card: Card;
-        }>(`/api/cards/${cardId}`);
-
-        if (response.success && response.card) {
-          setCard(response.card);
-        }
-      } catch (error: unknown) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
-        console.error('Error fetching card:', errorMessage);
-      }
-    };
-
-    if (cardId) {
-      fetchCard();
-    }
-  }, [cardId]);
-
-  // Format time for display
-  const formatTime = (dateString: string): string => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      });
-    } catch {
-      return '';
-    }
-  };
-
-  // Format date for display (for non-Today/Yesterday dates)
-  const formatDateDisplay = (dateString: string): string => {
-    try {
-      const date = new Date(dateString);
-      return formatDate(date, 'MMM dd');
-    } catch {
-      return '';
-    }
-  };
-
-  // Get merchant icon color (simple hash-based color)
-  const getMerchantIconColor = (merchantName: string): string => {
-    const colors = [
-      'bg-orange-500',
-      'bg-purple-500',
-      'bg-green-500',
-      'bg-red-500',
-      'bg-blue-500',
-      'bg-teal-500',
-      'bg-pink-500',
-      'bg-yellow-500',
-    ];
-    const hash = merchantName.split('').reduce((acc, char) => {
-      return char.charCodeAt(0) + ((acc << 5) - acc);
-    }, 0);
-    return colors[Math.abs(hash) % colors.length];
-  };
-
-  // Get merchant icon (first letter)
-  const getMerchantIcon = (merchantName: string): string => {
-    return merchantName.charAt(0).toUpperCase();
-  };
-
   if (isLoading) {
-    return (
-      <div className='min-h-screen bg-background-dark flex items-center justify-center'>
-        <LoadingSpinner size='lg' />
-      </div>
-    );
+    return <TransactionsListLoader />;
   }
 
   return (
@@ -189,7 +117,7 @@ export default function CardTransactionsPage() {
       </div>
 
       {/* Filters */}
-      <div className='px-6 pb-4'>
+      <div className='px-6 pb-4 overflow-visible'>
         <TransactionFilters
           dateFilter={dateFilter}
           onDateFilterChange={value =>
@@ -230,69 +158,16 @@ export default function CardTransactionsPage() {
                 {/* Transactions for this date */}
                 <div className='space-y-3'>
                   {dateData.transactions.map(transaction => (
-                    <button
+                    <TransactionItem
                       key={transaction.id}
+                      transaction={transaction}
+                      variant='detailed'
+                      showDate={dateKey !== 'Today'}
+                      showTime={dateKey === 'Today'}
                       onClick={() =>
                         router.push(`/transactions/${transaction.id}`)
                       }
-                      className='w-full text-left bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-gray-600 transition-colors'
-                    >
-                      <div className='flex items-start gap-3'>
-                        {/* Merchant Icon */}
-                        <div
-                          className={`w-12 h-12 rounded-full ${getMerchantIconColor(
-                            transaction.merchant_name,
-                          )} flex items-center justify-center text-white font-bold text-lg flex-shrink-0`}
-                        >
-                          {getMerchantIcon(transaction.merchant_name)}
-                        </div>
-
-                        {/* Transaction Details */}
-                        <div className='flex-1 min-w-0'>
-                          <div className='flex items-start justify-between mb-1'>
-                            <div className='flex-1 min-w-0'>
-                              <h3 className='text-base font-semibold text-white mb-1 truncate'>
-                                {transaction.merchant_name}
-                              </h3>
-                              <div className='flex items-center gap-3 text-sm text-gray-400'>
-                                <span>
-                                  {transaction.category || 'Uncategorized'}
-                                </span>
-                                {dateKey === 'Today' && (
-                                  <span>
-                                    {formatTime(transaction.transaction_date)}
-                                  </span>
-                                )}
-                                {dateKey !== 'Today' && (
-                                  <span>
-                                    {formatDateDisplay(
-                                      transaction.transaction_date,
-                                    )}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Amount */}
-                            <div className='text-right flex-shrink-0 ml-2'>
-                              <div
-                                className={`text-lg font-bold ${
-                                  transaction.type === 'debit'
-                                    ? 'text-red-400'
-                                    : transaction.type === 'credit' ||
-                                        transaction.type === 'refund'
-                                      ? 'text-green-400'
-                                      : 'text-white'
-                                }`}
-                              >
-                                {transaction.type === 'debit' ? '-' : '+'}
-                                {formatCurrency(transaction.amount)}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
+                    />
                   ))}
                 </div>
               </div>

@@ -161,39 +161,43 @@ export default function TransactionDetailPage() {
     <div className='min-h-screen bg-background-dark flex flex-col pb-24'>
       {/* Header */}
       <div className='px-6 py-4 border-b border-gray-800'>
-        <div className='flex items-center justify-between mb-4'>
+        <div className='flex items-center justify-between'>
           <button
             onClick={() => router.back()}
-            className='text-gray-400 hover:text-white transition-colors'
+            className='text-gray-400 hover:text-white transition-colors flex-shrink-0'
           >
             <ArrowLeft className='w-5 h-5' />
           </button>
-          <h1 className='text-xl font-bold text-white'>Transaction Detail</h1>
-          {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              className='text-white hover:text-primary transition-colors text-sm font-medium'
-            >
-              Edit
-            </button>
-          ) : (
-            <div className='flex items-center gap-3'>
+          <h1 className='text-xl font-bold text-white flex-1 text-center'>
+            Transaction Detail
+          </h1>
+          <div className='flex-shrink-0 w-16 flex justify-end'>
+            {!isEditing ? (
               <button
-                onClick={handleCancel}
-                disabled={isSaving}
-                className='text-gray-400 hover:text-white transition-colors text-sm font-medium disabled:opacity-50'
+                onClick={() => setIsEditing(true)}
+                className='text-white hover:text-primary transition-colors text-sm font-medium'
               >
-                Cancel
+                Edit
               </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className='text-primary hover:text-primary/80 transition-colors text-sm font-medium disabled:opacity-50'
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          )}
+            ) : (
+              <div className='flex items-center gap-3'>
+                <button
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                  className='text-gray-400 hover:text-white transition-colors text-sm font-medium disabled:opacity-50'
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className='text-primary hover:text-primary/80 transition-colors text-sm font-medium disabled:opacity-50'
+                >
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -226,9 +230,13 @@ export default function TransactionDetailPage() {
               {transaction.type === 'debit' ? '-' : '+'}
               {formatCurrency(transaction.amount)}
             </div>
-            <div className='inline-flex items-center px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30'>
-              <span className='text-xs font-medium text-green-400'>Posted</span>
-            </div>
+            {!transaction.category && (
+              <div className='inline-flex items-center px-3 py-1 rounded-full bg-gray-500/20 border border-gray-500/30'>
+                <span className='text-xs font-medium text-gray-400'>
+                  Untagged
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -238,7 +246,7 @@ export default function TransactionDetailPage() {
           <button
             onClick={() => {
               if (isEditing) {
-                // TODO: Open category picker
+                // TODO: Open category picker (Phase 2 - Transaction categorization)
                 toast('Category picker coming soon', { icon: 'ℹ️' });
               }
             }}

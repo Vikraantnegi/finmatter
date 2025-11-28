@@ -5,14 +5,15 @@ import { useRouter } from 'next/navigation';
 import { DashboardErrorBoundary } from '@/components/ErrorBoundary';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import { NoCardsEmptyState } from '@/components/dashboard/EmptyStates';
-import { DashboardLoader } from '@/components/dashboard/SectionLoader';
+import { CardsStackLoader } from '@/components/dashboard/SectionLoader';
 import { CardsStack } from '@/components/cards/CardsStack';
 import { AddCardFlow } from '@/components/cards/AddCardFlow';
 import { useCards } from '@/hooks/useCards';
 import { FinnyWidget } from '@/components/dashboard/FinnyWidget';
 import { SpendingSummaryWidget } from '@/components/dashboard/SpendingSummaryWidget';
 import { CategorizedSpendsWidget } from '@/components/dashboard/CategorizedSpendsWidget';
-import { RecentActivityWidget } from '@/components/dashboard/RecentActivityWidget';
+import { RecentTransactionsWidget } from '@/components/dashboard/RecentTransactionsWidget';
+import { RecentRewardsWidget } from '@/components/dashboard/RecentRewardsWidget';
 import { SpendingAnalysisWidget } from '@/components/dashboard/SpendingAnalysisWidget';
 
 function DashboardContent() {
@@ -29,16 +30,7 @@ function DashboardContent() {
     fetchCards({ force: true });
   };
 
-  if (isLoading) {
-    return (
-      <div className='min-h-full flex flex-col'>
-        <DashboardHeader />
-        <DashboardLoader />
-      </div>
-    );
-  }
-
-  if (cards.length === 0) {
+  if (cards.length === 0 && !isLoading) {
     return (
       <>
         <div className='h-[calc(100vh-92px)] flex flex-col'>
@@ -60,14 +52,21 @@ function DashboardContent() {
     <>
       <div className='flex flex-col pb-24'>
         <DashboardHeader />
-        <div className='flex-1 space-y-4 pb-10'>
-          <CardsStack cards={cards} onViewAll={() => router.push('/cards')} />
+        <div className='flex-1 space-y-4 pb-6'>
+          {isLoading ? (
+            <CardsStackLoader />
+          ) : (
+            <CardsStack cards={cards} onViewAll={() => router.push('/cards')} />
+          )}
           <SpendingSummaryWidget />
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
             <CategorizedSpendsWidget />
             <SpendingAnalysisWidget />
           </div>
-          <RecentActivityWidget />
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
+            <RecentTransactionsWidget />
+            <RecentRewardsWidget />
+          </div>
           <FinnyWidget />
         </div>
       </div>

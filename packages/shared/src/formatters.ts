@@ -3,6 +3,7 @@
  */
 
 import { format, parseISO, isValid } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 /**
  * Format currency amount
@@ -48,6 +49,39 @@ export const formatNumber = (
 };
 
 /**
+ * Format currency with Indian notation (K for thousands, L for Lakhs, Cr for Crores)
+ */
+export const formatCurrencyCompact = (amount: number): string => {
+  if (typeof amount !== 'number' || isNaN(amount)) {
+    return '₹0';
+  }
+
+  const absAmount = Math.abs(amount);
+  const sign = amount < 0 ? '-' : '';
+
+  // Crores (1,00,00,000)
+  if (absAmount >= 10000000) {
+    const crores = absAmount / 10000000;
+    return `${sign}₹${crores.toFixed(2)}Cr`;
+  }
+
+  // Lakhs (1,00,000)
+  if (absAmount >= 100000) {
+    const lakhs = absAmount / 100000;
+    return `${sign}₹${lakhs.toFixed(2)}L`;
+  }
+
+  // Thousands (1,000)
+  if (absAmount >= 1000) {
+    const thousands = absAmount / 1000;
+    return `${sign}₹${thousands.toFixed(2)}K`;
+  }
+
+  // Less than 1000 - show with 2 decimals
+  return `${sign}₹${absAmount.toFixed(2)}`;
+};
+
+/**
  * Format percentage
  */
 export const formatPercentage = (
@@ -80,6 +114,7 @@ export const formatFileSize = (bytes: number): string => {
 export const formatDate = (
   date: Date | string,
   formatString: string = 'MMM dd, yyyy',
+  timezone?: string,
 ): string => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : date;
@@ -88,10 +123,42 @@ export const formatDate = (
       return 'Invalid Date';
     }
 
+    // If timezone is specified, use date-fns-tz
+    if (timezone) {
+      return formatInTimeZone(dateObj, timezone, formatString);
+    }
+
     return format(dateObj, formatString);
   } catch {
     return 'Invalid Date';
   }
+};
+
+/**
+ * Format date in IST (Indian Standard Time)
+ */
+export const formatDateIST = (
+  date: Date | string,
+  formatString: string = 'MMM dd, yyyy',
+): string => {
+  return formatDate(date, formatString, 'Asia/Kolkata');
+};
+
+/**
+ * Format date and time in IST
+ */
+export const formatDateTimeIST = (
+  date: Date | string,
+  formatString: string = 'MMM dd, yyyy HH:mm',
+): string => {
+  return formatDate(date, formatString, 'Asia/Kolkata');
+};
+
+/**
+ * Format time in IST
+ */
+export const formatTimeIST = (date: Date | string): string => {
+  return formatDate(date, 'HH:mm', 'Asia/Kolkata');
 };
 
 /**

@@ -2,7 +2,11 @@
 
 import React, { useEffect, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { TransactionDateFilter, TransactionSortBy } from '@finmatter/types';
+// Types imported for TypeScript only - using string literals for runtime
+import type {
+  TransactionDateFilter,
+  TransactionSortBy,
+} from '@finmatter/types';
 
 interface FilterOption {
   label: string;
@@ -19,22 +23,6 @@ interface TransactionFiltersProps {
   categories?: string[];
 }
 
-const DATE_OPTIONS: FilterOption[] = [
-  { label: 'Last 30 Days', value: TransactionDateFilter.LAST_30_DAYS },
-  { label: 'Last 7 Days', value: TransactionDateFilter.LAST_7_DAYS },
-  { label: 'This Month', value: TransactionDateFilter.THIS_MONTH },
-  { label: 'Last Month', value: TransactionDateFilter.LAST_MONTH },
-  { label: 'This Year', value: TransactionDateFilter.THIS_YEAR },
-  { label: 'All Time', value: TransactionDateFilter.ALL_TIME },
-];
-
-const SORT_OPTIONS: FilterOption[] = [
-  { label: 'Date (Newest)', value: TransactionSortBy.DATE_DESC },
-  { label: 'Date (Oldest)', value: TransactionSortBy.DATE_ASC },
-  { label: 'Amount (High to Low)', value: TransactionSortBy.AMOUNT_DESC },
-  { label: 'Amount (Low to High)', value: TransactionSortBy.AMOUNT_ASC },
-];
-
 export function TransactionFilters({
   dateFilter,
   onDateFilterChange,
@@ -44,13 +32,81 @@ export function TransactionFilters({
   onSortByChange,
   categories = [],
 }: TransactionFiltersProps) {
+  // Define options inside component to avoid SSR issues with enum imports
+  // Use string literals that match enum values for SSR compatibility
+  const DATE_OPTIONS: FilterOption[] = React.useMemo(
+    () => [
+      { label: 'Last 30 Days', value: '30' }, // TransactionDateFilter.LAST_30_DAYS
+      { label: 'Last 7 Days', value: '7' }, // TransactionDateFilter.LAST_7_DAYS
+      { label: 'This Month', value: 'this_month' }, // TransactionDateFilter.THIS_MONTH
+      { label: 'Last Month', value: 'last_month' }, // TransactionDateFilter.LAST_MONTH
+      { label: 'This Year', value: 'this_year' }, // TransactionDateFilter.THIS_YEAR
+      { label: 'All Time', value: 'all' }, // TransactionDateFilter.ALL_TIME
+    ],
+    [],
+  );
+
+  const SORT_OPTIONS: FilterOption[] = React.useMemo(
+    () => [
+      { label: 'Date (Newest)', value: 'date_desc' }, // TransactionSortBy.DATE_DESC
+      { label: 'Date (Oldest)', value: 'date_asc' }, // TransactionSortBy.DATE_ASC
+      { label: 'Amount (High to Low)', value: 'amount_desc' }, // TransactionSortBy.AMOUNT_DESC
+      { label: 'Amount (Low to High)', value: 'amount_asc' }, // TransactionSortBy.AMOUNT_ASC
+    ],
+    [],
+  );
+
   const [isDateOpen, setIsDateOpen] = React.useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = React.useState(false);
   const [isSortOpen, setIsSortOpen] = React.useState(false);
 
+  const [dateDropdownPos, setDateDropdownPos] = React.useState({
+    top: 0,
+    left: 0,
+  });
+  const [categoryDropdownPos, setCategoryDropdownPos] = React.useState({
+    top: 0,
+    left: 0,
+  });
+  const [sortDropdownPos, setSortDropdownPos] = React.useState({
+    top: 0,
+    right: 0,
+  });
+
   const dateRef = useRef<HTMLDivElement>(null);
   const categoryRef = useRef<HTMLDivElement>(null);
   const sortRef = useRef<HTMLDivElement>(null);
+
+  // Calculate dropdown positions when opened
+  useEffect(() => {
+    if (isDateOpen && dateRef.current) {
+      const rect = dateRef.current.getBoundingClientRect();
+      setDateDropdownPos({
+        top: rect.bottom + 8,
+        left: rect.left,
+      });
+    }
+  }, [isDateOpen]);
+
+  useEffect(() => {
+    if (isCategoryOpen && categoryRef.current) {
+      const rect = categoryRef.current.getBoundingClientRect();
+      setCategoryDropdownPos({
+        top: rect.bottom + 8,
+        left: rect.left,
+      });
+    }
+  }, [isCategoryOpen]);
+
+  useEffect(() => {
+    if (isSortOpen && sortRef.current) {
+      const rect = sortRef.current.getBoundingClientRect();
+      setSortDropdownPos({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [isSortOpen]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -82,7 +138,7 @@ export function TransactionFilters({
     SORT_OPTIONS.find(opt => opt.value === sortBy)?.label || 'Sort By';
 
   return (
-    <div className='flex items-center gap-2 overflow-x-auto pb-2'>
+    <div className='flex items-center gap-2 overflow-x-auto overflow-y-visible pb-2 scrollbar-hide'>
       {/* Date Filter */}
       <div className='relative flex-shrink-0' ref={dateRef}>
         <button
@@ -92,7 +148,7 @@ export function TransactionFilters({
             setIsSortOpen(false);
           }}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-            dateFilter !== TransactionDateFilter.ALL_TIME
+            dateFilter !== 'all' // TransactionDateFilter.ALL_TIME
               ? 'bg-primary/20 border-primary text-primary'
               : 'bg-gray-800 border-gray-700 text-white hover:border-gray-600'
           }`}
@@ -103,7 +159,13 @@ export function TransactionFilters({
           <ChevronDown className='w-4 h-4' />
         </button>
         {isDateOpen && (
-          <div className='absolute top-full left-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-lg z-50'>
+          <div
+            className='fixed w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-lg z-[100]'
+            style={{
+              top: `${dateDropdownPos.top}px`,
+              left: `${dateDropdownPos.left}px`,
+            }}
+          >
             {DATE_OPTIONS.map(option => (
               <button
                 key={option.value}
@@ -144,7 +206,13 @@ export function TransactionFilters({
           <ChevronDown className='w-4 h-4' />
         </button>
         {isCategoryOpen && (
-          <div className='absolute top-full left-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto'>
+          <div
+            className='fixed w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-lg z-[100] max-h-64 overflow-y-auto'
+            style={{
+              top: `${categoryDropdownPos.top}px`,
+              left: `${categoryDropdownPos.left}px`,
+            }}
+          >
             <button
               onClick={() => {
                 onCategoryFilterChange('');
@@ -192,7 +260,13 @@ export function TransactionFilters({
           <ChevronDown className='w-4 h-4' />
         </button>
         {isSortOpen && (
-          <div className='absolute top-full right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-lg z-50'>
+          <div
+            className='fixed w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-lg z-[100]'
+            style={{
+              top: `${sortDropdownPos.top}px`,
+              right: `${sortDropdownPos.right}px`,
+            }}
+          >
             {SORT_OPTIONS.map(option => (
               <button
                 key={option.value}

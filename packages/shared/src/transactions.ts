@@ -14,10 +14,11 @@ import type {
   GroupedTransactions,
   TransactionType,
 } from '@finmatter/types';
-import {
+// Enums removed - using string literals for SSR compatibility
+// Types still imported for TypeScript type checking only
+import type {
   TransactionDateFilter,
   TransactionSortBy,
-  TransactionDateGroup,
 } from '@finmatter/types';
 
 /**
@@ -75,9 +76,9 @@ export const groupTransactionsByDate = (
     let dateKey: string;
 
     if (isToday(date)) {
-      dateKey = TransactionDateGroup.TODAY;
+      dateKey = 'Today';
     } else if (isYesterday(date)) {
-      dateKey = TransactionDateGroup.YESTERDAY;
+      dateKey = 'Yesterday';
     } else {
       dateKey = format(date, 'MMM dd, yyyy');
     }
@@ -113,11 +114,11 @@ export const groupTransactionsByDate = (
 export const sortGroupedTransactionsByDate = (
   grouped: DateGroupedTransactions,
 ): string[] => {
-  const order = [TransactionDateGroup.TODAY, TransactionDateGroup.YESTERDAY];
+  const order = ['Today', 'Yesterday'];
   return Object.keys(grouped).sort((a, b) => {
     // Today and Yesterday always come first
-    const aIndex = order.indexOf(a as TransactionDateGroup);
-    const bIndex = order.indexOf(b as TransactionDateGroup);
+    const aIndex = order.indexOf(a);
+    const bIndex = order.indexOf(b);
     if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
     if (aIndex !== -1) return -1;
     if (bIndex !== -1) return 1;
@@ -218,22 +219,25 @@ export const sortTransactions = (
 ): Transaction[] => {
   const sorted = [...transactions];
 
-  switch (sortBy) {
-    case TransactionSortBy.DATE_DESC:
+  // Normalize to string - all values are string literals now
+  const sortValue = typeof sortBy === 'string' ? sortBy : String(sortBy);
+
+  switch (sortValue) {
+    case 'date_desc':
       return sorted.sort(
         (a, b) =>
           new Date(b.transaction_date).getTime() -
           new Date(a.transaction_date).getTime(),
       );
-    case TransactionSortBy.DATE_ASC:
+    case 'date_asc':
       return sorted.sort(
         (a, b) =>
           new Date(a.transaction_date).getTime() -
           new Date(b.transaction_date).getTime(),
       );
-    case TransactionSortBy.AMOUNT_DESC:
+    case 'amount_desc':
       return sorted.sort((a, b) => b.amount - a.amount);
-    case TransactionSortBy.AMOUNT_ASC:
+    case 'amount_asc':
       return sorted.sort((a, b) => a.amount - b.amount);
     default:
       return sorted;
@@ -247,7 +251,11 @@ export const filterTransactionsByDate = (
   transactions: Transaction[],
   dateFilter: TransactionDateFilter | string,
 ): Transaction[] => {
-  if (dateFilter === TransactionDateFilter.ALL_TIME) return transactions;
+  // Normalize to string - all values are string literals now
+  const filterValue =
+    typeof dateFilter === 'string' ? dateFilter : String(dateFilter);
+
+  if (filterValue === 'all') return transactions;
 
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -260,24 +268,24 @@ export const filterTransactionsByDate = (
       txnDate.getDate(),
     );
 
-    switch (dateFilter) {
-      case TransactionDateFilter.LAST_7_DAYS:
+    switch (filterValue) {
+      case '7':
         return differenceInDays(today, txnDateOnly) <= 7;
-      case TransactionDateFilter.LAST_30_DAYS:
+      case '30':
         return differenceInDays(today, txnDateOnly) <= 30;
-      case TransactionDateFilter.THIS_MONTH:
+      case 'this_month':
         return (
           txnDate.getMonth() === now.getMonth() &&
           txnDate.getFullYear() === now.getFullYear()
         );
-      case TransactionDateFilter.LAST_MONTH: {
+      case 'last_month': {
         const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1);
         return (
           txnDate.getMonth() === lastMonth.getMonth() &&
           txnDate.getFullYear() === lastMonth.getFullYear()
         );
       }
-      case TransactionDateFilter.THIS_YEAR:
+      case 'this_year':
         return txnDate.getFullYear() === now.getFullYear();
       default:
         return true;

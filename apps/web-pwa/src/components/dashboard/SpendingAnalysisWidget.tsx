@@ -6,7 +6,7 @@ import { MoreVertical } from 'lucide-react';
 import { formatCurrency } from '@finmatter/shared';
 import { useTransactions } from '@/hooks/useTransactions';
 import { calculateCategorySpending } from '@finmatter/shared';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { SpendingAnalysisLoader } from './SectionLoader';
 
 interface SpendingAnalysisWidgetProps {
   className?: string;
@@ -97,13 +97,7 @@ export function SpendingAnalysisWidget({
   };
 
   if (isLoading) {
-    return (
-      <div className={`px-6 ${className}`}>
-        <div className='bg-gray-800 rounded-xl p-5 border border-gray-700'>
-          <LoadingSpinner size='sm' />
-        </div>
-      </div>
-    );
+    return <SpendingAnalysisLoader className={className} />;
   }
 
   if (categories.length === 0 || totalSpend === 0) {

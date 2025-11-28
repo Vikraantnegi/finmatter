@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
+import { getBankLogoUrl } from '@/lib/bankLogos';
 import { useRouter } from 'next/navigation';
 import { Edit2, ExternalLink, Eye, Trash2, UploadCloud } from 'lucide-react';
 import { CardPreview } from './CardPreview';
@@ -10,7 +11,8 @@ import { StatementMetadata } from '@/components/statements/StatementMetadata';
 import { RecentTransactions } from './RecentTransactions';
 import { RewardsAndOffers } from './RewardsAndOffers';
 import { apiClient } from '@/lib/apiClient';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { formatCurrency } from '@finmatter/shared';
 import { useCardTransactions } from '@/hooks/useCardTransactions';
 import type { Card } from '@finmatter/types';
 
@@ -55,21 +57,6 @@ export const CardDetailsView = ({
       setIsDeleting(false);
     }
   };
-
-  // Format dates
-  const formattedExpiry =
-    card.expiryMonth && card.expiryYear
-      ? `${String(card.expiryMonth).padStart(2, '0')}/${String(
-          card.expiryYear,
-        ).slice(-2)}`
-      : 'N/A';
-
-  const formattedIssueDate = card.issueDate
-    ? new Date(card.issueDate).toLocaleDateString('en-IN', {
-        month: 'short',
-        year: 'numeric',
-      })
-    : 'N/A';
 
   const formattedBillingDay = card.billingDay
     ? `${card.billingDay}${getOrdinalSuffix(card.billingDay)} of month`
@@ -172,16 +159,30 @@ export const CardDetailsView = ({
           <div className='flex items-center justify-between'>
             <span className='text-sm text-gray-400'>Bank</span>
             <div className='flex items-center gap-2'>
-              {card.bank?.logoUrl && (
-                <div className='relative w-6 h-6'>
-                  <Image
-                    src={card.bank.logoUrl}
-                    alt={card.bank.displayName || card.bank.name}
-                    fill
-                    className='object-contain'
-                  />
-                </div>
-              )}
+              {(() => {
+                const bankLogoUrl =
+                  card.bank?.logoUrl ||
+                  getBankLogoUrl(
+                    card.bank?.name || card.bank?.displayName || card.bankName,
+                    'symbol',
+                  );
+                return bankLogoUrl ? (
+                  <div className='relative w-6 h-6'>
+                    <Image
+                      src={bankLogoUrl}
+                      alt={
+                        card.bank?.displayName ||
+                        card.bank?.name ||
+                        card.bankName ||
+                        'Bank'
+                      }
+                      fill
+                      className='object-contain'
+                      unoptimized
+                    />
+                  </div>
+                ) : null;
+              })()}
               <span className='text-sm font-medium text-white'>
                 {card.bank?.displayName ||
                   card.bank?.name ||
@@ -232,62 +233,15 @@ export const CardDetailsView = ({
             </span>
           </div>
 
-          {/* Card Holder Name (Editable) */}
-          <div className='flex items-center justify-between'>
-            <span className='text-sm text-gray-400'>Card Holder Name</span>
-            <div className='flex items-center gap-2'>
+          {/* Billing Day*/}
+          {card.billingDay && (
+            <div className='flex items-center justify-between'>
+              <span className='text-sm text-gray-400'>Billing Day</span>
               <span className='text-sm font-medium text-white'>
-                {card.cardHolderName || 'N/A'}
+                {formattedBillingDay}
               </span>
-              <button
-                onClick={onEdit}
-                className='p-1 text-gray-400 hover:text-primary transition-colors'
-              >
-                <Edit2 className='w-4 h-4' />
-              </button>
             </div>
-          </div>
-        </div>
-
-        {/* Card Details Section */}
-        <div className='bg-gray-800 rounded-2xl p-5 border border-gray-700/80 space-y-3'>
-          <h3 className='text-lg font-semibold text-white mb-4'>
-            Card Details
-          </h3>
-
-          {/* Expiry Date */}
-          <div className='flex items-center justify-between'>
-            <span className='text-sm text-gray-400'>Expiry Date</span>
-            <div className='flex items-center gap-2'>
-              <span className='text-sm font-medium text-white'>
-                {formattedExpiry}
-              </span>
-              <button
-                onClick={onEdit}
-                className='p-1 text-gray-400 hover:text-primary transition-colors'
-              >
-                <Edit2 className='w-4 h-4' />
-              </button>
-            </div>
-          </div>
-
-          {/* Billing Day */}
-          <div className='flex items-center justify-between'>
-            <span className='text-sm text-gray-400'>Billing Day</span>
-            <span className='text-sm font-medium text-white'>
-              {formattedBillingDay}
-            </span>
-          </div>
-
-          {/* Issue Date */}
-          <div className='flex items-center justify-between'>
-            <span className='text-sm text-gray-400'>Issue Date</span>
-            <span className='text-sm font-medium text-white'>
-              {formattedIssueDate}
-            </span>
-          </div>
-
-          {/* Credit Limit */}
+          )}
           {card.creditLimit !== undefined && (
             <div className='flex items-center justify-between'>
               <span className='text-sm text-gray-400'>Credit Limit</span>
@@ -297,7 +251,6 @@ export const CardDetailsView = ({
             </div>
           )}
 
-          {/* Available Credit */}
           {card.availableCredit !== undefined && (
             <div className='flex items-center justify-between'>
               <span className='text-sm text-gray-400'>Available Credit</span>
@@ -370,9 +323,6 @@ export const CardDetailsView = ({
           </div>
         )}
 
-        {/* Latest Statement Metadata */}
-        {latestStatement && <StatementMetadata statement={latestStatement} />}
-
         {/* Rewards & Offers */}
         <RewardsAndOffers
           card={card}
@@ -386,6 +336,9 @@ export const CardDetailsView = ({
             cardId={card.id}
           />
         )}
+
+        {/* Latest Statement Metadata */}
+        {latestStatement && <StatementMetadata statement={latestStatement} />}
       </div>
 
       {/* Upload Statement Bottom Sheet */}

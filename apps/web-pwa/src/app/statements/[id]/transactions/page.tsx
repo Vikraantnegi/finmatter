@@ -7,7 +7,7 @@ import { apiClient } from '@/lib/apiClient';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatementMetadata } from '@/components/statements/StatementMetadata';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency } from '@finmatter/shared';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 

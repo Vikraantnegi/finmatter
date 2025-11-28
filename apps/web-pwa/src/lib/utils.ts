@@ -1,63 +1,23 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+/**
+ * Utility function to merge Tailwind CSS classes
+ * Re-export formatters from @finmatter/shared for convenience
+ */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency = 'INR'): string {
-  // Format the absolute value (currency formatter will add the symbol)
-  const absAmount = Math.abs(amount);
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(absAmount);
-}
-
-export function formatNumber(num: number): string {
-  return new Intl.NumberFormat('en-IN').format(num);
-}
-
-export function formatPercentage(value: number): string {
-  return `${value.toFixed(1)}%`;
-}
-
-export function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-
-  // Check if date is valid
-  if (isNaN(d.getTime())) {
-    return 'Invalid Date';
-  }
-
-  return new Intl.DateTimeFormat('en-IN', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(d);
-}
-
-export function formatRelativeTime(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  const now = new Date();
-  const diffInMs = now.getTime() - d.getTime();
-  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-  if (diffInDays === 0) {
-    return 'Today';
-  } else if (diffInDays === 1) {
-    return 'Yesterday';
-  } else if (diffInDays < 7) {
-    return `${diffInDays} days ago`;
-  } else if (diffInDays < 30) {
-    const weeks = Math.floor(diffInDays / 7);
-    return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
-  } else {
-    return formatDate(d);
-  }
-}
+// Re-export formatters from shared package for backward compatibility
+// TODO: Migrate all usages to import directly from @finmatter/shared
+export {
+  formatCurrency,
+  formatNumber,
+  formatPercentage,
+  formatDate,
+  formatRelativeTime,
+} from '@finmatter/shared';
 
 export function debounce<T extends (...args: any[]) => any>(
   func: T,

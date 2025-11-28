@@ -17,3 +17,10 @@ export * from './database';
 
 // Transaction types
 export * from './transaction';
+
+// Explicitly export enums for better Next.js compatibility
+export {
+  TransactionDateFilter,
+  TransactionSortBy,
+  TransactionDateGroup,
+} from './transaction';

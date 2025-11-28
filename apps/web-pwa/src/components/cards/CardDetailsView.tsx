@@ -6,8 +6,10 @@ import { Edit2, ExternalLink, Eye, Trash2, UploadCloud } from 'lucide-react';
 import { CardPreview } from './CardPreview';
 import { UploadStatementBottomSheet } from '@/components/statements/UploadStatementBottomSheet';
 import { StatementMetadata } from '@/components/statements/StatementMetadata';
+import { RecentTransactions } from './RecentTransactions';
 import { apiClient } from '@/lib/apiClient';
 import { cn, formatCurrency } from '@/lib/utils';
+import { useCardTransactions } from '@/hooks/useCardTransactions';
 import type { Card } from '@finmatter/types';
 
 interface CardDetailsViewProps {
@@ -24,6 +26,13 @@ export const CardDetailsView = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showUploadSheet, setShowUploadSheet] = useState(false);
   const [latestStatement, setLatestStatement] = useState<any>(null);
+
+  // Fetch recent transactions (4-5)
+  const { transactions: recentTransactions } = useCardTransactions({
+    cardId: card.id,
+    filters: { limit: 5 },
+    autoFetch: true,
+  });
 
   const handleDelete = async () => {
     if (
@@ -127,7 +136,13 @@ export const CardDetailsView = ({
             onClick={onEdit}
             intent='primary'
           />
-          <QuickAction icon={Eye} label='Transactions' disabled />
+          <QuickAction
+            icon={Eye}
+            label='Transactions'
+            onClick={() =>
+              window.location.assign(`/cards/${card.id}/transactions`)
+            }
+          />
           <QuickAction
             icon={UploadCloud}
             label='Upload'
@@ -348,6 +363,14 @@ export const CardDetailsView = ({
               </span>
             </div>
           </div>
+        )}
+
+        {/* Recent Transactions */}
+        {recentTransactions.length > 0 && (
+          <RecentTransactions
+            transactions={recentTransactions}
+            cardId={card.id}
+          />
         )}
 
         {/* Latest Statement Metadata */}

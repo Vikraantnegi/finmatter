@@ -18,7 +18,7 @@ const navItems: NavItem[] = [
   { name: 'Cards', href: '/cards', icon: CreditCard, label: 'Cards' },
   {
     name: 'Spending',
-    href: '/transactions',
+    href: '/spending',
     icon: PieChart,
     label: 'Spendings',
   },

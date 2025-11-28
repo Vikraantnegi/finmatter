@@ -5,6 +5,36 @@
 
 export type TransactionType = 'debit' | 'credit' | 'refund';
 
+/**
+ * Date filter options for transactions
+ */
+export enum TransactionDateFilter {
+  LAST_7_DAYS = '7',
+  LAST_30_DAYS = '30',
+  THIS_MONTH = 'this_month',
+  LAST_MONTH = 'last_month',
+  THIS_YEAR = 'this_year',
+  ALL_TIME = 'all',
+}
+
+/**
+ * Sort options for transactions
+ */
+export enum TransactionSortBy {
+  DATE_DESC = 'date_desc',
+  DATE_ASC = 'date_asc',
+  AMOUNT_DESC = 'amount_desc',
+  AMOUNT_ASC = 'amount_asc',
+}
+
+/**
+ * Date group keys for transaction grouping
+ */
+export enum TransactionDateGroup {
+  TODAY = 'Today',
+  YESTERDAY = 'Yesterday',
+}
+
 export interface Transaction {
   id: string;
   user_id: string;

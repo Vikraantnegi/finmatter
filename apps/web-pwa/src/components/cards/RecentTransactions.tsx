@@ -55,9 +55,7 @@ export function RecentTransactions({
         {transactions.map(transaction => (
           <button
             key={transaction.id}
-            onClick={() =>
-              window.location.assign(`/transactions/${transaction.id}`)
-            }
+            onClick={() => router.push(`/transactions/${transaction.id}`)}
             className='w-full text-left bg-gray-900 rounded-xl p-3 border border-gray-700 hover:border-gray-600 transition-colors'
           >
             <div className='flex items-start justify-between'>

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Edit2, ExternalLink, Eye, Trash2, UploadCloud } from 'lucide-react';
 import { CardPreview } from './CardPreview';
 import { UploadStatementBottomSheet } from '@/components/statements/UploadStatementBottomSheet';
@@ -23,14 +24,17 @@ export const CardDetailsView = ({
   onEdit,
   onDelete,
 }: CardDetailsViewProps) => {
+  const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showUploadSheet, setShowUploadSheet] = useState(false);
   const [latestStatement, setLatestStatement] = useState<any>(null);
 
   // Fetch recent transactions (4-5)
+  // Memoize filters object to prevent unnecessary re-renders
+  const transactionFilters = useMemo(() => ({ limit: 5 }), []);
   const { transactions: recentTransactions } = useCardTransactions({
     cardId: card.id,
-    filters: { limit: 5 },
+    filters: transactionFilters,
     autoFetch: true,
   });
 
@@ -112,6 +116,8 @@ export const CardDetailsView = ({
     if (card.id) {
       fetchLatestStatement();
     }
+    // Only run when card.id changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [card.id]);
 
   return (
@@ -139,9 +145,7 @@ export const CardDetailsView = ({
           <QuickAction
             icon={Eye}
             label='Transactions'
-            onClick={() =>
-              window.location.assign(`/cards/${card.id}/transactions`)
-            }
+            onClick={() => router.push(`/cards/${card.id}/transactions`)}
           />
           <QuickAction
             icon={UploadCloud}

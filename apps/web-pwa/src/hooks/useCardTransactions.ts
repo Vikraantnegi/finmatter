@@ -2,7 +2,7 @@
  * Custom hook for fetching and managing card transactions
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiClient } from '@/lib/apiClient';
 import type {
   Transaction,
@@ -37,6 +37,20 @@ export function useCardTransactions(
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
 
+  // Memoize filters to prevent unnecessary re-renders
+  const memoizedFilters = useMemo(
+    () => filters,
+    [
+      filters.limit,
+      filters.offset,
+      filters.category,
+      filters.start_date,
+      filters.end_date,
+      filters.type,
+      filters.merchant,
+    ],
+  );
+
   const fetchTransactions = useCallback(async () => {
     if (!cardId) {
       setTransactions([]);
@@ -49,13 +63,19 @@ export function useCardTransactions(
 
       const queryParams = new URLSearchParams({
         card_id: cardId,
-        ...(filters.limit && { limit: filters.limit.toString() }),
-        ...(filters.offset && { offset: filters.offset.toString() }),
-        ...(filters.category && { category: filters.category }),
-        ...(filters.start_date && { start_date: filters.start_date }),
-        ...(filters.end_date && { end_date: filters.end_date }),
-        ...(filters.type && { type: filters.type }),
-        ...(filters.merchant && { merchant: filters.merchant }),
+        ...(memoizedFilters.limit && {
+          limit: memoizedFilters.limit.toString(),
+        }),
+        ...(memoizedFilters.offset && {
+          offset: memoizedFilters.offset.toString(),
+        }),
+        ...(memoizedFilters.category && { category: memoizedFilters.category }),
+        ...(memoizedFilters.start_date && {
+          start_date: memoizedFilters.start_date,
+        }),
+        ...(memoizedFilters.end_date && { end_date: memoizedFilters.end_date }),
+        ...(memoizedFilters.type && { type: memoizedFilters.type }),
+        ...(memoizedFilters.merchant && { merchant: memoizedFilters.merchant }),
       });
 
       const response = await apiClient.get<TransactionsResponse>(
@@ -78,13 +98,13 @@ export function useCardTransactions(
     } finally {
       setIsLoading(false);
     }
-  }, [cardId, filters]);
+  }, [cardId, memoizedFilters]);
 
   useEffect(() => {
-    if (autoFetch) {
+    if (autoFetch && cardId) {
       fetchTransactions();
     }
-  }, [autoFetch, fetchTransactions]);
+  }, [autoFetch, cardId, fetchTransactions]);
 
   return {
     transactions,

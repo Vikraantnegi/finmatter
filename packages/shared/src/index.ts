@@ -11,9 +11,13 @@ export * from './validators';
 // Formatters (only existing exports)
 export {
   formatCurrency,
+  formatCurrencyCompact,
   formatNumber,
   formatPercentage,
   formatDate,
+  formatDateIST,
+  formatDateTimeIST,
+  formatTimeIST,
   formatRelativeTime,
   formatPhoneNumber,
   formatAddress,
@@ -38,3 +42,16 @@ export * from './errors';
 
 // API helpers
 export * from './api';
+
+// Transaction utilities
+export * from './transactions';
+export type { DateGroupedTransactions } from './transactions';
+
+// Analytics utilities
+export * from './analytics';
+export type {
+  CategorySpending,
+  MonthlySpending,
+  MerchantSpending,
+  MonthlyTrend,
+} from './analytics';

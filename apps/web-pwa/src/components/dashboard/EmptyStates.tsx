@@ -172,8 +172,7 @@ export const NoGoalsEmptyState = () => {
       description='Set up your first goal to start tracking your progress and achieve your financial objectives.'
       actionLabel='Create Goal'
       onAction={() => {
-        // TODO: Implement goal creation
-        console.log('Create goal');
+        // TODO: Implement goal creation functionality (Phase 2)
       }}
       illustration='goals'
     />

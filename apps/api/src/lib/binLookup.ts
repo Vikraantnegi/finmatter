@@ -115,7 +115,7 @@ export interface BinLookupResult {
   cardMetadataId?: string;
   cardName?: string;
   cardDisplayName?: string;
-  network: CardNetwork;
+  network: CardNetwork | null; // Nullable - may not be detected
   cardType: CardType;
   country: string;
   source: BinLookupSource;
@@ -265,7 +265,7 @@ export async function lookupBINInternal(
       cardMetadataId: data.card_metadata_id || undefined,
       cardName: cardMetadata?.card_name,
       cardDisplayName: cardMetadata?.display_name,
-      network: data.network as CardNetwork,
+      network: (data.network as CardNetwork) || null,
       cardType: data.card_type as CardType,
       country: data.country || 'IN',
       source: 'internal',
@@ -458,8 +458,10 @@ export async function cacheBinLookup(
   bin: string,
   result: BinLookupResult,
 ): Promise<void> {
-  if (!result.bankId && !result.bankName) {
-    // Can't cache without bank info
+  // Only cache if we have network info (even if bank info is missing)
+  // This helps avoid repeated API calls for the same BIN
+  if (!result.network) {
+    // No network detected - don't cache to DB, rely on in-memory cache
     return;
   }
 
@@ -472,25 +474,29 @@ export async function cacheBinLookup(
       bankId = resolved || undefined;
     }
 
-    // If we found a bank, cache the BIN lookup
-    if (bankId) {
-      await supabaseAdmin.from('bin_lookup').insert({
-        bin_start: bin,
-        bin_end: bin, // Single BIN, not a range
-        bank_id: bankId,
-        card_metadata_id: result.cardMetadataId || null,
-        card_type: result.cardType,
-        network: result.network,
-        country: result.country || 'IN',
-        is_active: true,
-      });
+    // Cache the BIN lookup even if we don't have bank info
+    // This helps avoid repeated API calls
+    await supabaseAdmin.from('bin_lookup').insert({
+      bin_start: bin,
+      bin_end: bin, // Single BIN, not a range
+      bank_id: bankId || null,
+      card_metadata_id: result.cardMetadataId || null,
+      card_type: result.cardType || 'credit',
+      network: result.network,
+      country: result.country || 'IN',
+      is_active: true,
+    });
 
+    if (bankId) {
       result.bankId = bankId;
-      // BIN lookup result cached for future use
     }
-  } catch (error) {
+    // BIN lookup result cached for future use
+  } catch (error: any) {
     // Don't throw - caching is best effort
-    console.error('Failed to cache BIN lookup:', error);
+    // Ignore duplicate key errors (BIN already cached)
+    if (error?.code !== '23505') {
+      console.error('Failed to cache BIN lookup:', error);
+    }
   }
 }
 

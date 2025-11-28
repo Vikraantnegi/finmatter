@@ -23,14 +23,15 @@ export function validateCardNumber(cardNumber: string): boolean {
   }
 
   // Luhn algorithm
+  // The rightmost digit is the check digit and should NOT be doubled
   let sum = 0;
-  let isEven = false;
+  let shouldDouble = true; // Start with true to skip check digit
 
-  // Process from right to left
-  for (let i = cleaned.length - 1; i >= 0; i--) {
+  // Process from right to left, starting from second-to-last digit
+  for (let i = cleaned.length - 2; i >= 0; i--) {
     let digit = parseInt(cleaned[i], 10);
 
-    if (isEven) {
+    if (shouldDouble) {
       digit *= 2;
       if (digit > 9) {
         digit -= 9;
@@ -38,8 +39,13 @@ export function validateCardNumber(cardNumber: string): boolean {
     }
 
     sum += digit;
-    isEven = !isEven;
+    shouldDouble = !shouldDouble;
   }
+
+  // Add the check digit (rightmost) without doubling
+  const checkDigit = parseInt(cleaned[cleaned.length - 1], 10);
+  if (Number.isNaN(checkDigit)) return false;
+  sum += checkDigit;
 
   return sum % 10 === 0;
 }

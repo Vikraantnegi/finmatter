@@ -3,7 +3,7 @@
 import React from 'react';
 import { CreditCard, TrendingUp, Wallet, Calendar } from 'lucide-react';
 import type { Card } from '@finmatter/types';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency } from '@finmatter/shared';
 
 interface PortfolioStatsProps {
   cards: Card[];

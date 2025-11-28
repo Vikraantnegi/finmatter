@@ -25,11 +25,16 @@ export const CardGridItem = ({ card, className }: CardGridItemProps) => {
       animate={{ opacity: 1, y: 0 }}
       className={cn('px-2', className)}
     >
-      <CardPreview
-        card={card}
-        className='h-[250px] w-full'
-        networkIconVariant='logo'
-      />
+      <div
+        onClick={handleViewDetails}
+        className='cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]'
+      >
+        <CardPreview
+          card={card}
+          className='h-[250px] w-full'
+          networkIconVariant='logo'
+        />
+      </div>
 
       <button
         onClick={handleViewDetails}

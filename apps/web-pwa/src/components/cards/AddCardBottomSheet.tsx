@@ -108,17 +108,23 @@ export const AddCardBottomSheet = ({
     [cardNumber],
   );
   const binNetwork = useMemo<DetectedNetwork | null>(() => {
-    const net = binLookupResult?.network?.toLowerCase();
-    return net ? (net as DetectedNetwork) : null;
-  }, [binLookupResult?.network]);
-  const effectiveNetwork = binNetwork || detectedNetwork || null;
+    // Only use network from BIN lookup if it was actually detected
+    if (binLookupResult?.detected && binLookupResult?.network) {
+      const net = binLookupResult.network.toLowerCase();
+      return net ? (net as DetectedNetwork) : null;
+    }
+    return null;
+  }, [binLookupResult?.detected, binLookupResult?.network]);
+  // Only show network logo if BIN lookup succeeded, don't fall back to pattern detection
+  const effectiveNetwork = binNetwork;
   const networkLogoUrl = getNetworkIconUrl(
     effectiveNetwork ?? undefined,
     'logo',
   );
+  // Use pattern detection for validation, but only BIN result for logo display
   const cardNumberHelperError = getCardNumberError(
     cardNumber || '',
-    effectiveNetwork,
+    detectedNetwork, // Use pattern detection for validation
   );
 
   // Debounce card number for BIN lookup
@@ -212,16 +218,7 @@ export const AddCardBottomSheet = ({
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const apiError = error.response?.data;
-        const errorCode =
-          apiError?.code || apiError?.error?.code || apiError?.errorCode;
-        const message =
-          apiError?.error ||
-          apiError?.message ||
-          apiError?.error?.message ||
-          error.message;
-        console.log('errorCode', errorCode);
-        console.log('message', message);
+        // Error details logged via error handler
       }
       console.error('Error adding card:', error);
       setIsSubmitting(false);

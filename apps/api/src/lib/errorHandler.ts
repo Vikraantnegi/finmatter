@@ -225,12 +225,14 @@ export function handleSupabaseError(error: any, context?: string): AppError {
   const errorCode = error?.code || error?.status || '';
 
   // Log full error for debugging
-  console.log('🔍 Supabase Error Details:', {
-    message: errorMessage,
-    code: errorCode,
-    status: error?.status,
-    fullError: error,
-  });
+  if (process.env.NODE_ENV === 'development') {
+    console.error('🔍 Supabase Error Details:', {
+      message: errorMessage,
+      code: errorCode,
+      status: error?.status,
+      fullError: error,
+    });
+  }
 
   // Twilio specific error codes
   if (errorMessage.includes('21211')) {

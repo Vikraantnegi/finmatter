@@ -42,3 +42,7 @@ export * from './api';
 // Transaction utilities
 export * from './transactions';
 export type { DateGroupedTransactions } from './transactions';
+
+// Analytics utilities
+export * from './analytics';
+export type { CategorySpending, MonthlySpending } from './analytics';

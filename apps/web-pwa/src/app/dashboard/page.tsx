@@ -10,6 +10,10 @@ import { CardsStack } from '@/components/cards/CardsStack';
 import { AddCardFlow } from '@/components/cards/AddCardFlow';
 import { useCards } from '@/hooks/useCards';
 import { FinnyWidget } from '@/components/dashboard/FinnyWidget';
+import { SpendingSummaryWidget } from '@/components/dashboard/SpendingSummaryWidget';
+import { CategorizedSpendsWidget } from '@/components/dashboard/CategorizedSpendsWidget';
+import { RecentActivityWidget } from '@/components/dashboard/RecentActivityWidget';
+import { SpendingAnalysisWidget } from '@/components/dashboard/SpendingAnalysisWidget';
 
 function DashboardContent() {
   const { cards, isLoading, fetchCards } = useCards();
@@ -58,6 +62,12 @@ function DashboardContent() {
         <DashboardHeader />
         <div className='flex-1 space-y-4 pb-10'>
           <CardsStack cards={cards} onViewAll={() => router.push('/cards')} />
+          <SpendingSummaryWidget />
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
+            <CategorizedSpendsWidget />
+            <SpendingAnalysisWidget />
+          </div>
+          <RecentActivityWidget />
           <FinnyWidget />
         </div>
       </div>

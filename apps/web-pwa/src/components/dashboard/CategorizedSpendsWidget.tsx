@@ -4,7 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { formatCurrency } from '@finmatter/shared';
-import { useTransactions } from '@/hooks/useTransactions';
+import { useTransactionsFromStore } from '@/hooks/useTransactionsStore';
 import { calculateCategorySpending, getCategoryIcon } from '@finmatter/shared';
 import { CategorizedSpendsLoader } from './SectionLoader';
 
@@ -16,9 +16,7 @@ export function CategorizedSpendsWidget({
   className = '',
 }: CategorizedSpendsWidgetProps) {
   const router = useRouter();
-  const { transactions, isLoading } = useTransactions({
-    autoFetch: true,
-  });
+  const { transactions, isLoading } = useTransactionsFromStore();
 
   const categories = React.useMemo(() => {
     return calculateCategorySpending(transactions, 4);

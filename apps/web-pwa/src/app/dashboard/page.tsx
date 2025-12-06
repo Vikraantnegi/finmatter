@@ -9,6 +9,7 @@ import { CardsStackLoader } from '@/components/dashboard/SectionLoader';
 import { CardsStack } from '@/components/cards/CardsStack';
 import { AddCardFlow } from '@/components/cards/AddCardFlow';
 import { useCards } from '@/hooks/useCards';
+import { useTransactionsFromStore } from '@/hooks/useTransactionsStore';
 import { FinnyWidget } from '@/components/dashboard/FinnyWidget';
 import { SpendingSummaryWidget } from '@/components/dashboard/SpendingSummaryWidget';
 import { CategorizedSpendsWidget } from '@/components/dashboard/CategorizedSpendsWidget';
@@ -18,12 +19,19 @@ import { SpendingAnalysisWidget } from '@/components/dashboard/SpendingAnalysisW
 
 function DashboardContent() {
   const { cards, isLoading, fetchCards } = useCards();
+  const { fetchTransactions } = useTransactionsFromStore();
   const [showAddCard, setShowAddCard] = useState(false);
   const router = useRouter();
 
+  // Fetch cards once on mount
   useEffect(() => {
     fetchCards();
-  }, [fetchCards]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch transactions once on mount for all widgets to share
+  useEffect(() => {
+    fetchTransactions();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddCardSuccess = () => {
     setShowAddCard(false);

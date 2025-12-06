@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
-import { useTransactions } from '@/hooks/useTransactions';
+import { useTransactionsFromStore } from '@/hooks/useTransactionsStore';
 import { RecentTransactionsLoader } from './SectionLoader';
 import { TransactionItem } from '@/components/transactions/TransactionItem';
 
@@ -15,10 +15,7 @@ export function RecentTransactionsWidget({
   className = '',
 }: RecentTransactionsWidgetProps) {
   const router = useRouter();
-  const { transactions, isLoading } = useTransactions({
-    filters: { limit: 3 },
-    autoFetch: true,
-  });
+  const { transactions, isLoading } = useTransactionsFromStore();
 
   // Only show debit transactions (spending)
   const recentTransactions = React.useMemo(() => {

@@ -68,9 +68,8 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
         ...(filters.card_id && { card_id: filters.card_id }),
       });
 
-      const response = await apiClient.get<TransactionsResponse>(
-        `/api/transactions?${queryParams.toString()}`,
-      );
+      const apiUrl = `/api/transactions?${queryParams.toString()}`;
+      const response = await apiClient.get<TransactionsResponse>(apiUrl);
 
       if (response.success) {
         set({

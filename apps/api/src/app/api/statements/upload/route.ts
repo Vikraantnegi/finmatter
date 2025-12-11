@@ -12,7 +12,10 @@ import {
   parseStatement,
   type BankName,
   type ParsedTransaction,
+  extractCardMetadataWithLLM,
+  extractTextFromPDF,
 } from '@finmatter/cc-engine';
+import { resolveBankIdByName } from '@/lib/binLookup';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const STATEMENTS_BUCKET = 'statements';
@@ -381,8 +384,15 @@ async function parseStatementAsync(
   password?: string,
 ): Promise<void> {
   try {
+    // Get OpenAI API key from environment
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    const useLLMFallback = process.env.USE_LLM_FALLBACK !== 'false'; // Default to true
+
     // Parse the PDF
-    const parseResult = await parseStatement(fileBuffer, bankName, password);
+    const parseResult = await parseStatement(fileBuffer, bankName, password, {
+      openaiApiKey,
+      useLLMFallback,
+    });
 
     // Insert transactions if parsing was successful
     if (parseResult.success && parseResult.transactions.length > 0) {
@@ -616,6 +626,422 @@ async function parseStatementAsync(
         .update(cardUpdateData)
         .eq('id', cardId)
         .eq('user_id', userId);
+    }
+
+    // Extract and store card metadata using LLM
+    // Always use LLM if API key is available - LLM can extract card name and bank name even if regex failed
+    console.log(`🔍 [Card Metadata] Checking for OpenAI API key...`);
+    console.log(`🔍 [Card Metadata] API key present: ${!!openaiApiKey}`);
+    console.log(
+      `🔍 [Card Metadata] API key length: ${openaiApiKey?.length || 0}`,
+    );
+
+    if (openaiApiKey) {
+      try {
+        console.log(
+          '🔄 [Card Metadata] Starting LLM extraction for card metadata',
+        );
+
+        // Extract PDF text for LLM (we'll use it to extract everything)
+        const pdfText = await extractTextFromPDF(fileBuffer, password);
+        console.log(
+          `📄 [Card Metadata] Extracted PDF text length: ${pdfText.length} characters`,
+        );
+        console.log(
+          `📄 [Card Metadata] PDF text preview (first 500 chars): ${pdfText.slice(0, 500)}`,
+        );
+
+        // Extract card metadata using LLM - give it full PDF text so it can extract card name and bank name
+        console.log('🤖 [Card Metadata] Calling extractCardMetadataWithLLM...');
+        const extractedMetadata = await extractCardMetadataWithLLM(
+          pdfText,
+          {
+            // Use regex-extracted values as hints, but LLM can override if it finds better ones
+            cardName: meta.cardName,
+            bankName: meta.bankName,
+            spendingCategories: meta.spendingCategories,
+            rewardsProgramSummary: meta.rewardsProgramSummary,
+            rewardPoints: meta.rewardPoints,
+          },
+          { apiKey: openaiApiKey },
+        );
+
+        console.log(
+          `📊 [Card Metadata] LLM extraction result:`,
+          extractedMetadata ? 'SUCCESS' : 'NULL',
+        );
+        if (extractedMetadata) {
+          console.log(
+            `📊 [Card Metadata] Extracted cardName: ${extractedMetadata.cardName || 'NOT FOUND'}`,
+          );
+          console.log(
+            `📊 [Card Metadata] Extracted bankName: ${extractedMetadata.bankName || 'NOT FOUND'}`,
+          );
+          console.log(
+            `📊 [Card Metadata] Extracted network: ${extractedMetadata.network || 'NOT FOUND'}`,
+          );
+          console.log(
+            `📊 [Card Metadata] Extracted rewardType: ${extractedMetadata.rewardType || 'NOT FOUND'}`,
+          );
+          console.log(
+            `📊 [Card Metadata] Full extracted metadata:`,
+            JSON.stringify(extractedMetadata, null, 2),
+          );
+        } else {
+          console.log(
+            '⚠️ [Card Metadata] extractCardMetadataWithLLM returned null - check logs above for reason',
+          );
+        }
+
+        // Merge strategy: LLM has priority, but fall back to regex if LLM didn't extract
+        // Log differences when both exist for debugging
+        const finalCardName = extractedMetadata?.cardName || meta.cardName;
+        const finalBankName = extractedMetadata?.bankName || meta.bankName;
+
+        // Log when values differ (for debugging)
+        if (
+          extractedMetadata?.cardName &&
+          meta.cardName &&
+          extractedMetadata.cardName !== meta.cardName
+        ) {
+          console.log(
+            `⚠️ [Card Metadata] Card name mismatch - LLM: "${extractedMetadata.cardName}", Regex: "${meta.cardName}". Using LLM value.`,
+          );
+        }
+        if (
+          extractedMetadata?.bankName &&
+          meta.bankName &&
+          extractedMetadata.bankName !== meta.bankName
+        ) {
+          console.log(
+            `⚠️ [Card Metadata] Bank name mismatch - LLM: "${extractedMetadata.bankName}", Regex: "${meta.bankName}". Using LLM value.`,
+          );
+        }
+
+        if (!finalCardName || !finalBankName) {
+          console.log(
+            '⚠️ [Card Metadata] Card name or bank name not found (neither regex nor LLM), skipping metadata extraction',
+          );
+          return;
+        }
+
+        console.log(
+          `✅ [Card Metadata] Using card name: ${finalCardName}, bank name: ${finalBankName}`,
+        );
+
+        // Get or resolve bank_id using the final bank name
+        let bankId = await resolveBankIdByName(finalBankName);
+        if (!bankId) {
+          // Try to get bank_id from card
+          const { data: currentCard } = await supabaseAdmin
+            .from('cards')
+            .select('bank_id')
+            .eq('id', cardId)
+            .single();
+          bankId = currentCard?.bank_id || null;
+        }
+
+        if (!bankId) {
+          console.log(
+            '⚠️ [Card Metadata] Bank ID not found, skipping metadata extraction',
+          );
+        } else {
+          // Normalize card name for lookup (remove "Credit Card" suffix, trim)
+          const normalizedCardName = finalCardName
+            .trim()
+            .replace(/\s+Credit\s+Card\s*$/i, '')
+            .trim();
+
+          // Check if metadata already exists for this card (across all users)
+          // Try multiple variations: exact match, with "Credit Card" suffix, case-insensitive
+          // First try exact match (case-insensitive)
+          let { data: existingMetadata } = await supabaseAdmin
+            .from('cards_metadata')
+            .select('id')
+            .eq('bank_id', bankId)
+            .ilike('card_name', normalizedCardName)
+            .maybeSingle();
+
+          // If not found, try with "Credit Card" suffix
+          if (!existingMetadata) {
+            const { data: metadataWithSuffix } = await supabaseAdmin
+              .from('cards_metadata')
+              .select('id')
+              .eq('bank_id', bankId)
+              .ilike('card_name', `${normalizedCardName} Credit Card`)
+              .maybeSingle();
+            existingMetadata = metadataWithSuffix || null;
+          }
+
+          // If still not found, try original card name
+          if (!existingMetadata) {
+            const { data: metadataOriginal } = await supabaseAdmin
+              .from('cards_metadata')
+              .select('id')
+              .eq('bank_id', bankId)
+              .ilike('card_name', finalCardName.trim())
+              .maybeSingle();
+            existingMetadata = metadataOriginal || null;
+          }
+
+          if (existingMetadata) {
+            console.log(
+              '✅ [Card Metadata] Metadata already exists, linking card to existing metadata',
+            );
+
+            // Fetch the existing metadata to get network, reward_type, annual_fee
+            const { data: fullMetadata } = await supabaseAdmin
+              .from('cards_metadata')
+              .select('network, reward_type, annual_fee, bank_id')
+              .eq('id', existingMetadata.id)
+              .single();
+
+            // Update card with metadata information
+            const cardUpdateFromExisting: any = {
+              card_metadata_id: existingMetadata.id,
+            };
+
+            if (fullMetadata) {
+              if (fullMetadata.network) {
+                cardUpdateFromExisting.network = fullMetadata.network;
+              }
+              if (fullMetadata.reward_type) {
+                cardUpdateFromExisting.reward_type = fullMetadata.reward_type;
+              }
+              if (fullMetadata.annual_fee !== undefined) {
+                cardUpdateFromExisting.annual_fee = fullMetadata.annual_fee;
+              }
+              if (fullMetadata.bank_id) {
+                cardUpdateFromExisting.bank_id = fullMetadata.bank_id;
+              }
+            }
+
+            // Also update card name and bank name from merged values (LLM has priority)
+            // This ensures the card table has the most accurate values even when linking to existing metadata
+            if (finalCardName) {
+              cardUpdateFromExisting.card_name = finalCardName;
+            }
+            if (finalBankName) {
+              // Normalize bank name for consistency
+              cardUpdateFromExisting.bank_name = finalBankName
+                .toLowerCase()
+                .replace(' bank', '');
+            }
+
+            // Link card to existing metadata and update other fields
+            await supabaseAdmin
+              .from('cards')
+              .update(cardUpdateFromExisting)
+              .eq('id', cardId)
+              .eq('user_id', userId);
+
+            console.log(
+              '✅ [Card Metadata] Card linked to existing metadata and updated with LLM-extracted values',
+            );
+          } else {
+            // Use the already-extracted metadata from LLM (we extracted it earlier)
+            if (extractedMetadata && extractedMetadata.cardName) {
+              console.log(
+                '✅ [Card Metadata] LLM extracted metadata, storing to database',
+              );
+
+              // Merge strategy: Use LLM values, fall back to defaults if missing
+              // For fields that regex might have extracted, we prefer LLM but log differences
+              const mergedMetadata = {
+                // Card name: LLM has priority (already handled above)
+                cardName: extractedMetadata.cardName,
+
+                // Display name: LLM or derived from card name
+                displayName:
+                  extractedMetadata.displayName ||
+                  extractedMetadata.cardName.replace(
+                    /\s+Credit\s+Card\s*$/i,
+                    '',
+                  ),
+
+                // Card type: LLM or default
+                cardType: extractedMetadata.cardType || 'credit',
+
+                // Network: LLM or infer from card name
+                network:
+                  extractedMetadata.network ||
+                  (() => {
+                    const cardNameLower = (
+                      extractedMetadata.cardName || ''
+                    ).toLowerCase();
+                    if (
+                      cardNameLower.includes('amex') ||
+                      cardNameLower.includes('american express')
+                    )
+                      return 'amex';
+                    if (cardNameLower.includes('diners')) return 'diners';
+                    if (cardNameLower.includes('rupay')) return 'rupay';
+                    return 'visa'; // Default
+                  })(),
+
+                // Reward type: LLM only (regex doesn't extract this)
+                rewardType: extractedMetadata.rewardType || null,
+
+                // Fees: LLM or defaults
+                annualFee:
+                  extractedMetadata.annualFee !== undefined
+                    ? extractedMetadata.annualFee
+                    : 0,
+                joiningFee:
+                  extractedMetadata.joiningFee !== undefined
+                    ? extractedMetadata.joiningFee
+                    : 0,
+
+                // Colors: LLM only
+                primaryColor: extractedMetadata.primaryColor || null,
+                secondaryColor: extractedMetadata.secondaryColor || null,
+
+                // Complex objects: LLM only (regex doesn't extract these)
+                benefits: extractedMetadata.benefits || [],
+                offers: extractedMetadata.offers || [],
+                rewards: extractedMetadata.rewards || {},
+                milestones: extractedMetadata.milestones || [],
+                rewardsProgress: extractedMetadata.rewardsProgress || null,
+              };
+
+              // Prepare metadata for database insertion
+              const metadataToInsert: any = {
+                bank_id: bankId,
+                card_name: mergedMetadata.cardName,
+                display_name: mergedMetadata.displayName,
+                card_type: mergedMetadata.cardType,
+                network: mergedMetadata.network,
+                reward_type: mergedMetadata.rewardType,
+                annual_fee: mergedMetadata.annualFee,
+                joining_fee: mergedMetadata.joiningFee,
+                primary_color: mergedMetadata.primaryColor,
+                secondary_color: mergedMetadata.secondaryColor,
+                card_logo_url: null, // Can be added later
+                benefits: mergedMetadata.benefits,
+                offers: mergedMetadata.offers,
+                rewards: mergedMetadata.rewards,
+                milestones: mergedMetadata.milestones,
+                rewards_progress: mergedMetadata.rewardsProgress,
+                metadata: {
+                  ...(extractedMetadata.metadata || {}),
+                  extractedFromStatement: true,
+                  extractionDate: new Date().toISOString(),
+                  confidence: extractedMetadata.confidence || 'medium',
+                  // Store source information for debugging
+                  extractionSource: 'llm',
+                  regexFallback: {
+                    cardName: meta.cardName || null,
+                    bankName: meta.bankName || null,
+                  },
+                },
+                is_active: true,
+              };
+
+              // Insert card metadata
+              const { data: newMetadata, error: metadataError } =
+                await supabaseAdmin
+                  .from('cards_metadata')
+                  .insert(metadataToInsert)
+                  .select()
+                  .single();
+
+              if (metadataError || !newMetadata) {
+                console.error(
+                  '❌ [Card Metadata] Failed to insert metadata:',
+                  metadataError,
+                );
+                logError(
+                  metadataError
+                    ? new Error(metadataError.message)
+                    : new Error('Metadata insertion failed'),
+                  {
+                    userId,
+                    additionalData: {
+                      cardId,
+                      statementId,
+                      error: metadataError?.message,
+                    },
+                  },
+                );
+              } else {
+                console.log(
+                  '✅ [Card Metadata] Metadata stored successfully, linking to card',
+                );
+
+                // Update card with metadata information
+                const cardUpdateFromMetadata: any = {
+                  card_metadata_id: newMetadata.id,
+                };
+
+                // Update network: Use merged value (LLM or inferred)
+                cardUpdateFromMetadata.network = mergedMetadata.network;
+
+                // Update reward_type: Use merged value (LLM or null)
+                if (mergedMetadata.rewardType) {
+                  cardUpdateFromMetadata.reward_type =
+                    mergedMetadata.rewardType;
+                }
+
+                // Update annual_fee: Use merged value (LLM or 0)
+                if (mergedMetadata.annualFee !== undefined) {
+                  cardUpdateFromMetadata.annual_fee = mergedMetadata.annualFee;
+                }
+
+                // Update bank_id if we have it (should already be set, but ensure it's correct)
+                if (bankId) {
+                  cardUpdateFromMetadata.bank_id = bankId;
+                }
+
+                // Also update card name and bank name from merged values (LLM has priority)
+                // This ensures the card table has the most accurate values
+                if (finalCardName) {
+                  cardUpdateFromMetadata.card_name = finalCardName;
+                }
+                if (finalBankName) {
+                  // Normalize bank name for consistency
+                  cardUpdateFromMetadata.bank_name = finalBankName
+                    .toLowerCase()
+                    .replace(' bank', '');
+                }
+
+                // Link card to the new metadata and update other fields
+                await supabaseAdmin
+                  .from('cards')
+                  .update(cardUpdateFromMetadata)
+                  .eq('id', cardId)
+                  .eq('user_id', userId);
+              }
+            } else {
+              console.log('⚠️ [Card Metadata] LLM extraction returned no data');
+            }
+          }
+        }
+      } catch (error) {
+        // Don't fail the whole process if metadata extraction fails
+        console.error(
+          '❌ [Card Metadata] Error during metadata extraction:',
+          error,
+        );
+        logError(
+          error instanceof Error
+            ? error
+            : new Error('Metadata extraction error'),
+          {
+            userId,
+            additionalData: {
+              cardId,
+              statementId,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            },
+          },
+        );
+      }
+    } else {
+      if (!openaiApiKey) {
+        console.log(
+          'ℹ️ [Card Metadata] No OpenAI API key, skipping metadata extraction',
+        );
+      }
     }
   } catch (error) {
     const errorMessage =

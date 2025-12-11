@@ -3,7 +3,7 @@
 import React from 'react';
 import { Award, Coffee, Plane, ShoppingCart, Check } from 'lucide-react';
 import { formatCurrency } from '@finmatter/shared';
-import type { Card, CardOffer } from '@finmatter/types';
+import type { Card, CardOffer, CardRewardsProgress } from '@finmatter/types';
 
 interface RewardsAndOffersProps {
   card: Card;
@@ -17,18 +17,34 @@ export function RewardsAndOffers({
   // Get offers from card metadata
   const offers: CardOffer[] = (card.cardMetadata?.offers as CardOffer[]) || [];
 
-  // Calculate equivalent value (assuming 1 point = ₹0.084, which gives ₹1,050 for 12,500 points)
-  const pointsToRupeeRate = 0.084;
-  const equivalentValue = rewardPoints ? rewardPoints * pointsToRupeeRate : 0;
+  // Get rewards progress configuration from card metadata
+  const rewardsProgress: CardRewardsProgress | null =
+    (card.cardMetadata?.rewardsProgress as CardRewardsProgress) || null;
 
-  // Calculate progress to next milestone (example: next milestone at 13,000 points)
-  const nextMilestone = 13000;
+  // Use rewards progress config if available, otherwise use defaults
+  const unit = rewardsProgress?.unit || 'pts';
+  const displayName = rewardsProgress?.displayName || 'Reward Points';
+  const redemptionRate = rewardsProgress?.redemptionRate || 0.084; // Default: 1 point = ₹0.084
+
+  // Calculate equivalent value using redemption rate from metadata
+  const equivalentValue = rewardPoints ? rewardPoints * redemptionRate : 0;
+
+  // Calculate progress to next milestone
+  // Use first milestone from metadata if available, otherwise use default
+  const milestones = rewardsProgress?.milestones || [];
+  const nextMilestone =
+    milestones.length > 0
+      ? milestones[0].threshold
+      : rewardPoints
+        ? rewardPoints * 1.1
+        : 13000; // Default: 10% more than current
   const pointsToNextMilestone = rewardPoints
     ? Math.max(0, nextMilestone - rewardPoints)
     : 0;
-  const progressPercentage = rewardPoints
-    ? Math.min(100, (rewardPoints / nextMilestone) * 100)
-    : 0;
+  const progressPercentage =
+    rewardPoints && nextMilestone > 0
+      ? Math.min(100, (rewardPoints / nextMilestone) * 100)
+      : 0;
 
   // Get offer icon
   const getOfferIcon = (offer: CardOffer) => {
@@ -71,17 +87,19 @@ export function RewardsAndOffers({
       {rewardPoints !== null && (
         <div className='bg-gray-800 rounded-2xl p-5 border border-gray-700/80'>
           <h3 className='text-lg font-semibold text-white mb-4'>
-            Rewards Progress
+            {displayName} Progress
           </h3>
           <div className='space-y-4'>
             <div className='flex items-end justify-between'>
               <div>
                 <p className='text-3xl font-bold text-white mb-1'>
-                  {rewardPoints.toLocaleString()} pts
+                  {rewardPoints.toLocaleString()} {unit}
                 </p>
-                <p className='text-sm text-gray-400'>
-                  Equivalent to {formatCurrency(equivalentValue)}
-                </p>
+                {redemptionRate > 0 && (
+                  <p className='text-sm text-gray-400'>
+                    Equivalent to {formatCurrency(equivalentValue)}
+                  </p>
+                )}
               </div>
               <button className='px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors'>
                 Redeem
@@ -98,8 +116,11 @@ export function RewardsAndOffers({
               </div>
               {pointsToNextMilestone > 0 && (
                 <p className='text-xs text-gray-400'>
-                  You are {pointsToNextMilestone.toLocaleString()} pts away from
-                  the next reward
+                  You are {pointsToNextMilestone.toLocaleString()} {unit} away
+                  from
+                  {milestones.length > 0 && milestones[0].reward
+                    ? ` ${milestones[0].reward}`
+                    : ' the next reward'}
                 </p>
               )}
             </div>

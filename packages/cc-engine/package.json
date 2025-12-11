@@ -17,7 +17,8 @@
     "date-fns": "^3.6.0",
     "pdf-parse": "^1.1.1",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^5.4.296"
+    "pdfjs-dist": "^5.4.296",
+    "openai": "^4.24.1"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

@@ -9,13 +9,24 @@ import type {
   ParsedTransaction,
   StatementMetadata,
 } from '../types';
+import { extractMetadataWithLLM } from '../utils/llmExtractor';
 
 export class HDFCParser extends BaseParser {
   protected bankName = 'hdfc';
 
-  async parse(pdfBuffer: Buffer, password?: string): Promise<ParseResult> {
+  async parse(
+    pdfBuffer: Buffer,
+    password?: string,
+    options?: { openaiApiKey?: string; useLLMFallback?: boolean },
+  ): Promise<ParseResult> {
     const text = await this.extractText(pdfBuffer, password);
 
+    // Log full PDF text
+    console.log(`\n${'='.repeat(80)}`);
+    console.log('📄 FULL PDF TEXT');
+    console.log('='.repeat(80));
+    console.log(text);
+    console.log(`${'='.repeat(80)}\n`);
     // PDF extraction might not preserve line breaks properly
     // Split by newlines first, but also handle cases where everything is in one line
     let lines = text
@@ -55,7 +66,7 @@ export class HDFCParser extends BaseParser {
     const errors: string[] = [];
 
     // Extract metadata (card number, statement period, etc.)
-    this.extractMetadata(lines, metadata);
+    await this.extractMetadata(lines, metadata, text, options);
 
     // Extract transactions
     // HDFC statements typically have transaction tables with columns:
@@ -106,22 +117,42 @@ export class HDFCParser extends BaseParser {
 
       // If we've found a transactions section, continue adding lines until we hit a clear break
       if (foundDomestic || transactionText) {
-        // Stop at clear section breaks
+        // Stop at clear section breaks (but allow transactions to continue across pages)
         if (
-          lowerLine.includes('rewards program') ||
-          lowerLine.includes('smart emi loan') ||
-          lowerLine.includes('gst summary') ||
-          lowerLine.includes('page 3 of 3') ||
-          (lowerLine.includes('page 2 of 3') &&
+          (lowerLine.includes('rewards program') &&
+            !lowerLine.includes('transaction')) ||
+          (lowerLine.includes('smart emi loan') &&
+            !lowerLine.includes('transaction')) ||
+          (lowerLine.includes('gst summary') &&
+            !lowerLine.includes('transaction')) ||
+          (lowerLine.includes('bonus neucoins summary') &&
+            !lowerLine.includes('transaction')) ||
+          (lowerLine.includes('important information') &&
+            !lowerLine.includes('transaction')) ||
+          (lowerLine.includes('useful links') &&
             !lowerLine.includes('transaction'))
         ) {
-          break;
+          // Check if there are still transactions after this line before breaking
+          const hasMoreTransactions = lines
+            .slice(i + 1, Math.min(i + 5, lines.length))
+            .some(
+              nextLine =>
+                nextLine &&
+                nextLine.match(
+                  /\d{1,2}\/\d{1,2}\/\d{2,4}\s*[|]\s*\d{1,2}:\d{2}/,
+                ),
+            );
+          if (!hasMoreTransactions) {
+            break;
+          }
         }
         // Continue adding if it looks like transaction content
         if (
           line.match(/\d{1,2}\/\d{1,2}\/\d{2,4}\s*[|]/) ||
           lowerLine.includes('transaction') ||
-          lowerLine.includes('date & time')
+          lowerLine.includes('date & time') ||
+          lowerLine.includes('domestic transactions') ||
+          lowerLine.includes('international transactions')
         ) {
           transactionText += `${line} `;
         }
@@ -201,6 +232,62 @@ export class HDFCParser extends BaseParser {
       }
     }
 
+    // Log metadata
+    console.log(`\n${'='.repeat(80)}`);
+    console.log('📊 FINAL EXTRACTED METADATA');
+    console.log('='.repeat(80));
+    console.log(
+      JSON.stringify(
+        metadata,
+        (key, value) => {
+          // Convert Date objects to ISO strings for better readability
+          if (value instanceof Date) {
+            return value.toISOString();
+          }
+          return value;
+        },
+        2,
+      ),
+    );
+    console.log(`${'='.repeat(80)}\n`);
+
+    // Log transactions
+    console.log(`\n${'='.repeat(80)}`);
+    console.log(`💳 EXTRACTED TRANSACTIONS (${transactions.length} total)`);
+    console.log('='.repeat(80));
+    if (transactions.length > 0) {
+      transactions.forEach((txn, index) => {
+        console.log(`\nTransaction ${index + 1}:`);
+        console.log(
+          JSON.stringify(
+            txn,
+            (key, value) => {
+              // Convert Date objects to ISO strings for better readability
+              if (value instanceof Date) {
+                return value.toISOString();
+              }
+              return value;
+            },
+            2,
+          ),
+        );
+      });
+    } else {
+      console.log('No transactions found');
+    }
+    console.log(`\n${'='.repeat(80)}\n`);
+
+    // Log errors if any
+    if (errors.length > 0) {
+      console.log(`\n${'='.repeat(80)}`);
+      console.log('⚠️ PARSING ERRORS');
+      console.log('='.repeat(80));
+      errors.forEach((error, index) => {
+        console.log(`${index + 1}. ${error}`);
+      });
+      console.log(`${'='.repeat(80)}\n`);
+    }
+
     const result: ParseResult = {
       success: errors.length === 0,
       transactions,
@@ -214,13 +301,18 @@ export class HDFCParser extends BaseParser {
     return this.validateResult(result);
   }
 
-  private extractMetadata(lines: string[], metadata: StatementMetadata): void {
-    const fullText = lines.join(' ');
+  private async extractMetadata(
+    lines: string[],
+    metadata: StatementMetadata,
+    fullText: string,
+    options?: { openaiApiKey?: string; useLLMFallback?: boolean },
+  ): Promise<void> {
+    const text = fullText || lines.join(' ');
 
     // Extract card number (last 4 digits) - format: 518159XXXXXX5761
     const cardMatch =
-      fullText.match(/(\d{4})XXXXXX(\d{4})/i) ||
-      fullText.match(/Card\s*No[.:\s]*\*{4,}\s*(\d{4})/i);
+      text.match(/(\d{4})XXXXXX(\d{4})/i) ||
+      text.match(/Card\s*No[.:\s]*\*{4,}\s*(\d{4})/i);
     if (cardMatch) {
       const lastFour = cardMatch[2] || cardMatch[1];
       if (lastFour && !metadata.cardLastFour) {
@@ -228,42 +320,88 @@ export class HDFCParser extends BaseParser {
       }
     }
 
-    // Extract card name - format: "Millennia Credit Card"
-    // Try specific card names first (Millennia, Regalia, Tata Neu Plus, etc.)
-    const specificCardNames = [
-      'Millennia',
-      'Regalia',
-      'Tata Neu Plus',
-      'Diners Club',
-      'Infinia',
-      'Platinum',
-      'Gold',
-      'Freedom',
-      'MoneyBack',
-      'Business',
-    ];
-
+    // Extract card name - format: "Millennia Credit Card" or "Tata Neu Plus HDFC Bank Credit Card Statement"
+    // Try pattern with "Statement" suffix first (most reliable)
     let cardName: string | undefined;
-    for (const name of specificCardNames) {
-      const pattern = new RegExp(`(${name}\\s+Credit\\s+Card)`, 'i');
-      const match = fullText.match(pattern);
-      if (match && match[1]) {
-        cardName = match[1].trim();
-        break;
+    const statementPattern = text.match(
+      /([A-Za-z][A-Za-z\s]+?)\s+HDFC\s+Bank\s+Credit\s+Card\s+Statement/i,
+    );
+    if (statementPattern && statementPattern[1]) {
+      const extracted = statementPattern[1].trim();
+      // Exclude generic phrases
+      if (
+        !extracted.match(
+          /^(CALCULATION|YOUR|BANK|MITC|MINIMUM|AMOUNT|DUE|MAD)$/i,
+        ) &&
+        extracted.length > 3
+      ) {
+        cardName = `${extracted} Credit Card`;
       }
     }
 
-    // If no specific card name found, try generic pattern but exclude "BANK CREDIT CARD"
+    // Try specific card names if not found yet
     if (!cardName) {
-      const genericMatch = fullText.match(
-        /([A-Za-z][A-Za-z\s]+Credit\s+Card)/i,
+      const specificCardNames = [
+        'Tata Neu Plus',
+        'Millennia',
+        'Regalia',
+        'Diners Club',
+        'Infinia',
+        'Platinum',
+        'Gold',
+        'Freedom',
+        'MoneyBack',
+        'Business',
+        'Swiggy',
+        'Times',
+        'IndianOil',
+      ];
+
+      for (const name of specificCardNames) {
+        // Try with "Credit Card" suffix
+        const pattern1 = new RegExp(
+          `(${name.replace(/\s+/g, '\\s+')}\\s+Credit\\s+Card)`,
+          'i',
+        );
+        const match1 = text.match(pattern1);
+        if (match1 && match1[1]) {
+          cardName = match1[1].trim();
+          break;
+        }
+        // Try without suffix (e.g., "HDFC Millennia")
+        const pattern2 = new RegExp(
+          `(HDFC\\s+${name.replace(/\s+/g, '\\s+')})`,
+          'i',
+        );
+        const match2 = text.match(pattern2);
+        if (match2 && match2[1]) {
+          cardName = `${match2[1].trim()} Credit Card`;
+          break;
+        }
+      }
+    }
+
+    // If no specific card name found, try generic pattern with better exclusions
+    if (!cardName) {
+      const genericMatch = text.match(
+        /([A-Za-z][A-Za-z\s]{2,30}?Credit\s+Card)/i,
       );
-      if (
-        genericMatch &&
-        genericMatch[1] &&
-        !genericMatch[1].match(/^BANK\s+Credit\s+Card$/i)
-      ) {
-        cardName = genericMatch[1].trim();
+      if (genericMatch && genericMatch[1]) {
+        const candidate = genericMatch[1].trim();
+        // Exclude common false positives
+        const excludePatterns = [
+          /^BANK\s+Credit\s+Card$/i,
+          /CALCULATION/i,
+          /YOUR\s+HDFC/i,
+          /MINIMUM\s+AMOUNT/i,
+          /MITC/i,
+        ];
+        const shouldExclude = excludePatterns.some(pattern =>
+          pattern.test(candidate),
+        );
+        if (!shouldExclude && candidate.length > 10 && candidate.length < 50) {
+          cardName = candidate;
+        }
       }
     }
 
@@ -272,17 +410,20 @@ export class HDFCParser extends BaseParser {
     }
 
     // Extract bank name - format: "HDFC Bank"
-    const bankMatch = fullText.match(/(HDFC|ICICI|SBI|AXIS|AMEX)\s+Bank/i);
+    const bankMatch = text.match(/(HDFC|ICICI|SBI|AXIS|AMEX)\s+Bank/i);
     if (bankMatch && bankMatch[1] && !metadata.bankName) {
       metadata.bankName = `${bankMatch[1].toUpperCase()} Bank`;
     }
 
     // Extract statement date - format: "Statement Date 17 Sep, 2025" or "Credit Card No. ... Statement Date 17 Sep, 2025"
+    // Try multiple patterns to handle different formatting
     const statementDateMatch =
-      fullText.match(/Statement\s+Date[:\s]+(\d{1,2}\s+\w+,\s+\d{4})/i) ||
-      fullText.match(
+      text.match(/Statement\s+Date[:\s]+(\d{1,2}\s+\w+,\s+\d{4})/i) ||
+      text.match(/Statement\s+Date\s+(\d{1,2}\s+\w+,\s+\d{4})/i) ||
+      text.match(
         /Credit\s+Card\s+No[.\s]+[^\s]+\s+[^\s]+\s+Statement\s+Date[:\s]+(\d{1,2}\s+\w+,\s+\d{4})/i,
-      );
+      ) ||
+      text.match(/Statement\s+Date\s+(\d{1,2}\s+[A-Za-z]{3},\s+\d{4})/i);
     if (
       statementDateMatch &&
       statementDateMatch[1] &&
@@ -296,10 +437,10 @@ export class HDFCParser extends BaseParser {
 
     // Extract billing period - format: "18 Aug, 2025 - 17 Sep, 2025" or "Billing Period  18 Aug, 2025 - 17 Sep, 2025"
     const billingMatch =
-      fullText.match(
+      text.match(
         /Billing\s+Period[:\s]+(\d{1,2}\s+\w+,\s+\d{4})\s*-\s*(\d{1,2}\s+\w+,\s+\d{4})/i,
       ) ||
-      fullText.match(/(\d{1,2}\s+\w+,\s+\d{4})\s*-\s*(\d{1,2}\s+\w+,\s+\d{4})/);
+      text.match(/(\d{1,2}\s+\w+,\s+\d{4})\s*-\s*(\d{1,2}\s+\w+,\s+\d{4})/);
     if (
       billingMatch &&
       billingMatch[1] &&
@@ -324,9 +465,7 @@ export class HDFCParser extends BaseParser {
     }
 
     // Extract payment due date - format: "DUE DATE  07 Oct, 2025"
-    const dueMatch = fullText.match(
-      /DUE\s+DATE[:\s]+(\d{1,2}\s+\w+,\s+\d{4})/i,
-    );
+    const dueMatch = text.match(/DUE\s+DATE[:\s]+(\d{1,2}\s+\w+,\s+\d{4})/i);
     if (dueMatch && dueMatch[1] && !metadata.paymentDueDate) {
       const dueDate = this.parseDate(dueMatch[1]);
       if (dueDate) {
@@ -335,7 +474,7 @@ export class HDFCParser extends BaseParser {
     }
 
     // Extract total amount due - format: "TOTAL AMOUNT DUE  C 7,658.00" (may or may not have "l" after)
-    const totalMatch = fullText.match(
+    const totalMatch = text.match(
       /TOTAL\s+AMOUNT\s+DUE[:\s]+C\s+([\d,]+\.?\d*)(?:\s*l|\s+MINIMUM|\s+DUE\s+DATE)/i,
     );
     if (totalMatch && totalMatch[1] && !metadata.totalAmount) {
@@ -346,7 +485,7 @@ export class HDFCParser extends BaseParser {
     }
 
     // Extract minimum due - format: "MINIMUM DUE  C 2,750.00" (may or may not have "l" after)
-    const minDueMatch = fullText.match(
+    const minDueMatch = text.match(
       /MINIMUM\s+DUE[:\s]+C\s+([\d,]+\.?\d*)(?:\s*l|\s+DUE\s+DATE)/i,
     );
     if (minDueMatch && minDueMatch[1] && !metadata.minimumDue) {
@@ -357,7 +496,7 @@ export class HDFCParser extends BaseParser {
     }
 
     // Extract reward points - format: "Reward Points  7,934"
-    const rewardPointsMatch = fullText.match(/Reward\s+Points[:\s]+([\d,]+)/i);
+    const rewardPointsMatch = text.match(/Reward\s+Points[:\s]+([\d,]+)/i);
     if (rewardPointsMatch && rewardPointsMatch[1] && !metadata.rewardPoints) {
       const points = parseInt(rewardPointsMatch[1].replace(/,/g, ''), 10);
       if (!isNaN(points)) {
@@ -366,7 +505,7 @@ export class HDFCParser extends BaseParser {
     }
 
     // Extract reward points details - format: "Opening Balance   Earned   Disbursed   Adjusted/Lapsed  7,886   48   0   0"
-    const rewardDetailsMatch = fullText.match(
+    const rewardDetailsMatch = text.match(
       /Opening\s+Balance[:\s]+Earned[:\s]+Disbursed[:\s]+Adjusted\/Lapsed[:\s]+([\d,]+)[:\s]+([\d,]+)[:\s]+([\d,]+)[:\s]+([\d,]+)/i,
     );
     if (rewardDetailsMatch) {
@@ -389,7 +528,7 @@ export class HDFCParser extends BaseParser {
     }
 
     // Extract points expiring - format: "POINTS EXPIRING   IN 30 DAYS   0   IN 60 DAYS   0"
-    const pointsExpiringMatch = fullText.match(
+    const pointsExpiringMatch = text.match(
       /POINTS\s+EXPIRING[:\s]+IN\s+30\s+DAYS[:\s]+([\d,]+)[:\s]+IN\s+60\s+DAYS[:\s]+([\d,]+)/i,
     );
     if (pointsExpiringMatch) {
@@ -405,7 +544,7 @@ export class HDFCParser extends BaseParser {
 
     // Extract spending categories - format: "DEPTSTORE  39%  l   ELECTRONICS  34%  l   GROCERIES  27%"
     const spendingCategories: { category: string; percentage: number }[] = [];
-    const categoryMatches = fullText.matchAll(/(\w+)[:\s]+(\d+)%\s*l/gi);
+    const categoryMatches = text.matchAll(/(\w+)[:\s]+(\d+)%\s*l/gi);
     for (const match of categoryMatches) {
       const category = match[1];
       const percentageStr = match[2];
@@ -428,7 +567,7 @@ export class HDFCParser extends BaseParser {
 
     // Extract rewards program summary - format: "1% CashBack on other Spends   17 pts"
     const rewardsProgram: { program: string; points: number }[] = [];
-    const rewardsMatch = fullText.match(
+    const rewardsMatch = text.match(
       /Rewards\s+Program\s+Points\s+Summary([\s\S]*?)Total[:\s]+(\d+)\s+pts/i,
     );
     if (rewardsMatch && rewardsMatch[1]) {
@@ -459,7 +598,7 @@ export class HDFCParser extends BaseParser {
     }
 
     // Extract financial summary - format: "PREVIOUS STATEMENT DUES   PAYMENTS/CREDITS RECEIVED PURCHASES/DEBIT (Current Billing Cycle)   FINANCE CHARGES  C 11,332.97   C 11,333.00   C 7,658.08   C 0.00"
-    const financialMatch = fullText.match(
+    const financialMatch = text.match(
       /PREVIOUS\s+STATEMENT\s+DUES[:\s]+PAYMENTS\/CREDITS\s+RECEIVED[:\s]+PURCHASES\/DEBIT[:\s]+\(Current\s+Billing\s+Cycle\)[:\s]+FINANCE\s+CHARGES[:\s]+C\s+([\d,]+\.?\d*)[:\s]+C\s+([\d,]+\.?\d*)[:\s]+C\s+([\d,]+\.?\d*)[:\s]+C\s+([\d,]+\.?\d*)/i,
     );
     if (financialMatch) {
@@ -482,7 +621,7 @@ export class HDFCParser extends BaseParser {
     }
 
     // Extract credit limits - format: "TOTAL CREDIT LIMIT (Including Cash)   AVAILABLE CREDIT LIMIT   AVAILABLE CASH LIMIT  C 97,000   C 79,460   C 38,800"
-    const creditLimitMatch = fullText.match(
+    const creditLimitMatch = text.match(
       /TOTAL\s+CREDIT\s+LIMIT[:\s]+\(Including\s+Cash\)[:\s]+AVAILABLE\s+CREDIT\s+LIMIT[:\s]+AVAILABLE\s+CASH\s+LIMIT[:\s]+C\s+([\d,]+\.?\d*)[:\s]+C\s+([\d,]+\.?\d*)[:\s]+C\s+([\d,]+\.?\d*)/i,
     );
     if (creditLimitMatch) {
@@ -502,7 +641,7 @@ export class HDFCParser extends BaseParser {
 
     // Extract EMI loans - format: "128251594   14/08/2025   C 14,309.82   6 Months   15 %   C 9,658.82   C 304.00   4 Months"
     const emiLoans: StatementMetadata['emiLoans'] = [];
-    const emiSectionMatch = fullText.match(
+    const emiSectionMatch = text.match(
       /Smart\s+EMI\s+Loan\s+Summary([\s\S]*?)\*Pre-closure/i,
     );
     if (emiSectionMatch && emiSectionMatch[1]) {
@@ -559,7 +698,7 @@ export class HDFCParser extends BaseParser {
     }
 
     // Extract GST summary - format: "IGST   CGST   SGST   REVERSAL   TOTAL GST  C 35.67   C 0   C 0   C 0   C 35.67"
-    const gstMatch = fullText.match(
+    const gstMatch = text.match(
       /GST\s+Summary[:\s]+IGST[:\s]+CGST[:\s]+SGST[:\s]+REVERSAL[:\s]+TOTAL\s+GST[:\s]+C\s+([\d,]+\.?\d*)[:\s]+C\s+([\d,]+\.?\d*)[:\s]+C\s+([\d,]+\.?\d*)[:\s]+C\s+([\d,]+\.?\d*)[:\s]+C\s+([\d,]+\.?\d*)/i,
     );
     if (gstMatch && !metadata.gstSummary) {
@@ -578,6 +717,125 @@ export class HDFCParser extends BaseParser {
           total: this.parseAmount(totalStr) || 0,
         };
       }
+    }
+
+    // Log regex extraction results first
+    console.log(`\n${'-'.repeat(80)}`);
+    console.log('🔍 REGEX EXTRACTION RESULTS');
+    console.log('-'.repeat(80));
+    console.log('Card Name:', metadata.cardName || 'NOT FOUND');
+    console.log('Card Last Four:', metadata.cardLastFour || 'NOT FOUND');
+    console.log('Bank Name:', metadata.bankName || 'NOT FOUND');
+    console.log(
+      'Statement Date:',
+      metadata.statementDate?.toISOString() || 'NOT FOUND',
+    );
+    console.log(
+      'Billing Cycle:',
+      `${metadata.billingCycleStart?.toISOString() || 'N/A'} to ${metadata.billingCycleEnd?.toISOString() || 'N/A'}`,
+    );
+    console.log('Total Amount Due:', metadata.totalAmount || 'NOT FOUND');
+    console.log('Minimum Due:', metadata.minimumDue || 'NOT FOUND');
+    console.log(`${'-'.repeat(80)}\n`);
+
+    // LLM Fallback: Use LLM if regex failed or confidence is low
+    const useLLM =
+      options?.useLLMFallback !== false && // Default to true if not specified
+      options?.openaiApiKey &&
+      (!metadata.cardName || // Regex didn't find card name
+        metadata.cardName.toLowerCase().includes('calculation') || // Low confidence match
+        metadata.cardName.toLowerCase().includes('your')); // Generic match
+
+    if (useLLM && options.openaiApiKey) {
+      console.log(
+        '🔄 [HDFC Parser] Using LLM fallback for metadata extraction',
+      );
+      try {
+        const llmResult = await extractMetadataWithLLM(text, {
+          apiKey: options.openaiApiKey,
+        });
+
+        if (llmResult) {
+          console.log(`\n${'-'.repeat(80)}`);
+          console.log('🤖 LLM EXTRACTION RESULTS');
+          console.log('-'.repeat(80));
+          console.log(JSON.stringify(llmResult, null, 2));
+          console.log(`${'-'.repeat(80)}\n`);
+
+          // Merge LLM results with regex results (LLM takes precedence for missing fields)
+          if (llmResult.cardName && !metadata.cardName) {
+            metadata.cardName = llmResult.cardName;
+            console.log(
+              '✅ [HDFC Parser] LLM extracted card name:',
+              llmResult.cardName,
+            );
+          }
+          if (llmResult.cardLastFour && !metadata.cardLastFour) {
+            metadata.cardLastFour = llmResult.cardLastFour;
+          }
+          if (llmResult.bankName && !metadata.bankName) {
+            metadata.bankName = llmResult.bankName;
+          }
+          if (llmResult.statementDate && !metadata.statementDate) {
+            const date = this.parseDate(llmResult.statementDate);
+            if (date) metadata.statementDate = date;
+          }
+          if (
+            llmResult.statementPeriodStart &&
+            !metadata.statementPeriodStart
+          ) {
+            const date = this.parseDate(llmResult.statementPeriodStart);
+            if (date) metadata.statementPeriodStart = date;
+          }
+          if (llmResult.statementPeriodEnd && !metadata.statementPeriodEnd) {
+            const date = this.parseDate(llmResult.statementPeriodEnd);
+            if (date) metadata.statementPeriodEnd = date;
+          }
+          if (llmResult.billingCycleStart && !metadata.billingCycleStart) {
+            const date = this.parseDate(llmResult.billingCycleStart);
+            if (date) metadata.billingCycleStart = date;
+          }
+          if (llmResult.billingCycleEnd && !metadata.billingCycleEnd) {
+            const date = this.parseDate(llmResult.billingCycleEnd);
+            if (date) metadata.billingCycleEnd = date;
+          }
+          if (llmResult.paymentDueDate && !metadata.paymentDueDate) {
+            const date = this.parseDate(llmResult.paymentDueDate);
+            if (date) metadata.paymentDueDate = date;
+          }
+          if (llmResult.totalAmount !== undefined && !metadata.totalAmount) {
+            metadata.totalAmount = llmResult.totalAmount;
+          }
+          if (llmResult.minimumDue !== undefined && !metadata.minimumDue) {
+            metadata.minimumDue = llmResult.minimumDue;
+          }
+          if (llmResult.rewardPoints !== undefined && !metadata.rewardPoints) {
+            metadata.rewardPoints = llmResult.rewardPoints;
+          }
+          if (
+            llmResult.creditLimit !== undefined &&
+            !metadata.totalCreditLimit
+          ) {
+            metadata.totalCreditLimit = llmResult.creditLimit;
+          }
+          if (
+            llmResult.availableCredit !== undefined &&
+            !metadata.availableCreditLimit
+          ) {
+            metadata.availableCreditLimit = llmResult.availableCredit;
+          }
+        }
+      } catch (error) {
+        console.warn(
+          '⚠️ [HDFC Parser] LLM extraction failed, using regex results only:',
+          error,
+        );
+        // Continue with regex results only
+      }
+    } else if (options?.useLLMFallback !== false && !options?.openaiApiKey) {
+      console.log(
+        'ℹ️ [HDFC Parser] LLM fallback enabled but no API key provided, using regex only',
+      );
     }
   }
 

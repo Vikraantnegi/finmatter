@@ -4,7 +4,7 @@ import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { MoreVertical } from 'lucide-react';
 import { formatCurrency } from '@finmatter/shared';
-import { useTransactions } from '@/hooks/useTransactions';
+import { useTransactionsFromStore } from '@/hooks/useTransactionsStore';
 import { calculateCategorySpending } from '@finmatter/shared';
 import { SpendingAnalysisLoader } from './SectionLoader';
 
@@ -26,9 +26,7 @@ const COLORS = [
 export function SpendingAnalysisWidget({
   className = '',
 }: SpendingAnalysisWidgetProps) {
-  const { transactions, isLoading } = useTransactions({
-    autoFetch: true,
-  });
+  const { transactions, isLoading } = useTransactionsFromStore();
 
   const categories = React.useMemo(() => {
     return calculateCategorySpending(transactions, 5);

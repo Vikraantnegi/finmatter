@@ -69,7 +69,9 @@ async function getBankCache(): Promise<BankCacheEntry[]> {
   return bankCache;
 }
 
-async function resolveBankIdByName(name: string): Promise<string | null> {
+export async function resolveBankIdByName(
+  name: string,
+): Promise<string | null> {
   const normalized = normalizeBankName(name);
   if (!normalized) {
     return null;
@@ -370,13 +372,11 @@ export async function lookupBINExternal(
     const network = mapNetworkFromBinList(data.scheme);
     const cardType: CardType = mapCardTypeFromBinList(data.type) || 'credit';
 
-    if (!network) {
-      return null;
-    }
-
+    // Return result even if network is null - we want to cache it to avoid repeated API calls
+    // The cacheBinLookup function will handle null network values
     const result: BinLookupResult = {
       bankName: data.bank?.name || undefined,
-      network,
+      network: network || null, // Allow null network
       cardType,
       country: data.country?.alpha2 || 'IN',
       source: 'binlist_api',
@@ -386,12 +386,24 @@ export async function lookupBINExternal(
   } catch (error: any) {
     // Handle rate limiting (429) or other errors
     if (error.response?.status === 429) {
-      console.warn('BinList API rate limit exceeded');
+      console.warn(
+        `⚠️ [BIN Lookup] BinList API rate limit exceeded for BIN ${bin}`,
+      );
     } else if (error.response?.status === 404) {
       // BIN not found in BinList database
+      console.log(`ℹ️ [BIN Lookup] BIN ${bin} not found in BinList database`);
       return null;
     } else {
-      console.error('BinList API error:', error.message);
+      console.error(
+        `❌ [BIN Lookup] BinList API error for BIN ${bin}:`,
+        error.message,
+      );
+      if (error.response) {
+        console.error(
+          `❌ [BIN Lookup] Response status: ${error.response.status}`,
+        );
+        console.error(`❌ [BIN Lookup] Response data:`, error.response.data);
+      }
     }
     return null;
   }
@@ -458,13 +470,9 @@ export async function cacheBinLookup(
   bin: string,
   result: BinLookupResult,
 ): Promise<void> {
-  // Only cache if we have network info (even if bank info is missing)
-  // This helps avoid repeated API calls for the same BIN
-  if (!result.network) {
-    // No network detected - don't cache to DB, rely on in-memory cache
-    return;
-  }
-
+  // Cache ALL external lookups to avoid hitting the API repeatedly for the same BIN
+  // This is global (not user-level) to prevent rate limits
+  // Even if we don't have network or bank info, cache what we have to avoid API calls
   try {
     // First, try to find matching bank by name
     let bankId = result.bankId;
@@ -474,15 +482,15 @@ export async function cacheBinLookup(
       bankId = resolved || undefined;
     }
 
-    // Cache the BIN lookup even if we don't have bank info
-    // This helps avoid repeated API calls
+    // Cache the BIN lookup - use default values if missing to avoid API calls
+    // Network can be null in the database, but we'll use a default if needed
     await supabaseAdmin.from('bin_lookup').insert({
       bin_start: bin,
       bin_end: bin, // Single BIN, not a range
       bank_id: bankId || null,
       card_metadata_id: result.cardMetadataId || null,
       card_type: result.cardType || 'credit',
-      network: result.network,
+      network: result.network || null, // Allow null to cache even without network
       country: result.country || 'IN',
       is_active: true,
     });
@@ -490,12 +498,15 @@ export async function cacheBinLookup(
     if (bankId) {
       result.bankId = bankId;
     }
-    // BIN lookup result cached for future use
+    console.log(`✅ [BIN Lookup] Cached BIN ${bin} to database (global cache)`);
   } catch (error: any) {
     // Don't throw - caching is best effort
     // Ignore duplicate key errors (BIN already cached)
     if (error?.code !== '23505') {
-      console.error('Failed to cache BIN lookup:', error);
+      console.error('⚠️ [BIN Lookup] Failed to cache BIN lookup:', error);
+    } else {
+      // BIN already exists in cache - that's fine
+      console.log(`ℹ️ [BIN Lookup] BIN ${bin} already cached`);
     }
   }
 }
@@ -527,12 +538,20 @@ export async function lookupBIN(bin: string): Promise<BinLookupResult | null> {
   }
 
   // Step 2: Try external BinList API
+  console.log(`🔍 [BIN Lookup] Attempting external lookup for BIN ${bin}`);
   const externalResult = await lookupBINExternal(bin);
   if (externalResult) {
+    console.log(
+      `✅ [BIN Lookup] External lookup successful for BIN ${bin}, caching...`,
+    );
     // Step 3: Cache external result for future use
     await cacheBinLookup(bin, externalResult);
     setCachedBinResult(bin, externalResult);
     return externalResult;
+  } else {
+    console.log(
+      `⚠️ [BIN Lookup] External lookup failed or returned null for BIN ${bin}`,
+    );
   }
 
   // No result found

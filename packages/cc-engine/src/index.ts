@@ -10,18 +10,22 @@ import type { ParseResult, BankName } from './types';
 
 export * from './types';
 export * from './parsers';
+export * from './utils/cardMetadataExtractor';
+export { extractTextFromPDF } from './utils/pdfExtractor';
 
 /**
  * Parse a credit card statement PDF
  * @param pdfBuffer - Buffer containing the PDF file
  * @param bankName - Bank name ('hdfc', 'icici', 'amex')
  * @param password - Optional password for password-protected PDFs
+ * @param options - Optional parsing options (openaiApiKey, useLLMFallback)
  * @returns Parsed result with transactions and metadata
  */
 export async function parseStatement(
   pdfBuffer: Buffer,
   bankName: BankName,
   password?: string,
+  options?: { openaiApiKey?: string; useLLMFallback?: boolean },
 ): Promise<ParseResult> {
   let parser;
 
@@ -41,5 +45,5 @@ export async function parseStatement(
       );
   }
 
-  return parser.parse(pdfBuffer, password);
+  return parser.parse(pdfBuffer, password, options);
 }

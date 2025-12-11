@@ -171,6 +171,7 @@ export type CardMetadata = {
   offers: CardOffer[]; // JSONB array
   rewards: CardRewards; // JSONB object
   milestones: CardMilestone[]; // JSONB array
+  rewardsProgress?: CardRewardsProgress; // JSONB object
   metadata?: Record<string, any>; // JSONB object
   isActive: boolean;
   createdAt: string;
@@ -196,6 +197,7 @@ export type DatabaseCardMetadata = {
   offers: CardOffer[] | Json;
   rewards: CardRewards | Json;
   milestones: CardMilestone[] | Json;
+  rewards_progress?: CardRewardsProgress | Json;
   metadata?: Json;
   is_active: boolean;
   created_at: string;
@@ -248,6 +250,28 @@ export type CardMilestone = {
   description: string;
   type: 'monthly' | 'quarterly' | 'annual';
   isActive: boolean;
+};
+
+// Card Rewards Progress (part of cards_metadata.rewards_progress JSONB)
+// Used for the Rewards Progress widget
+export type CardRewardsProgress = {
+  type:
+    | 'cashback'
+    | 'points'
+    | 'coins'
+    | 'miles'
+    | 'membership_points'
+    | 'edge_miles'
+    | 'other';
+  unit: string; // e.g., "pts", "coins", "miles", "₹"
+  displayName: string; // e.g., "Reward Points", "NeuCoins", "Edge Miles"
+  redemptionRate?: number; // e.g., 0.25 for 1 point = ₹0.25, or 1 for cashback
+  redemptionCurrency?: string; // e.g., "INR"
+  milestones?: Array<{
+    threshold: number;
+    reward: string;
+    description: string;
+  }>;
 };
 
 // BIN Lookup types

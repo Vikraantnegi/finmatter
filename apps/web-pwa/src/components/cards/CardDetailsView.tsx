@@ -194,14 +194,26 @@ export const CardDetailsView = ({
           </div>
 
           {/* Card Name */}
-          {(card.cardMetadata?.displayName || card.cardName) && (
-            <div className='flex items-center justify-between'>
-              <span className='text-sm text-gray-400'>Card Name</span>
-              <span className='text-sm font-medium text-white'>
-                {card.cardMetadata?.displayName || card.cardName}
-              </span>
-            </div>
-          )}
+          <div className='flex items-center justify-between'>
+            <span className='text-sm text-gray-400'>Card Name</span>
+            <span className='text-sm font-medium text-white truncate max-w-[60%]'>
+              {(() => {
+                const cardName =
+                  card.cardMetadata?.displayName || card.cardName;
+                // Check if card name is uncertain/generic (like "CALCULATION ON YOUR HDFC BANK CREDIT CARD")
+                const isUncertainCardName =
+                  !cardName ||
+                  cardName.toLowerCase().includes('calculation') ||
+                  cardName.toLowerCase().includes('your') ||
+                  cardName
+                    .toLowerCase()
+                    .match(/^[a-z\s]+bank\s+credit\s+card$/i) ||
+                  cardName.length > 50; // Very long names are likely generic
+
+                return isUncertainCardName ? 'NA' : cardName;
+              })()}
+            </span>
+          </div>
 
           {/* Network */}
           <div className='flex items-center justify-between'>

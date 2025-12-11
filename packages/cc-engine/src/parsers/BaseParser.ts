@@ -138,8 +138,13 @@ export abstract class BaseParser {
    * Each bank parser must implement this
    * @param pdfBuffer - Buffer containing the PDF file
    * @param password - Optional password for password-protected PDFs
+   * @param options - Optional parsing options (openaiApiKey, useLLMFallback)
    */
-  abstract parse(pdfBuffer: Buffer, password?: string): Promise<ParseResult>;
+  abstract parse(
+    pdfBuffer: Buffer,
+    password?: string,
+    options?: { openaiApiKey?: string; useLLMFallback?: boolean },
+  ): Promise<ParseResult>;
 
   /**
    * Validate parse result

@@ -13,7 +13,11 @@ import type {
 export class ICICIParser extends BaseParser {
   protected bankName = 'icici';
 
-  async parse(pdfBuffer: Buffer, password?: string): Promise<ParseResult> {
+  async parse(
+    pdfBuffer: Buffer,
+    password?: string,
+    _options?: { openaiApiKey?: string; useLLMFallback?: boolean },
+  ): Promise<ParseResult> {
     const text = await this.extractText(pdfBuffer, password);
     const lines = text
       .split('\n')

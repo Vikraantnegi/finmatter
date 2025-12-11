@@ -383,14 +383,17 @@ export const UploadStatementBottomSheet = ({
             <button
               type='button'
               onClick={handleFileClick}
-              className='w-full p-4 border-2 border-dashed border-gray-700 rounded-xl hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-800/30'
+              className='w-full p-4 border-2 border-dashed border-gray-700 rounded-xl hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-800/30 overflow-hidden'
             >
-              <div className='flex flex-col items-center gap-2'>
-                <UploadCloud className='w-8 h-8 text-gray-400' />
+              <div className='flex flex-col items-center gap-2 w-full min-w-0'>
+                <UploadCloud className='w-8 h-8 text-gray-400 flex-shrink-0' />
                 {selectedFile ? (
-                  <div className='text-center'>
-                    <FileText className='w-6 h-6 text-primary mx-auto mb-1' />
-                    <p className='text-sm font-medium text-white'>
+                  <div className='text-center w-full min-w-0'>
+                    <FileText className='w-6 h-6 text-primary mx-auto mb-1 flex-shrink-0' />
+                    <p
+                      className='text-sm font-medium text-white truncate w-full px-2 mx-auto'
+                      title={selectedFile.name}
+                    >
                       {selectedFile.name}
                     </p>
                     <p className='text-xs text-gray-400'>

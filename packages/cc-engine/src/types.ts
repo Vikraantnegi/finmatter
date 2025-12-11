@@ -34,6 +34,17 @@ export interface StatementMetadata {
   rewardPointsAdjustedLapsed?: number;
   rewardPointsExpiring30Days?: number;
   rewardPointsExpiring60Days?: number;
+  // NeuCoins (Tata Neu Plus cards)
+  neuCoins?: number;
+  neuCoinsOpeningBalance?: number;
+  neuCoinsEarned?: number;
+  neuCoinsTransferredToTataNeu?: number;
+  neuCoinsAdjustedLapsed?: number;
+  bonusNeuCoinsSummary?: {
+    program: string;
+    bonusNeuCoins: number;
+  }[];
+  bonusNeuCoinsTotal?: number;
   // Spending Categories/Insights
   spendingCategories?: {
     category: string;

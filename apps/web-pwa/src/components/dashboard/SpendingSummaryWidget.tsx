@@ -3,7 +3,7 @@
 import React from 'react';
 import { TrendingUp, Award } from 'lucide-react';
 import { formatCurrencyCompact } from '@finmatter/shared';
-import { useTransactions } from '@/hooks/useTransactions';
+import { useTransactionsFromStore } from '@/hooks/useTransactionsStore';
 import { calculateMonthlySpending } from '@finmatter/shared';
 import { SpendingSummaryLoader } from './SectionLoader';
 
@@ -14,9 +14,7 @@ interface SpendingSummaryWidgetProps {
 export function SpendingSummaryWidget({
   className = '',
 }: SpendingSummaryWidgetProps) {
-  const { transactions, isLoading } = useTransactions({
-    autoFetch: true,
-  });
+  const { transactions, isLoading } = useTransactionsFromStore();
 
   const monthlyStats = React.useMemo(() => {
     return calculateMonthlySpending(transactions);

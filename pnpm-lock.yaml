@@ -289,6 +289,9 @@ importers:
       date-fns:
         specifier: ^3.6.0
         version: 3.6.0
+      openai:
+        specifier: ^4.24.1
+        version: 4.104.0(zod@3.25.76)
       pdf-lib:
         specifier: ^1.17.1
         version: 1.17.1

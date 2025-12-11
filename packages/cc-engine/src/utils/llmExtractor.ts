@@ -60,9 +60,10 @@ export async function extractMetadataWithLLM(
   } = options;
 
   // Auto-detect provider if not specified
+  // Default to Ollama if available, fallback to OpenAI
   const detectedProvider =
     provider === 'openai'
-      ? process.env.USE_OLLAMA === 'true'
+      ? process.env.USE_OLLAMA === 'true' || !apiKey
         ? 'ollama'
         : 'openai'
       : provider;
@@ -77,7 +78,7 @@ export async function extractMetadataWithLLM(
 
   // Determine model based on provider
   const finalModel =
-    model || (detectedProvider === 'ollama' ? 'llama3.2' : 'gpt-4o-mini');
+    model || (detectedProvider === 'ollama' ? 'llama3.1:8b' : 'gpt-4o-mini');
 
   // Truncate text intelligently - keep important parts (beginning and key sections)
   const truncatedText = truncateTextIntelligently(pdfText, 10000);
@@ -185,45 +186,80 @@ async function performExtraction(
   let content: string;
 
   if (provider === 'ollama') {
-    // Use Ollama API with better error handling
-    const url = `${ollamaBaseUrl || 'http://localhost:11434'}/api/chat`;
+    // Use Ollama directly (consistent with categorization approach)
+    try {
+      const { Ollama } = await import('ollama');
+      const ollama = new Ollama({
+        host: ollamaBaseUrl || 'http://localhost:11434',
+      });
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are a financial document parser. Extract structured data and return ONLY valid JSON. Do not include markdown, explanations, or any text outside the JSON object.',
-          },
-          { role: 'user', content: prompt },
-        ],
+      const systemPrompt =
+        'You are a financial document parser. Extract structured data and return ONLY valid JSON. Do not include markdown, explanations, or any text outside the JSON object.';
+      const fullPrompt = `${systemPrompt}\n\n${prompt}`;
+
+      const response = await ollama.generate({
+        model: model || 'llama3.1:8b',
+        prompt: fullPrompt,
+        format: 'json',
         stream: false,
         options: {
           temperature,
-          num_predict: 1000, // Limit tokens for faster response
+          num_predict: 1000,
         },
-        format: 'json', // Request JSON format
-      }),
-    });
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      throw new Error(`Ollama API error (${response.status}): ${errorText}`);
+      content = response.response;
+
+      if (!content) {
+        throw new Error('Empty response from Ollama');
+      }
+
+      // Ollama might return markdown or wrapped JSON, extract it
+      content = extractJSONFromResponse(content);
+    } catch (error) {
+      // Fallback to direct fetch if Ollama import fails
+      console.warn(
+        '⚠️ [LLM Extractor] Ollama client failed, falling back to direct fetch:',
+        error,
+      );
+      const url = `${ollamaBaseUrl || 'http://localhost:11434'}/api/chat`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: model || 'llama3.1:8b',
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are a financial document parser. Extract structured data and return ONLY valid JSON. Do not include markdown, explanations, or any text outside the JSON object.',
+            },
+            { role: 'user', content: prompt },
+          ],
+          stream: false,
+          options: {
+            temperature,
+            num_predict: 1000,
+          },
+          format: 'json',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`Ollama API error (${response.status}): ${errorText}`);
+      }
+
+      const data = await response.json();
+      content = data.message?.content;
+
+      if (!content) {
+        throw new Error('Empty response from Ollama');
+      }
+
+      content = extractJSONFromResponse(content);
     }
-
-    const data = await response.json();
-    content = data.message?.content;
-
-    if (!content) {
-      throw new Error('Empty response from Ollama');
-    }
-
-    // Ollama might return markdown or wrapped JSON, extract it
-    content = extractJSONFromResponse(content);
   } else {
     // Use OpenAI API
     const { OpenAI } = await import('openai');

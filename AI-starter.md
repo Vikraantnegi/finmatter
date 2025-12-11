@@ -104,53 +104,52 @@ this.cache = new Map();
   async infer(request: InferenceRequest): Promise<InferenceResponse> {
   const startTime = Date.now();
 
+  // Check cache first
+  const cacheKey = this.getCacheKey(request);
+  const cached = this.cache.get(cacheKey);
+  if (cached && Date.now() < cached.expiry) {
+  return {
+  result: cached.result,
+  model: 'cache',
+  latency: Date.now() - startTime,
+  cost: 0,
+  cached: true,
+  };
+  }
 
-    // Check cache first
-    const cacheKey = this.getCacheKey(request);
-    const cached = this.cache.get(cacheKey);
-    if (cached && Date.now() < cached.expiry) {
-      return {
-        result: cached.result,
-        model: 'cache',
-        latency: Date.now() - startTime,
-        cost: 0,
-        cached: true,
-      };
-    }
+  // Select best model
+  const model = this.selectModel(request.queryType);
 
-    // Select best model
-    const model = this.selectModel(request.queryType);
+  // Route to appropriate model
+  let result: string;
+  let cost = 0;
 
-    // Route to appropriate model
-    let result: string;
-    let cost = 0;
+  if (model.startsWith('llama') || model.startsWith('mistral')) {
+  if (!this.ollamaHealthy) {
+  console.warn('Ollama unavailable, falling back to OpenAI');
+  return this.inferWithOpenAI(request, 'gpt-4o-mini', startTime);
+  }
+  result = await this.inferWithOllama(request, model);
+  } else {
+  return this.inferWithOpenAI(request, model, startTime);
+  }
 
-    if (model.startsWith('llama') || model.startsWith('mistral')) {
-      if (!this.ollamaHealthy) {
-        console.warn('Ollama unavailable, falling back to OpenAI');
-        return this.inferWithOpenAI(request, 'gpt-4o-mini', startTime);
-      }
-      result = await this.inferWithOllama(request, model);
-    } else {
-      return this.inferWithOpenAI(request, model, startTime);
-    }
+  const latency = Date.now() - startTime;
 
-    const latency = Date.now() - startTime;
+  // Cache result (5 min TTL for categorization, 1 min for others)
+  const ttl = request.queryType === 'categorization' ? 5 _ 60 _ 1000 : 60 \* 1000;
+  this.cache.set(cacheKey, {
+  result,
+  expiry: Date.now() + ttl,
+  });
 
-    // Cache result (5 min TTL for categorization, 1 min for others)
-    const ttl = request.queryType === 'categorization' ? 5 * 60 * 1000 : 60 * 1000;
-    this.cache.set(cacheKey, {
-      result,
-      expiry: Date.now() + ttl,
-    });
-
-    return {
-      result,
-      model,
-      latency,
-      cost,
-      cached: false,
-    };
+  return {
+  result,
+  model,
+  latency,
+  cost,
+  cached: false,
+  };
 
 }
 
@@ -168,21 +167,20 @@ this.cache = new Map();
   optimization: ['gpt-4', 'gpt-4o-mini'],
   };
 
+  const preferences = modelPreferences[queryType];
 
-    const preferences = modelPreferences[queryType];
+  for (const model of preferences) {
+  const isLocal = model.startsWith('llama') || model.startsWith('mistral');
+  if (isLocal && this.ollamaHealthy) {
+  return model;
+  }
+  if (!isLocal) {
+  return model;
+  }
+  }
 
-    for (const model of preferences) {
-      const isLocal = model.startsWith('llama') || model.startsWith('mistral');
-      if (isLocal && this.ollamaHealthy) {
-        return model;
-      }
-      if (!isLocal) {
-        return model;
-      }
-    }
-
-    // Fallback to OpenAI
-    return 'gpt-4o-mini';
+  // Fallback to OpenAI
+  return 'gpt-4o-mini';
 
 }
 
@@ -207,8 +205,7 @@ this.cache = new Map();
   },
   });
 
-
-    return response.response;
+  return response.response;
 
 }
 
@@ -223,33 +220,32 @@ this.cache = new Map();
   ): Promise<InferenceResponse> {
   const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
 
+  if (request.context) {
+  messages.push({ role: 'system', content: request.context });
+  }
 
-    if (request.context) {
-      messages.push({ role: 'system', content: request.context });
-    }
+  messages.push({ role: 'user', content: request.prompt });
 
-    messages.push({ role: 'user', content: request.prompt });
+  const response = await this.openai.chat.completions.create({
+  model,
+  messages,
+  temperature: request.temperature ?? 0.3,
+  max_tokens: request.maxTokens ?? 512,
+  response_format: request.jsonMode ? { type: 'json_object' } : undefined,
+  });
 
-    const response = await this.openai.chat.completions.create({
-      model,
-      messages,
-      temperature: request.temperature ?? 0.3,
-      max_tokens: request.maxTokens ?? 512,
-      response_format: request.jsonMode ? { type: 'json_object' } : undefined,
-    });
+  const result = response.choices[0].message.content || '';
+  const tokens = response.usage?.total_tokens || 0;
+  const costPerToken = MODEL_REGISTRY[model as keyof typeof MODEL_REGISTRY].costPerToken;
+  const cost = (tokens / 1000) \* costPerToken;
 
-    const result = response.choices[0].message.content || '';
-    const tokens = response.usage?.total_tokens || 0;
-    const costPerToken = MODEL_REGISTRY[model as keyof typeof MODEL_REGISTRY].costPerToken;
-    const cost = (tokens / 1000) * costPerToken;
-
-    return {
-      result,
-      model,
-      latency: Date.now() - startTime,
-      cost,
-      cached: false,
-    };
+  return {
+  result,
+  model,
+  latency: Date.now() - startTime,
+  cost,
+  cached: false,
+  };
 
 }
 
@@ -362,24 +358,23 @@ Respond ONLY with JSON:
   context += `Category: ${transaction.category}\n\n`;
   context += `Available Cards:\n\n`;
 
+  userCards.forEach((card, idx) => {
+  context += `${idx + 1}. ${card.name} (${card.bank})\n`;
+  context += `   Available Credit: ₹${card.available.toLocaleString('en-IN')}\n`;
+  context += `   Rewards:\n`;
+  Object.entries(card.rewards).forEach(([cat, rate]) => {
+  context += `     - ${cat}: ${rate}%\n`;
+  });
+  context += `\n`;
+  });
 
-    userCards.forEach((card, idx) => {
-      context += `${idx + 1}. ${card.name} (${card.bank})\n`;
-      context += `   Available Credit: ₹${card.available.toLocaleString('en-IN')}\n`;
-      context += `   Rewards:\n`;
-      Object.entries(card.rewards).forEach(([cat, rate]) => {
-        context += `     - ${cat}: ${rate}%\n`;
-      });
-      context += `\n`;
-    });
+  context += `Recommend the BEST card for this transaction. Consider:\n`;
+  context += `1. Highest reward rate for the category\n`;
+  context += `2. Available credit\n`;
+  context += `3. Overall value\n\n`;
+  context += `Respond with card name, expected reward, and reasoning.`;
 
-    context += `Recommend the BEST card for this transaction. Consider:\n`;
-    context += `1. Highest reward rate for the category\n`;
-    context += `2. Available credit\n`;
-    context += `3. Overall value\n\n`;
-    context += `Respond with card name, expected reward, and reasoning.`;
-
-    return this.truncateContext(context);
+  return this.truncateContext(context);
 
 }
 
@@ -398,30 +393,29 @@ Respond ONLY with JSON:
   ): string {
   let context = `# Spending Analysis (${timeRange})\n\n`;
 
+  // Group by category
+  const byCategory: Record<string, number> = {};
+  transactions.forEach((txn) => {
+  byCategory[txn.category] = (byCategory[txn.category] || 0) + txn.amount;
+  });
 
-    // Group by category
-    const byCategory: Record<string, number> = {};
-    transactions.forEach((txn) => {
-      byCategory[txn.category] = (byCategory[txn.category] || 0) + txn.amount;
-    });
+  const total = Object.values(byCategory).reduce((sum, amt) => sum + amt, 0);
 
-    const total = Object.values(byCategory).reduce((sum, amt) => sum + amt, 0);
+  context += `Total Spending: ₹${total.toLocaleString('en-IN')}\n\n`;
+  context += `Breakdown by Category:\n`;
+  Object.entries(byCategory)
+  .sort(([, a], [, b]) => b - a)
+  .forEach(([cat, amt]) => {
+  const pct = ((amt / total) \* 100).toFixed(1);
+  context += `- ${cat}: ₹${amt.toLocaleString('en-IN')} (${pct}%)\n`;
+  });
 
-    context += `Total Spending: ₹${total.toLocaleString('en-IN')}\n\n`;
-    context += `Breakdown by Category:\n`;
-    Object.entries(byCategory)
-      .sort(([, a], [, b]) => b - a)
-      .forEach(([cat, amt]) => {
-        const pct = ((amt / total) * 100).toFixed(1);
-        context += `- ${cat}: ₹${amt.toLocaleString('en-IN')} (${pct}%)\n`;
-      });
+  context += `\n\nRecent Transactions:\n`;
+  transactions.slice(0, 10).forEach((txn) => {
+  context += `- ${txn.date}: ${txn.merchant} - ₹${txn.amount} (${txn.category})\n`;
+  });
 
-    context += `\n\nRecent Transactions:\n`;
-    transactions.slice(0, 10).forEach((txn) => {
-      context += `- ${txn.date}: ${txn.merchant} - ₹${txn.amount} (${txn.category})\n`;
-    });
-
-    return this.truncateContext(context);
+  return this.truncateContext(context);
 
 }
 
@@ -433,15 +427,14 @@ Respond ONLY with JSON:
   // Rough estimate: 1 token ≈ 4 characters
   const estimatedTokens = context.length / 4;
 
+  if (estimatedTokens <= this.maxTokens) {
+  return context;
+  }
 
-    if (estimatedTokens <= this.maxTokens) {
-      return context;
-    }
-
-    // Truncate and add note
-    const targetLength = this.maxTokens * 4;
-    const truncated = context.substring(0, targetLength);
-    return truncated + '\n\n[Context truncated to fit token limit]';
+  // Truncate and add note
+  const targetLength = this.maxTokens \* 4;
+  const truncated = context.substring(0, targetLength);
+  return truncated + '\n\n[Context truncated to fit token limit]';
 
 }
 }

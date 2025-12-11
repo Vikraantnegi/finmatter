@@ -1,6 +1,13 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Transpile workspace packages
+  transpilePackages: [
+    '@finmatter/types',
+    '@finmatter/shared',
+    '@finmatter/cc-engine',
+  ],
+
   // Mark pdfjs-dist as external for server-side (prevents bundling ESM modules)
   serverExternalPackages: ['pdfjs-dist'],
 

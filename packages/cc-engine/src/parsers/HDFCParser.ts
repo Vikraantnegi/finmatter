@@ -755,10 +755,8 @@ export class HDFCParser extends BaseParser {
         metadata.cardName.toLowerCase().includes('calculation') || // Low confidence match
         metadata.cardName.toLowerCase().includes('your')); // Generic match
 
-    const hasLLM =
-      options?.openaiApiKey ||
-      (options as any)?.ollamaBaseUrl ||
-      process.env.USE_OLLAMA === 'true';
+    // Default to Ollama if no API key provided, or use specified provider
+    const hasLLM = true; // Always try Ollama first (it will fallback gracefully)
 
     if (useLLM && hasLLM) {
       console.log(
@@ -767,9 +765,11 @@ export class HDFCParser extends BaseParser {
       try {
         const llmOptions: any = {};
 
+        // Prefer Ollama if explicitly set, or if no OpenAI key provided
         if (
           (options as any)?.llmProvider === 'ollama' ||
-          process.env.USE_OLLAMA === 'true'
+          process.env.USE_OLLAMA === 'true' ||
+          !options?.openaiApiKey
         ) {
           llmOptions.provider = 'ollama';
           llmOptions.ollamaBaseUrl =

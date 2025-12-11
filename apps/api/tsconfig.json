@@ -23,7 +23,9 @@
       "@finmatter/shared": ["../../packages/shared/src"],
       "@finmatter/shared/*": ["../../packages/shared/src/*"],
       "@finmatter/types": ["../../packages/types/src"],
-      "@finmatter/types/*": ["../../packages/types/src/*"]
+      "@finmatter/types/*": ["../../packages/types/src/*"],
+      "@finmatter/cc-engine": ["../../packages/cc-engine/src"],
+      "@finmatter/cc-engine/*": ["../../packages/cc-engine/src/*"]
     },
     "baseUrl": "."
   },

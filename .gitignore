@@ -157,3 +157,11 @@ yarn.lock
 
 # Turbo
 .turbo/
+
+# Compiled TypeScript files in src directories (should be in dist/)
+packages/*/src/**/*.js
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.map
+
+# Test results
+packages/*/test-results/

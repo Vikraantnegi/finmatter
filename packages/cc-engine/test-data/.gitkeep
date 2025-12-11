@@ -1,0 +1,16 @@
+# Test Data Directory
+# 
+# Place your test PDF statements here:
+# 
+# test-data/
+#   statements/
+#     hdfc/
+#       statement-001.pdf
+#       statement-001.expected.json
+#     icici/
+#       statement-001.pdf
+#       statement-001.expected.json
+#     amex/
+#     hsbc/
+
+

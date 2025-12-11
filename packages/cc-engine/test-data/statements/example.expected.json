@@ -1,0 +1,52 @@
+{
+  "statementId": "example-statement",
+  "bank": "hdfc",
+  "password": "optional-password-if-pdf-is-protected",
+  "expectedTransactionCount": 3,
+  "expectedTransactions": [
+    {
+      "transactionDate": "2024-01-15",
+      "postingDate": "2024-01-16",
+      "merchantName": "SWIGGY",
+      "merchantCategory": "5814",
+      "amount": 450.0,
+      "type": "debit",
+      "currency": "INR",
+      "description": "SWIGGY INDIA",
+      "merchantNameVariations": ["SWIGGY INDIA", "SWIGGY*"],
+      "amountTolerance": 0.01
+    },
+    {
+      "transactionDate": "2024-01-20",
+      "merchantName": "AMAZON",
+      "amount": 2500.0,
+      "type": "debit",
+      "merchantNameVariations": ["AMAZON PAY", "AMAZON.IN"],
+      "amountTolerance": 0.01
+    },
+    {
+      "transactionDate": "2024-01-25",
+      "merchantName": "REFUND AMAZON",
+      "amount": 500.0,
+      "type": "refund",
+      "amountTolerance": 0.01
+    }
+  ],
+  "expectedMetadata": {
+    "cardLastFour": "1234",
+    "statementDate": "2024-01-17",
+    "statementPeriodStart": "2023-12-18",
+    "statementPeriodEnd": "2024-01-17",
+    "billingCycleStart": "2023-12-18",
+    "billingCycleEnd": "2024-01-17",
+    "totalAmount": 15000.0,
+    "minimumDue": 500.0,
+    "paymentDueDate": "2024-02-05",
+    "cardName": "Millennia Credit Card",
+    "bankName": "HDFC Bank",
+    "rewardPoints": 1500,
+    "creditLimit": 100000,
+    "availableCredit": 85000
+  },
+  "notes": "Example expected result format. Copy this structure for your test statements."
+}

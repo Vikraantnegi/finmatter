@@ -65,7 +65,7 @@
     "lint-staged": "^16.2.4",
     "prettier": "^3.2.4",
     "supabase": "^2.58.5",
-    "tsx": "^4.8.1",
+    "tsx": "^4.20.6",
     "turbo": "^1.12.4",
     "typescript": "^5.3.3"
   },
@@ -79,5 +79,8 @@
     "typescript"
   ],
   "author": "FinMatter Team",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "ollama": "^0.6.3"
+  }
 }

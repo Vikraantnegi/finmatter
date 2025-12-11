@@ -10,19 +10,29 @@
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "parsers:improve": "tsx src/testing/tune-statement-parsers/workflows/improve.ts",
+    "parsers:improve:keep": "tsx src/testing/tune-statement-parsers/workflows/improve.ts --keep-results",
+    "parsers:clean": "tsx src/testing/tune-statement-parsers/workflows/improve.ts --clean-only",
+    "parsers:test": "tsx src/testing/tune-statement-parsers/workflows/test.ts",
+    "view:results": "tsx src/testing/tune-statement-parsers/scripts/view-results.ts",
+    "view:results:latest": "tsx src/testing/tune-statement-parsers/scripts/view-results.ts --latest",
+    "view:results:all": "tsx src/testing/tune-statement-parsers/scripts/view-results.ts --all"
   },
   "dependencies": {
     "@finmatter/types": "workspace:*",
     "date-fns": "^3.6.0",
-    "pdf-parse": "^1.1.1",
+    "openai": "^4.24.1",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^5.4.296",
-    "openai": "^4.24.1"
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^5.4.296"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "@types/pdf-parse": "^1.1.4",
+    "dotenv": "^17.2.3",
+    "pm2": "^5.3.0",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   },
   "files": [

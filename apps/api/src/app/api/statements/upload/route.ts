@@ -384,14 +384,28 @@ async function parseStatementAsync(
   password?: string,
 ): Promise<void> {
   try {
-    // Get OpenAI API key from environment
+    // Get LLM configuration from environment
     const openaiApiKey = process.env.OPENAI_API_KEY;
     const useLLMFallback = process.env.USE_LLM_FALLBACK !== 'false'; // Default to true
+    const ollamaBaseUrl = process.env.OLLAMA_BASE_URL;
+    const useOllama = process.env.USE_OLLAMA === 'true';
+
+    // Determine LLM provider: Prefer Ollama if available, fallback to OpenAI
+    let llmProvider: 'openai' | 'ollama' | undefined;
+    if (useOllama || ollamaBaseUrl) {
+      llmProvider = 'ollama';
+    } else if (openaiApiKey) {
+      llmProvider = 'openai';
+    }
 
     // Parse the PDF
     const parseResult = await parseStatement(fileBuffer, bankName, password, {
       openaiApiKey,
       useLLMFallback,
+      ollamaBaseUrl:
+        ollamaBaseUrl ||
+        (llmProvider === 'ollama' ? 'http://localhost:11434' : undefined),
+      llmProvider,
     });
 
     // Insert transactions if parsing was successful

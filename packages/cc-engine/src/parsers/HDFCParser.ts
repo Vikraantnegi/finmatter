@@ -10,6 +10,7 @@ import type {
   StatementMetadata,
 } from '../types';
 import { extractMetadataWithLLM } from '../utils/llmExtractor';
+import { cleanCardName } from '../utils/formatters';
 
 export class HDFCParser extends BaseParser {
   protected bankName = 'hdfc';
@@ -17,7 +18,15 @@ export class HDFCParser extends BaseParser {
   async parse(
     pdfBuffer: Buffer,
     password?: string,
-    options?: { openaiApiKey?: string; useLLMFallback?: boolean },
+    options?:
+      | {
+          openaiApiKey?: string;
+          useLLMFallback?: boolean;
+          ollamaBaseUrl?: string;
+          llmProvider?: 'openai' | 'ollama';
+          provider?: 'openai' | 'ollama'; // Alias for llmProvider
+        }
+      | undefined,
   ): Promise<ParseResult> {
     const text = await this.extractText(pdfBuffer, password);
 
@@ -406,7 +415,7 @@ export class HDFCParser extends BaseParser {
     }
 
     if (cardName && !metadata.cardName) {
-      metadata.cardName = cardName;
+      metadata.cardName = cleanCardName(cardName);
     }
 
     // Extract bank name - format: "HDFC Bank"
@@ -746,14 +755,33 @@ export class HDFCParser extends BaseParser {
         metadata.cardName.toLowerCase().includes('calculation') || // Low confidence match
         metadata.cardName.toLowerCase().includes('your')); // Generic match
 
-    if (useLLM && options.openaiApiKey) {
+    const hasLLM =
+      options?.openaiApiKey ||
+      (options as any)?.ollamaBaseUrl ||
+      process.env.USE_OLLAMA === 'true';
+
+    if (useLLM && hasLLM) {
       console.log(
         '🔄 [HDFC Parser] Using LLM fallback for metadata extraction',
       );
       try {
-        const llmResult = await extractMetadataWithLLM(text, {
-          apiKey: options.openaiApiKey,
-        });
+        const llmOptions: any = {};
+
+        if (
+          (options as any)?.llmProvider === 'ollama' ||
+          process.env.USE_OLLAMA === 'true'
+        ) {
+          llmOptions.provider = 'ollama';
+          llmOptions.ollamaBaseUrl =
+            (options as any)?.ollamaBaseUrl ||
+            process.env.OLLAMA_BASE_URL ||
+            'http://localhost:11434';
+        } else if (options?.openaiApiKey) {
+          llmOptions.provider = 'openai';
+          llmOptions.apiKey = options.openaiApiKey;
+        }
+
+        const llmResult = await extractMetadataWithLLM(text, llmOptions);
 
         if (llmResult) {
           console.log(`\n${'-'.repeat(80)}`);
@@ -764,10 +792,10 @@ export class HDFCParser extends BaseParser {
 
           // Merge LLM results with regex results (LLM takes precedence for missing fields)
           if (llmResult.cardName && !metadata.cardName) {
-            metadata.cardName = llmResult.cardName;
+            metadata.cardName = cleanCardName(llmResult.cardName);
             console.log(
               '✅ [HDFC Parser] LLM extracted card name:',
-              llmResult.cardName,
+              metadata.cardName,
             );
           }
           if (llmResult.cardLastFour && !metadata.cardLastFour) {

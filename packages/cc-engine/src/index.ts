@@ -25,7 +25,13 @@ export async function parseStatement(
   pdfBuffer: Buffer,
   bankName: BankName,
   password?: string,
-  options?: { openaiApiKey?: string; useLLMFallback?: boolean },
+  options?: {
+    openaiApiKey?: string;
+    useLLMFallback?: boolean;
+    ollamaBaseUrl?: string;
+    llmProvider?: 'openai' | 'ollama';
+    provider?: 'openai' | 'ollama'; // Alias for llmProvider
+  },
 ): Promise<ParseResult> {
   let parser;
 
@@ -45,5 +51,15 @@ export async function parseStatement(
       );
   }
 
-  return parser.parse(pdfBuffer, password, options);
+  // Map llmProvider to provider for consistency (parsers use provider internally)
+  const parserOptions = options
+    ? {
+        ...options,
+        ...(options.provider || options.llmProvider
+          ? { provider: options.provider || options.llmProvider }
+          : {}),
+      }
+    : undefined;
+
+  return parser.parse(pdfBuffer, password, parserOptions);
 }

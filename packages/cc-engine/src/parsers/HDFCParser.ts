@@ -9,7 +9,7 @@ import type {
   ParsedTransaction,
   StatementMetadata,
 } from '../types';
-import { extractMetadataWithLLM } from '../utils/llmExtractor';
+import { extractMetadataWithLLM } from '@finmatter/llm-router';
 import { cleanCardName } from '../utils/formatters';
 
 export class HDFCParser extends BaseParser {
@@ -747,13 +747,19 @@ export class HDFCParser extends BaseParser {
     console.log('Minimum Due:', metadata.minimumDue || 'NOT FOUND');
     console.log(`${'-'.repeat(80)}\n`);
 
-    // LLM Fallback: Use LLM if regex failed or confidence is low
+    // LLM Fallback: Use LLM only for card identification (card name, bank name)
+    // Statement metadata (dates, amounts) comes from regex parsing, not LLM
+    // Card metadata (benefits, rewards, fees) is extracted separately in upload route
+    const missingCardIdentification = !metadata.cardName || !metadata.bankName;
+
+    const lowConfidenceCardName =
+      metadata.cardName &&
+      (metadata.cardName.toLowerCase().includes('calculation') ||
+        metadata.cardName.toLowerCase().includes('your'));
+
     const useLLM =
       options?.useLLMFallback !== false && // Default to true if not specified
-      options?.openaiApiKey &&
-      (!metadata.cardName || // Regex didn't find card name
-        metadata.cardName.toLowerCase().includes('calculation') || // Low confidence match
-        metadata.cardName.toLowerCase().includes('your')); // Generic match
+      (missingCardIdentification || lowConfidenceCardName); // Use LLM only if card name/bank name missing OR low confidence
 
     // Default to Ollama if no API key provided, or use specified provider
     const hasLLM = true; // Always try Ollama first (it will fallback gracefully)
@@ -768,6 +774,7 @@ export class HDFCParser extends BaseParser {
         // Prefer Ollama if explicitly set, or if no OpenAI key provided
         if (
           (options as any)?.llmProvider === 'ollama' ||
+          (options as any)?.provider === 'ollama' ||
           process.env.USE_OLLAMA === 'true' ||
           !options?.openaiApiKey
         ) {

@@ -42,13 +42,10 @@ export const CardPreview = ({
   const network = card.cardMetadata?.network || (card as Card).network;
   const networkLogoUrl = getNetworkIconUrl(network, networkIconVariant);
 
-  // Get bank logo - prefer from bank object, fallback to bank name
-  const bankLogoUrl =
-    card.bank?.logoUrl ||
-    getBankLogoUrl(
-      card.bank?.name || card.bank?.displayName || (card as Card).bankName,
-      'logo',
-    );
+  const bankLogoUrl = getBankLogoUrl(
+    card.bank?.name || card.bank?.displayName || (card as Card).bankName,
+    'logo',
+  );
   const bankDisplayName =
     card.bank?.displayName ||
     card.bank?.name ||
@@ -80,16 +77,17 @@ export const CardPreview = ({
           <div className='text-2xl font-bold'>{bankDisplayName}</div>
         )}
 
-        {networkLogoUrl && (
+        {networkLogoUrl ? (
           <div className='relative w-12 h-12'>
             <Image
               src={networkLogoUrl}
               alt={network || 'Network'}
               fill
               className='object-contain'
+              unoptimized
             />
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className='space-y-4'>

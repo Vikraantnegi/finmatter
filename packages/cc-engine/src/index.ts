@@ -10,8 +10,16 @@ import type { ParseResult, BankName } from './types';
 
 export * from './types';
 export * from './parsers';
-export * from './utils/cardMetadataExtractor';
 export { extractTextFromPDF } from './utils/pdfExtractor';
+
+// Re-export LLM functions from llm-router for backward compatibility
+export {
+  extractCardMetadataWithLLM,
+  extractMetadataWithLLM,
+  type StatementMetadataResult,
+  type CardMetadataResult,
+  type CardMetadataExtractionOptions,
+} from '@finmatter/llm-router';
 
 /**
  * Parse a credit card statement PDF

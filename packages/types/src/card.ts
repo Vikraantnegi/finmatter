@@ -296,10 +296,10 @@ export type DatabaseBinLookup = {
   id: string;
   bin_start: string;
   bin_end?: string | null;
-  bank_id: string;
+  bank_id: string | null; // Allow null - we might not always know the bank from external API
   card_metadata_id?: string | null;
   card_type: CardType;
-  network: CardNetwork;
+  network: CardNetwork | null; // Allow null - external API might not return network info
   country: string;
   is_active: boolean;
   created_at: string;

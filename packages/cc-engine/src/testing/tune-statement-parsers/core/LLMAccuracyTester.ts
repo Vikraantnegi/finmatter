@@ -4,7 +4,7 @@
  * Tests LLM extraction accuracy and compares with regex extraction
  */
 
-import { extractMetadataWithLLM } from '../../../utils/llmExtractor';
+import { extractMetadataWithLLM } from '@finmatter/llm-router';
 import type { StatementMetadata } from '../../../types';
 import type { ExpectedMetadata } from './types';
 

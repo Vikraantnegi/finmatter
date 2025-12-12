@@ -287,15 +287,15 @@ importers:
 
   packages/cc-engine:
     dependencies:
+      '@finmatter/llm-router':
+        specifier: workspace:*
+        version: link:../llm-router
       '@finmatter/types':
         specifier: workspace:*
         version: link:../types
       date-fns:
         specifier: ^3.6.0
         version: 3.6.0
-      openai:
-        specifier: ^4.24.1
-        version: 4.104.0(zod@3.25.76)
       pdf-lib:
         specifier: ^1.17.1
         version: 1.17.1
@@ -330,6 +330,9 @@ importers:
       ollama:
         specifier: ^0.5.9
         version: 0.5.18
+      openai:
+        specifier: ^4.24.1
+        version: 4.104.0(zod@3.25.76)
     devDependencies:
       '@types/node':
         specifier: ^20.11.0

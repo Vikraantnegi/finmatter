@@ -390,6 +390,15 @@ async function parseStatementAsync(
     const ollamaBaseUrl = process.env.OLLAMA_BASE_URL;
     const useOllama = process.env.USE_OLLAMA === 'true';
 
+    // Debug: Log environment variables
+    console.log('🔍 [LLM Config] USE_OLLAMA:', process.env.USE_OLLAMA);
+    console.log('🔍 [LLM Config] OLLAMA_BASE_URL:', ollamaBaseUrl || 'not set');
+    console.log(
+      '🔍 [LLM Config] OPENAI_API_KEY:',
+      openaiApiKey ? 'set' : 'not set',
+    );
+    console.log('🔍 [LLM Config] useOllama (computed):', useOllama);
+
     // Determine LLM provider: Prefer Ollama if available, fallback to OpenAI
     let llmProvider: 'openai' | 'ollama' | undefined;
     if (useOllama || ollamaBaseUrl) {
@@ -643,14 +652,22 @@ async function parseStatementAsync(
     }
 
     // Extract and store card metadata using LLM
-    // Always use LLM if API key is available - LLM can extract card name and bank name even if regex failed
-    console.log(`🔍 [Card Metadata] Checking for OpenAI API key...`);
-    console.log(`🔍 [Card Metadata] API key present: ${!!openaiApiKey}`);
-    console.log(
-      `🔍 [Card Metadata] API key length: ${openaiApiKey?.length || 0}`,
-    );
+    // First check if we have card name and bank name from regex
+    const hasCardName = !!meta.cardName;
+    const hasBankName = !!meta.bankName;
 
-    if (openaiApiKey) {
+    console.log(`🔍 [Card Metadata] Checking prerequisites...`);
+    console.log(
+      `🔍 [Card Metadata] Card name from regex: ${hasCardName ? '✅' : '❌'}`,
+    );
+    console.log(
+      `🔍 [Card Metadata] Bank name from regex: ${hasBankName ? '✅' : '❌'}`,
+    );
+    console.log(`🔍 [Card Metadata] OpenAI API key present: ${!!openaiApiKey}`);
+
+    // Only proceed if we have card name and bank name (needed for DB lookup)
+    // OR if we have API key to extract them via LLM
+    if ((hasCardName && hasBankName) || openaiApiKey) {
       try {
         console.log(
           '🔄 [Card Metadata] Starting LLM extraction for card metadata',
@@ -665,52 +682,143 @@ async function parseStatementAsync(
           `📄 [Card Metadata] PDF text preview (first 500 chars): ${pdfText.slice(0, 500)}`,
         );
 
-        // Extract card metadata using LLM - give it full PDF text so it can extract card name and bank name
-        console.log('🤖 [Card Metadata] Calling extractCardMetadataWithLLM...');
-        const extractedMetadata = await extractCardMetadataWithLLM(
-          pdfText,
-          {
-            // Use regex-extracted values as hints, but LLM can override if it finds better ones
-            cardName: meta.cardName,
-            bankName: meta.bankName,
-            spendingCategories: meta.spendingCategories,
-            rewardsProgramSummary: meta.rewardsProgramSummary,
-            rewardPoints: meta.rewardPoints,
-          },
-          { apiKey: openaiApiKey },
-        );
+        // Merge strategy: LLM has priority, but fall back to regex if LLM didn't extract
+        // First, get card name and bank name from regex (we need these for DB lookup)
+        let finalCardName = meta.cardName;
+        let finalBankName = meta.bankName;
+        let extractedMetadata: any = null;
+        let existingCompleteMetadata: any = null;
+        let isComplete = false;
 
-        console.log(
-          `📊 [Card Metadata] LLM extraction result:`,
-          extractedMetadata ? 'SUCCESS' : 'NULL',
-        );
-        if (extractedMetadata) {
-          console.log(
-            `📊 [Card Metadata] Extracted cardName: ${extractedMetadata.cardName || 'NOT FOUND'}`,
-          );
-          console.log(
-            `📊 [Card Metadata] Extracted bankName: ${extractedMetadata.bankName || 'NOT FOUND'}`,
-          );
-          console.log(
-            `📊 [Card Metadata] Extracted network: ${extractedMetadata.network || 'NOT FOUND'}`,
-          );
-          console.log(
-            `📊 [Card Metadata] Extracted rewardType: ${extractedMetadata.rewardType || 'NOT FOUND'}`,
-          );
-          console.log(
-            `📊 [Card Metadata] Full extracted metadata:`,
-            JSON.stringify(extractedMetadata, null, 2),
-          );
-        } else {
-          console.log(
-            '⚠️ [Card Metadata] extractCardMetadataWithLLM returned null - check logs above for reason',
-          );
+        // Check DB first to see if metadata already exists (only if we have card name and bank name)
+        if (finalCardName && finalBankName) {
+          const bankIdForLookup = await resolveBankIdByName(finalBankName);
+          if (bankIdForLookup) {
+            const normalizedCardName = finalCardName
+              .trim()
+              .replace(/\s+Credit\s+Card\s*$/i, '')
+              .trim();
+
+            // Check if complete metadata exists in DB
+            let { data: existingMetadataData } = await supabaseAdmin
+              .from('cards_metadata')
+              .select(
+                'id, network, reward_type, benefits, offers, rewards, milestones, rewards_progress',
+              )
+              .eq('bank_id', bankIdForLookup)
+              .ilike('card_name', normalizedCardName)
+              .maybeSingle();
+
+            if (!existingMetadataData) {
+              const { data: metadataWithSuffix } = await supabaseAdmin
+                .from('cards_metadata')
+                .select(
+                  'id, network, reward_type, benefits, offers, rewards, milestones, rewards_progress',
+                )
+                .eq('bank_id', bankIdForLookup)
+                .ilike('card_name', `${normalizedCardName} Credit Card`)
+                .maybeSingle();
+              existingMetadataData = metadataWithSuffix || null;
+            }
+
+            existingCompleteMetadata = existingMetadataData;
+
+            // Check if metadata is complete (has benefits, offers, or rewards)
+            isComplete =
+              existingCompleteMetadata &&
+              ((Array.isArray(existingCompleteMetadata.benefits) &&
+                existingCompleteMetadata.benefits.length > 0) ||
+                (Array.isArray(existingCompleteMetadata.offers) &&
+                  existingCompleteMetadata.offers.length > 0) ||
+                (existingCompleteMetadata.rewards &&
+                  Object.keys(existingCompleteMetadata.rewards).length > 0));
+
+            if (isComplete) {
+              console.log(
+                '✅ [Card Metadata] Complete metadata found in DB, skipping LLM extraction',
+              );
+            } else if (existingCompleteMetadata) {
+              console.log(
+                '⚠️ [Card Metadata] Metadata exists but incomplete, will use LLM to enrich',
+              );
+            } else {
+              console.log(
+                'ℹ️ [Card Metadata] No metadata found in DB, will extract using LLM',
+              );
+            }
+          }
         }
 
-        // Merge strategy: LLM has priority, but fall back to regex if LLM didn't extract
-        // Log differences when both exist for debugging
-        const finalCardName = extractedMetadata?.cardName || meta.cardName;
-        const finalBankName = extractedMetadata?.bankName || meta.bankName;
+        // Only call LLM if (metadata doesn't exist OR is incomplete)
+        // Prefer Ollama if available, fallback to OpenAI
+        if (!existingCompleteMetadata || !isComplete) {
+          console.log(
+            '🤖 [Card Metadata] Calling extractCardMetadataWithLLM...',
+          );
+
+          // Determine provider: Prefer Ollama if available, fallback to OpenAI
+          const useOllama = process.env.USE_OLLAMA === 'true' || !openaiApiKey;
+          const ollamaBaseUrl =
+            process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+
+          console.log('🔍 [Card Metadata] Provider decision:');
+          console.log('  - USE_OLLAMA env:', process.env.USE_OLLAMA);
+          console.log('  - useOllama (computed):', useOllama);
+          console.log('  - ollamaBaseUrl:', ollamaBaseUrl);
+          console.log('  - openaiApiKey:', openaiApiKey ? 'set' : 'not set');
+
+          extractedMetadata = await extractCardMetadataWithLLM(
+            pdfText,
+            {
+              // Use regex-extracted values as hints, but LLM can override if it finds better ones
+              cardName: meta.cardName,
+              bankName: meta.bankName,
+              spendingCategories: meta.spendingCategories,
+              rewardsProgramSummary: meta.rewardsProgramSummary,
+              rewardPoints: meta.rewardPoints,
+            },
+            {
+              provider: useOllama ? 'ollama' : 'openai',
+              apiKey: openaiApiKey,
+              ollamaBaseUrl,
+            },
+          );
+
+          console.log(
+            `📊 [Card Metadata] LLM extraction result:`,
+            extractedMetadata ? 'SUCCESS' : 'NULL',
+          );
+          if (extractedMetadata) {
+            console.log(
+              `📊 [Card Metadata] Extracted cardName: ${extractedMetadata.cardName || 'NOT FOUND'}`,
+            );
+            console.log(
+              `📊 [Card Metadata] Extracted bankName: ${extractedMetadata.bankName || 'NOT FOUND'}`,
+            );
+            console.log(
+              `📊 [Card Metadata] Extracted network: ${extractedMetadata.network || 'NOT FOUND'}`,
+            );
+            console.log(
+              `📊 [Card Metadata] Extracted rewardType: ${extractedMetadata.rewardType || 'NOT FOUND'}`,
+            );
+            console.log(
+              `📊 [Card Metadata] Full extracted metadata:`,
+              JSON.stringify(extractedMetadata, null, 2),
+            );
+
+            // Update final values with LLM results (LLM has priority)
+            if (extractedMetadata.cardName) {
+              finalCardName = extractedMetadata.cardName;
+            }
+            if (extractedMetadata.bankName) {
+              finalBankName = extractedMetadata.bankName;
+            }
+          } else {
+            console.log(
+              '⚠️ [Card Metadata] extractCardMetadataWithLLM returned null - check logs above for reason',
+            );
+          }
+        }
 
         // Log when values differ (for debugging)
         if (
@@ -744,15 +852,29 @@ async function parseStatementAsync(
         );
 
         // Get or resolve bank_id using the final bank name
+        // Also get network from card (set during card creation via BIN lookup)
         let bankId = await resolveBankIdByName(finalBankName);
+
+        // Always fetch network from card (BIN lookup result from card creation)
+        const { data: currentCard } = await supabaseAdmin
+          .from('cards')
+          .select('bank_id, network')
+          .eq('id', cardId)
+          .single();
+
         if (!bankId) {
-          // Try to get bank_id from card
-          const { data: currentCard } = await supabaseAdmin
-            .from('cards')
-            .select('bank_id')
-            .eq('id', cardId)
-            .single();
           bankId = currentCard?.bank_id || null;
+        }
+        const cardNetworkFromBin: string | null = currentCard?.network || null;
+
+        if (cardNetworkFromBin) {
+          console.log(
+            `🔍 [Card Metadata] Network from BIN lookup (card.network): ${cardNetworkFromBin}`,
+          );
+        } else {
+          console.log(
+            'ℹ️ [Card Metadata] No network found from BIN lookup (card.network is null)',
+          );
         }
 
         if (!bankId) {
@@ -876,25 +998,107 @@ async function parseStatementAsync(
                 // Card type: LLM or default
                 cardType: extractedMetadata.cardType || 'credit',
 
-                // Network: LLM or infer from card name
-                network:
-                  extractedMetadata.network ||
-                  (() => {
-                    const cardNameLower = (
-                      extractedMetadata.cardName || ''
-                    ).toLowerCase();
-                    if (
-                      cardNameLower.includes('amex') ||
-                      cardNameLower.includes('american express')
-                    )
-                      return 'amex';
-                    if (cardNameLower.includes('diners')) return 'diners';
-                    if (cardNameLower.includes('rupay')) return 'rupay';
-                    return 'visa'; // Default
-                  })(),
+                // Network: Priority 1) BIN lookup, 2) Statement parsing, 3) LLM
+                network: (() => {
+                  // Priority 1: Check BIN lookup (from card's existing network)
+                  if (cardNetworkFromBin) {
+                    console.log(
+                      `✅ [Card Metadata] Using network from BIN lookup: ${cardNetworkFromBin}`,
+                    );
+                    return cardNetworkFromBin;
+                  }
+
+                  // Priority 2: Check statement parsing (PDF text) - search for network mentions
+                  const pdfTextLower = pdfText.toLowerCase();
+                  console.log(
+                    `🔍 [Card Metadata] Checking PDF text for network (length: ${pdfText.length})...`,
+                  );
+
+                  // Check for Rupay first (most specific)
+                  if (pdfTextLower.includes('rupay')) {
+                    console.log(
+                      '✅ [Card Metadata] Detected network from statement PDF: rupay',
+                    );
+                    return 'rupay';
+                  }
+                  // Check for other networks
+                  if (
+                    pdfTextLower.includes('mastercard') ||
+                    pdfTextLower.includes('master card')
+                  ) {
+                    console.log(
+                      '✅ [Card Metadata] Detected network from statement PDF: mastercard',
+                    );
+                    return 'mastercard';
+                  }
+                  if (
+                    pdfTextLower.includes('amex') ||
+                    pdfTextLower.includes('american express')
+                  ) {
+                    console.log(
+                      '✅ [Card Metadata] Detected network from statement PDF: amex',
+                    );
+                    return 'amex';
+                  }
+                  if (pdfTextLower.includes('diners')) {
+                    console.log(
+                      '✅ [Card Metadata] Detected network from statement PDF: diners',
+                    );
+                    return 'diners';
+                  }
+                  if (pdfTextLower.includes('visa')) {
+                    console.log(
+                      '✅ [Card Metadata] Detected network from statement PDF: visa',
+                    );
+                    return 'visa';
+                  }
+
+                  console.log(
+                    'ℹ️ [Card Metadata] No network found in PDF text, checking LLM result...',
+                  );
+
+                  // Priority 3: Use LLM result if available
+                  if (extractedMetadata.network) {
+                    console.log(
+                      `⚠️ [Card Metadata] Using network from LLM (fallback): ${extractedMetadata.network}`,
+                    );
+                    return extractedMetadata.network;
+                  }
+
+                  // Priority 4: Infer from card name (Tata Neu cards are Rupay)
+                  const cardNameLower = finalCardName.toLowerCase();
+                  if (
+                    cardNameLower.includes('tata neu') ||
+                    cardNameLower.includes('neu')
+                  ) {
+                    console.log(
+                      '✅ [Card Metadata] Inferred network from card name (Tata Neu = Rupay): rupay',
+                    );
+                    return 'rupay';
+                  }
+
+                  // Priority 5: Default fallback - database requires non-null
+                  // Most Indian cards are Visa, so default to that
+                  console.log(
+                    '⚠️ [Card Metadata] Network not detected from any source, using default: visa',
+                  );
+                  return 'visa'; // Default fallback since database requires non-null
+                })(),
 
                 // Reward type: LLM only (regex doesn't extract this)
-                rewardType: extractedMetadata.rewardType || null,
+                // Map "coins" to "points" since database constraint only allows: cashback, points, miles, none
+                rewardType: (() => {
+                  const rt = extractedMetadata.rewardType;
+                  if (!rt) return null;
+                  // Map "coins" to "points" for database constraint
+                  if (rt === 'coins') return 'points';
+                  // Ensure it's one of the allowed values
+                  if (['cashback', 'points', 'miles', 'none'].includes(rt)) {
+                    return rt;
+                  }
+                  // Default to "points" for unknown types
+                  return 'points';
+                })(),
 
                 // Fees: LLM or defaults
                 annualFee:
@@ -935,17 +1139,32 @@ async function parseStatementAsync(
                 offers: mergedMetadata.offers,
                 rewards: mergedMetadata.rewards,
                 milestones: mergedMetadata.milestones,
-                rewards_progress: mergedMetadata.rewardsProgress,
                 metadata: {
-                  ...(extractedMetadata.metadata || {}),
+                  // Store extraction metadata
                   extractedFromStatement: true,
                   extractionDate: new Date().toISOString(),
                   confidence: extractedMetadata.confidence || 'medium',
-                  // Store source information for debugging
                   extractionSource: 'llm',
+
+                  // Store source information for debugging
                   regexFallback: {
                     cardName: meta.cardName || null,
                     bankName: meta.bankName || null,
+                  },
+
+                  // Store any additional metadata from LLM
+                  ...(extractedMetadata.metadata || {}),
+
+                  // Store rewards_progress in metadata since column doesn't exist
+                  ...(mergedMetadata.rewardsProgress
+                    ? { rewardsProgress: mergedMetadata.rewardsProgress }
+                    : {}),
+
+                  // Store statement-specific metadata
+                  statementMetadata: {
+                    statementId,
+                    extractedAt: new Date().toISOString(),
+                    pdfTextLength: pdfText.length,
                   },
                 },
                 is_active: true,
